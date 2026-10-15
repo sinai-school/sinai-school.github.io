@@ -25,6 +25,21 @@ SEO = ('<meta name="google-site-verification" content="h_644To8ATCnToP7enUdCGD_z
 src = re.sub(r'<title>[^<]*</title>', '<title>إعدادية سيناء للبنين — التطبيق والنظام الرسمي</title>', src, count=1)
 k = src.find('<title')
 html = src[:k] + head + SEO + src[k:] if k >= 0 else head + SEO + src
+def _fixhead(h):
+    import re as _re
+    ns = _re.search(r'<noscript>.*?</noscript>\n?', h, _re.S)
+    nos = ns.group(0) if ns else ''
+    if ns: h = h.replace(nos, '', 1)
+    metas = ''.join(_re.findall(r'<meta name="google-site-verification"[^>]*>|<meta name="(?:description|keywords|robots)"[^>]*>|<link rel="canonical"[^>]*>|<meta property="og:[^>]*>|<script type="application/ld\+json">.*?</script>|<link rel="manifest"[^>]*>|<meta name="theme-color"[^>]*>|<link rel="apple-touch-icon"[^>]*>|<link rel="icon"[^>]*>|<meta name="(?:apple-mobile-web-app-capable|mobile-web-app-capable|apple-mobile-web-app-title|application-name)"[^>]*>', h, _re.S))
+    for m in _re.findall(r'<meta name="google-site-verification"[^>]*>|<meta name="(?:description|keywords|robots)"[^>]*>|<link rel="canonical"[^>]*>|<meta property="og:[^>]*>|<script type="application/ld\+json">.*?</script>|<link rel="manifest"[^>]*>|<meta name="theme-color"[^>]*>|<link rel="apple-touch-icon"[^>]*>|<link rel="icon"[^>]*>|<meta name="(?:apple-mobile-web-app-capable|mobile-web-app-capable|apple-mobile-web-app-title|application-name)"[^>]*>', h, _re.S):
+        h = h.replace(m, '', 1)
+    t = _re.search(r'<title>[^<]*</title>', h)
+    title = t.group(0) if t else ''
+    if t: h = h.replace(title, '', 1)
+    h = h.replace('</head>', title + metas + '</head>', 1)
+    h = _re.sub(r'(<body[^>]*>)', lambda m: m.group(1) + nos, h, count=1)
+    return h
+html = _fixhead(html)
 dst = os.path.join(out, 'index.html')
 old = open(dst, encoding='utf-8').read() if os.path.exists(dst) else ''
 strip = lambda h: re.sub(r'window\.APP_VER="[^"]*"', '', h)
