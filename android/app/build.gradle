@@ -1,11 +1,11 @@
 plugins { id 'com.android.application' }
 android {
     namespace 'iq.sinai.school'
-    compileSdk 34
+    compileSdk 35
     defaultConfig {
         applicationId "iq.sinai.school"
         minSdk 21
-        targetSdk 34
+        targetSdk 35
         versionCode Integer.parseInt(System.getenv("APP_VERSION_CODE") ?: "1")
         versionName "1." + (System.getenv("APP_VERSION_CODE") ?: "1")
     }

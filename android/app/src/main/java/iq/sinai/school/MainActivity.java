@@ -26,6 +26,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import android.webkit.WebResourceError;
+import android.widget.FrameLayout;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,7 +49,15 @@ public class MainActivity extends Activity {
         w.setStatusBarColor(Color.parseColor("#0c362f"));
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#0c362f"));
-        setContentView(web);
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.parseColor("#0c362f"));
+        root.addView(web);
+        setContentView(root);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, ins) -> {
+            Insets b = ins.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
+            v.setPadding(b.left, b.top, b.right, b.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -73,6 +86,11 @@ public class MainActivity extends Activity {
                 if ((scheme.equals("https") || scheme.equals("http")) && host.endsWith("sinai-school.github.io")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { }
                 return true;
+            }
+
+            @Override
+            public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
+                if (req.isForMainFrame()) v.loadDataWithBaseURL(HOME, OFFLINE_HTML, "text/html", "utf-8", null);
             }
 
             @Override
@@ -109,6 +127,13 @@ public class MainActivity extends Activity {
         if (state != null) web.restoreState(state);
         else web.loadUrl(HOME);
     }
+
+    private static final String OFFLINE_HTML =
+        "<!doctype html><html lang='ar' dir='rtl'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" +
+        "<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0c362f;color:#f6edd2;font:17px/1.8 sans-serif;text-align:center;padding:24px;box-sizing:border-box}" +
+        "button{margin-top:18px;border:0;border-radius:12px;padding:13px 28px;font:700 17px sans-serif;background:#e0c47c;color:#1b1406}</style></head>" +
+        "<body><div><h2>لا يوجد اتصال بالإنترنت</h2><p>تأكد من الإنترنت ثم اضغط «إعادة المحاولة».</p>" +
+        "<button onclick=\"location.href='" + HOME + "'\">إعادة المحاولة</button></div></body></html>";
 
     private static String q(String s) {
         return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'";
