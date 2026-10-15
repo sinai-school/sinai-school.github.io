@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'iq.sinai.school'
+    compileSdk 34
+    defaultConfig {
+        applicationId "iq.sinai.school"
+        minSdk 21
+        targetSdk 34
+        versionCode Integer.parseInt(System.getenv("APP_VERSION_CODE") ?: "1")
+        versionName "1." + (System.getenv("APP_VERSION_CODE") ?: "1")
+    }
+    signingConfigs {
+        rel {
+            storeFile file("../sinai.keystore")
+            storePassword "sinai-school"
+            keyAlias "sinai"
+            keyPassword "sinai-school"
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.rel }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
