@@ -40,10 +40,14 @@ def _fixhead(h):
     h = _re.sub(r'(<body[^>]*>)', lambda m: m.group(1) + nos, h, count=1)
     return h
 html = _fixhead(html)
+_h8 = hashlib.sha1(re.sub(r'window\.APP_VER="[^"]*"', '', html).encode('utf-8')).hexdigest()[:8]
+ver = ver + '-' + _h8
+html = re.sub(r'window\.APP_VER="[^"]*"', 'window.APP_VER=' + json.dumps(ver).replace('\\', '\\\\'), html, count=1)
 dst = os.path.join(out, 'index.html')
 old = open(dst, encoding='utf-8').read() if os.path.exists(dst) else ''
 strip = lambda h: re.sub(r'window\.APP_VER="[^"]*"', '', h)
 if strip(old) == strip(html):
     print('SAME'); sys.exit(0)
 open(dst, 'w', encoding='utf-8').write(html)
+open(os.path.join(out, 'version.json'), 'w', encoding='utf-8').write(json.dumps({'v': ver}))
 print('CHANGED', ver, len(html))
