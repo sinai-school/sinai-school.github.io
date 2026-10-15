@@ -25,6 +25,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -120,6 +121,7 @@ public class MainActivity extends Activity {
         "document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(!a)return;var h=a.href||'';if(h.indexOf('blob:')==0||h.indexOf('data:')==0){e.preventDefault();e.stopPropagation();if(h.indexOf('data:')==0)SinaiApp.save(a.download||'file',h);else window.__sinaiBlob(h,a.download)}},true);" +
         "var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var h=this.href||'';if(this.hasAttribute('download')&&(h.indexOf('blob:')==0||h.indexOf('data:')==0)){if(h.indexOf('data:')==0)SinaiApp.save(this.download||'file',h);else window.__sinaiBlob(h,this.download);return}return oc.apply(this,arguments)};" +
         "window.print=function(){SinaiApp.print()};" +
+        "try{navigator.canShare=function(d){return!!(d&&d.files&&d.files.length)};navigator.share=function(d){return new Promise(function(ok,no){var f=d&&d.files&&d.files[0];if(!f){no(new Error('x'));return}var r=new FileReader();r.onload=function(){SinaiApp.share(f.name||'file',r.result);ok()};r.onerror=function(){no(new Error('x'))};r.readAsDataURL(f)})}}catch(e){}" +
         "var op=window.open;window.open=function(u){if(u&&String(u).indexOf('blob:')==0){window.__sinaiBlob(u,'file.pdf');return null}return op.apply(window,arguments)};" +
         "})();";
 
@@ -169,7 +171,34 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void shareDataUrl(String dataUrl, String name) {
+        try {
+            int c = dataUrl.indexOf(',');
+            String mime = dataUrl.substring(5, c).split(";")[0];
+            if (mime.isEmpty()) mime = "application/octet-stream";
+            byte[] bytes = Base64.decode(dataUrl.substring(c + 1), Base64.DEFAULT);
+            if (!name.contains(".") && mime.contains("pdf")) name += ".pdf";
+            File dir = new File(getCacheDir(), "shared");
+            if (dir.exists()) { File[] old = dir.listFiles(); if (old != null) for (File o : old) o.delete(); }
+            dir.mkdirs();
+            File f = new File(dir, name.replaceAll("[\\\\/:*?\"<>|]", "_"));
+            try (FileOutputStream os = new FileOutputStream(f)) { os.write(bytes); }
+            Uri u = FileProvider.getUriForFile(this, "iq.sinai.school.files", f);
+            Intent i = new Intent(Intent.ACTION_SEND);
+            i.setType(mime);
+            i.putExtra(Intent.EXTRA_STREAM, u);
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            final Intent ch = Intent.createChooser(i, "مشاركة الملف");
+            runOnUiThread(() -> startActivity(ch));
+        } catch (Exception e) {
+            runOnUiThread(() -> Toast.makeText(this, "تعذّرت المشاركة", Toast.LENGTH_LONG).show());
+        }
+    }
+
     private class Bridge {
+        @JavascriptInterface
+        public void share(String name, String dataUrl) { shareDataUrl(dataUrl, name); }
+
         @JavascriptInterface
         public void save(String name, String dataUrl) { saveDataUrl(dataUrl, name); }
 
