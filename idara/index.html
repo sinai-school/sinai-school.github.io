@@ -1,0 +1,29 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>إدارة سيناء</title><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0c362f">
+<link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="إدارة سيناء">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 18px calc(24px + env(safe-area-inset-bottom));background:radial-gradient(circle at 50% 30%,rgba(224,196,124,.18),transparent 45%),linear-gradient(170deg,#0f4038,#071f1a);color:#f6edd2;font:17px/1.8 Tahoma,"Segoe UI",sans-serif;text-align:center}
+main{max-width:420px;width:100%;display:grid;gap:14px;justify-items:center}
+img{width:150px;height:150px;border-radius:28px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+h1{margin:6px 0 0;font-size:26px}p{margin:0;color:#cfdcd5}
+a.go{display:block;width:100%;padding:15px;border-radius:14px;background:linear-gradient(180deg,#ecd395,#c9a24a);color:#1b1406;font-weight:700;font-size:18px;text-decoration:none}
+.st{width:100%;text-align:right;background:rgba(255,255,255,.06);border:1px solid rgba(224,196,124,.3);border-radius:14px;padding:14px 16px;font-size:15.5px}
+.st b{color:#ecd395}
+</style></head><body><main>
+<img src="icon-512.png" alt="">
+<h1>نظام إعدادية سيناء — الإدارة</h1>
+<p id="msg">جارٍ فتح النظام…</p>
+<a class="go" id="go" href="https://claude.ai/artifact/5JC8UcGa3EQ4vA2bSmdmfo">فتح نظام الإدارة</a>
+<div class="st" id="how" hidden>حتى تصير أيقونة على الشاشة الرئيسية:<br>١. اضغط زر <b>المشاركة</b> (المربع ويا السهم لفوق)<br>٢. اختار <b>«إضافة إلى الشاشة الرئيسية»</b> ← <b>إضافة</b><br>٣. افتح النظام من الأيقونة الجديدة.</div>
+</main>
+<script>
+var U="https://claude.ai/artifact/5JC8UcGa3EQ4vA2bSmdmfo";
+var standalone=(window.navigator.standalone===true)||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+if(standalone){setTimeout(function(){location.replace(U)},150)}
+else{document.getElementById("msg").textContent="هذه صفحة أيقونة الإدارة.";document.getElementById("how").hidden=false}
+</script></body></html>
