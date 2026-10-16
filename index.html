@@ -1100,7 +1100,7 @@ pdfRun=async function(name,paper,orient,fill){try{quiet()}catch(e){}toast("جا�
 .pf3kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:5px 0;font-size:13.5px}
 .pf3kv dt{color:var(--muted)}.pf3kv dd{margin:0;font-weight:600;text-align:left}
 `;document.head.appendChild(st)}
-const CODEV101="v104";
+const CODEV101="v105";
 {const _bs101=buildSnap;buildSnap=function(...a){const S=_bs101(...a);if(S){S.cv=CODEV101;S.ver=hash(canon([S.ver,CODEV101]))}return S}}
 
 /* ---------- 1) الجلسة تبقى محفوظة: ما يرجع للبداية إذا طلع من التطبيق ---------- */
@@ -1362,6 +1362,22 @@ if(IN_CLAUDE){bkTick=async function(){await bkLoadI()};bkLoadList=async function
   <div class="tools"><button class="btn" onclick="bkDownload()">${ic("download")} احفظ النسخة الكاملة</button></div></div>`};
  const _vh104=V.h;V.h=function(...a){const h=_vh104(...a);if(!BKI)setTimeout(bkLoadI,0);return bkDue()?`<div class="banner warn">${ic("shield")} <span>صار وقت النسخة الاحتياطية الكاملة (كل أسبوعين).</span><button class="btn sm" onclick="bkDownload()">${ic("download")} احفظها هسة</button></div>`+h:h};
  emisBox=function(){const L=STA(),n=INF?L.filter(s=>(INF[s.id]||{}).x).length:null;return`<div class="box"><h3>${ic("download")} بيانات الطلاب لنظام EMIS</h3><p class="muted" style="margin:0">المعلومات اللي يملّيها الطلاب بالبوابة تنضاف لسجلاتهم من ملف «لوحة البوابة» (الزر الفوك). هذا الملف بنفس ترتيب حقول استمارة الطالب، جاهز للرفع على EMIS.</p>${n!=null?`<p style="margin:0">أكمل ملفه: <b>${toAr(n)}</b> من <b>${toAr(L.length)}</b> طالب</p>`:""}<div class="tools"><button class="btn" onclick="emisExport(1)">${ic("download")} تنزيل المكتملين (Excel)</button><button class="btn ghost" onclick="emisExport(0)">كل الطلاب</button></div></div>`}}
+
+/* ===== v105 — أول ما يدخل الطالب أو المدرس: لازم يختار اسمه ويسجّل، وما يتصفح شي قبلها ===== */
+const PK={q:"",g:null,s:null};
+function pkPick(kind,i,j){if(kind=="s"){const k=((SNAP.sid||[])[i]||[])[j],n=(SNAP.stu[i]||[])[j];if(!k)return toast("ما لكيت هذا الاسم، راجع الإدارة","err");PS.tab="f";psOpen("s",k,n)}else{const x=SNAP.tch[i];if(!x||!x.k)return toast("ما لكيت هذا الاسم، راجع الإدارة","err");PS.tab="f";psOpen("t",x.k,x.n)}PK.q="";PK.g=PK.s=null;prender();scrollTo(0,0)}
+function pkMatch(q){const w=nrm(q).replace(/ة/g,"ه");if(w.length<2)return[];const out=[];if(ROLE=="s"){SNAP.stu.forEach((L,i)=>(L||[]).forEach((n,j)=>{if(nrm(n).replace(/ة/g,"ه").includes(w))out.push(["s",i,j,n,SNAP.sn[i]])}))}else{SNAP.tch.forEach((x,i)=>{if(x&&x.k&&nrm(x.n).replace(/ة/g,"ه").includes(w))out.push(["t",i,0,x.n,x.spec||""])})}return out.slice(0,40)}
+function pkRes(){const r=$("pk_r");if(!r)return;const L=pkMatch(PK.q);r.innerHTML=PK.q.trim().length<2?"":L.length?L.map(([k,i,j,n,sub])=>`<button class="gsi" onclick="pkPick('${k}',${i},${j})"><b>${esc(n)}</b><span>${esc(sub)}</span></button>`).join(""):'<p class="muted" style="margin:0">ما لكيت هذا الاسم. جرّب جزء منه، أو اختاره من القائمة جوّه.</p>'}
+function pkScreen(){const head=`<div class="box lockb"><div class="lockh">${ic("shield")}<div><h3>${ROLE=="s"?"اختر اسمك أولاً":"اختر اسمك أولاً"}</h3><p class="muted">لازم تختار اسمك وتسجّل برقم هاتفك وتكمل معلوماتك، بعدها يفتح التطبيق.</p></div></div>
+ <input id="pk_q" type="search" autocomplete="off" placeholder="اكتب اسمك" value="${esc(PK.q)}" oninput="PK.q=this.value;pkRes()" style="font-size:16px;padding:12px 14px;border-radius:12px"><div id="pk_r" class="gsr" style="margin:0"></div></div>`;
+ let body="";if(ROLE=="t"){body=`<div class="vh"><h2>أو اختر اسمك من القائمة</h2></div><div style="display:grid;gap:0">${SNAP.tch.map((x,i)=>x&&x.k?`<button class="gsi" onclick="pkPick('t',${i},0)"><b>${esc(x.n)}</b><span>${esc(x.spec||"")}</span></button>`:"").join("")}</div>`}
+ else{const G=pGrades();if(PK.g==null)body=`<div class="vh"><h2>أو اختر صفك</h2></div><div class="pick">${G.map((g0,i)=>`<button onclick="PK.g=${i};prender()"><b>الصف ${esc(g0)}</b><span>${toAr(pSecs(g0).length)} شعب</span></button>`).join("")}</div>`;
+  else{const g0=G[PK.g],S=pSecs(g0);const cr=`<div class="crumbs"><button onclick="PK.g=null;PK.s=null;prender()">الصفوف</button><span>›</span>${PK.s!=null?`<button onclick="PK.s=null;prender()">الصف ${esc(g0)}</button><span>›</span><span>${esc(SNAP.sn[PK.s])}</span>`:`<span>الصف ${esc(g0)}</span>`}</div>`;
+   body=cr+(PK.s==null?`<div class="vh"><h2>اختر شعبتك</h2></div><div class="pick">${S.map(([n,i])=>`<button onclick="PK.s=${i};prender()"><b>${esc(n.split(" ").slice(1).join(" "))}</b><span>${toAr((SNAP.stu[i]||[]).length)} طالب</span></button>`).join("")}</div>`
+   :`<div class="vh"><h2>اضغط على اسمك</h2></div><div style="display:grid;gap:0">${(SNAP.stu[PK.s]||[]).map((n,j)=>`<button class="gsi" onclick="pkPick('s',${PK.s},${j})"><b>${esc(n)}</b><span>${toAr(j+1)}</span></button>`).join("")}</div>`)}}
+ setTimeout(pkRes,0);return head+body}
+{const _pS105=pStudent;pStudent=function(){if(!apiURL()||PS.key||!SNAP)return _pS105();return pkScreen()}}
+{const _pT105=pTeacher;pTeacher=function(){if(!apiURL()||PS.key||!SNAP)return _pT105();return pkScreen()}}
 
 boot();
 </script>
