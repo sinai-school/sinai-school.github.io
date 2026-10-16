@@ -1100,7 +1100,7 @@ pdfRun=async function(name,paper,orient,fill){try{quiet()}catch(e){}toast("جا�
 .pf3kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:5px 0;font-size:13.5px}
 .pf3kv dt{color:var(--muted)}.pf3kv dd{margin:0;font-weight:600;text-align:left}
 `;document.head.appendChild(st)}
-const CODEV101="v105";
+const CODEV101="v106";
 {const _bs101=buildSnap;buildSnap=function(...a){const S=_bs101(...a);if(S){S.cv=CODEV101;S.ver=hash(canon([S.ver,CODEV101]))}return S}}
 
 /* ---------- 1) الجلسة تبقى محفوظة: ما يرجع للبداية إذا طلع من التطبيق ---------- */
@@ -1378,6 +1378,9 @@ function pkScreen(){const head=`<div class="box lockb"><div class="lockh">${ic("
  setTimeout(pkRes,0);return head+body}
 {const _pS105=pStudent;pStudent=function(){if(!apiURL()||PS.key||!SNAP)return _pS105();return pkScreen()}}
 {const _pT105=pTeacher;pTeacher=function(){if(!apiURL()||PS.key||!SNAP)return _pT105();return pkScreen()}}
+
+/* ===== v106 — التسجيل ينحفظ دائماً على الجهاز (بدون خيار «تذكرني») ===== */
+{const _psS106=psScreen;psScreen=function(){return _psS106().replace(/<label class="sub"[^<]*<input type="checkbox" id="psrem"[^>]*>[^<]*<\/label>/,"")}}
 
 boot();
 </script>
