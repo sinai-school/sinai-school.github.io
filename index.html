@@ -1404,6 +1404,12 @@ function rules49(){if(R49)return R49;const bad={},mergeX=[],merge3=[],over=[];if
   for(let s=0;s<NS;s++)for(let d=0;d<5;d++)for(let p=0;p<PER[d];p++){const u=g[s]&&g[s][d]&&g[s][d][p];if(u==null||u<0||!U[u])continue;const k=s+'|'+U[u].t+'|'+U[u].sj;got[k]=(got[k]||0)+1}
   for(const k in got){if(got[k]>(need[k]||0)){const[s,t,sj]=k.split('|');over.push(`${SN[s]} — ${sj} (${T[t]}): ${toAr(got[k])} حصص وبجدول توزيع المديرية ${toAr(need[k]||0)}`);
     for(let d=0;d<5;d++)for(let p=0;p<PER[d];p++){const u=g[s][d][p];if(u>=0&&U[u]&&U[u].t==+t&&U[u].sj==sj)bad[s+'|'+d+'|'+p]=1}}}
+  /* the ministry study plan (CUR.__h): a section may not get more lessons of a subject than the plan */
+  const PL=(CUR&&CUR.__h)||{},cs={},doneS=new Set(over.map(x=>x.split(' — ')[0]+'|'+x.split(' — ')[1].split(' (')[0]));
+  for(let s=0;s<NS;s++)for(let d=0;d<5;d++)for(let p=0;p<PER[d];p++){const u=g[s]&&g[s][d]&&g[s][d][p];if(u==null||u<0||!U[u])continue;const k=s+'|'+U[u].sj;cs[k]=(cs[k]||0)+1}
+  for(const k in cs){const[s,sj]=k.split('|'),pl=(PL[grp(SN[s])]||{})[sj];if(pl==null||cs[k]<=pl)continue;
+    if(!doneS.has(SN[s]+'|'+sj))over.push(`${SN[s]} — ${sj}: ${toAr(cs[k])} حصص والخطة الدراسية للوزارة ${toAr(pl)}`);
+    for(let d=0;d<5;d++)for(let p=0;p<PER[d];p++){const u=g[s][d][p];if(u>=0&&U[u]&&U[u].sj==sj)bad[s+'|'+d+'|'+p]=1}}
   return R49={bad,mergeX,merge3,over}}
 {const _r49=render;render=function(...a){R49=null;return _r49(...a)}}
 {const _c49=conf;conf=function(s,d,p){return _c49(s,d,p)||(rules49().bad[s+'|'+d+'|'+p]?1:0)}}
@@ -1411,7 +1417,7 @@ function rules49(){if(R49)return R49;const bad={},mergeX=[],merge3=[],over=[];if
   const add=(ok,txt,list)=>{(ok?out.items:out.bad).push({ok,txt,list:list||[]});if(!ok)out.ok=false};
   add(!r.mergeX.length,r.mergeX.length?`دمج بين مرحلتين أو فرعين مختلفين (مناهج مختلفة): ${toAr(r.mergeX.length)}`:'لا يوجد دمج بين مرحلتين مختلفتين',r.mergeX);
   add(!r.merge3.length,r.merge3.length?`دمج أكثر من شعبتين بحصة وحدة: ${toAr(r.merge3.length)}`:'لا يوجد دمج لأكثر من شعبتين',r.merge3);
-  add(!r.over.length,r.over.length?`حصص أكثر من جدول توزيع المديرية: ${toAr(r.over.length)}`:'حصص كل مدرس بكل شعبة ضمن جدول توزيع المديرية',r.over);
+  add(!r.over.length,r.over.length?`حصص أكثر من جدول توزيع المديرية أو الخطة الدراسية: ${toAr(r.over.length)}`:'الحصص ضمن جدول توزيع المديرية والخطة الدراسية',r.over);
   return out}}
 {const _cl49=clash;clash=function(...a){const x=_cl49(...a);try{R49=null;const r=rules49();return x+r.mergeX.length+r.merge3.length+r.over.length}catch(e){return x}}}
 
