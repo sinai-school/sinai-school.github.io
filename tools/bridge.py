@@ -25,6 +25,8 @@ if os.path.exists(ap):
     if r.get('ok') or r.get('err') == 'auth':
         os.remove(ap)
 r = post({'a': 'export'})
+if r.get('err') in ('action', 'nosecret'):
+    print('portal server not ready yet:', r.get('err')); sys.exit(0)
 if not r.get('ok'):
     raise SystemExit('ERROR: export %s' % r.get('err'))
 pp = os.path.join(B, 'portal.json')
