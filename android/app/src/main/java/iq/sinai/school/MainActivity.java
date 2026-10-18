@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
     private static final int FILE_REQ = 7;
     private WebView web;
     private ValueCallback<Uri[]> fileCb;
+    private boolean triedCache = false;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -70,7 +71,7 @@ public class MainActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setSupportZoom(true);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setUserAgentString(s.getUserAgentString() + " SinaiSchoolApp/1");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
@@ -90,11 +91,20 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
-                if (req.isForMainFrame()) v.loadDataWithBaseURL(HOME, OFFLINE_HTML, "text/html", "utf-8", null);
+                if (!req.isForMainFrame()) return;
+                // بدون إنترنت: افتح آخر نسخة محفوظة بالجهاز، وإذا ما موجودة اعرض رسالة
+                if (!triedCache) {
+                    triedCache = true;
+                    v.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+                    v.loadUrl(HOME);
+                    return;
+                }
+                v.loadDataWithBaseURL(HOME, OFFLINE_HTML, "text/html", "utf-8", null);
             }
 
             @Override
             public void onPageFinished(WebView v, String url) {
+                if (url != null && url.startsWith(HOME)) { triedCache = false; v.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT); }
                 v.evaluateJavascript(PATCH_JS, null);
             }
         });
