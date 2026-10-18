@@ -1,5 +1,5 @@
 /* إعدادية سيناء للبنين — يفتح التطبيق من الجهاز فوراً حتى بدون إنترنت، والتحديث ينزل بالخلفية */
-const V='sinai-app-v3',CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
+const V='sinai-app-v4',CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>Promise.all(CORE.map(u=>c.match(u).then(m=>m||c.add(u)).catch(()=>{})))).catch(()=>{}))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=V&&/^sinai-app/.test(x)).map(x=>caches.open(V).then(c=>c.match('index.html')).then(m=>m?caches.delete(x):0)))).then(()=>self.clients.claim()))});
 const put=(key,res)=>{if(res&&(res.ok||res.type=='opaque')){const cp=res.clone();caches.open(V).then(c=>c.put(key,cp)).catch(()=>{})}return res};
