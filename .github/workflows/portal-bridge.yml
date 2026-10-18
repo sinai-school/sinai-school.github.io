@@ -13,5 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Echo
-        run: echo ok
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Bridge branch
+        run: |
+          git fetch --depth 1 origin bridge
+          git worktree add -B bridge b origin/bridge
+      - name: Sync with the portal server
+        run: python3 tools/bridge.py b
+      - name: Save
+        working-directory: b
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "جسر البوابة"
+          for i in 1 2 3; do git pull -q --rebase origin bridge && git push -q origin HEAD:bridge && exit 0; sleep 5; done
+          exit 1
