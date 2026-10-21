@@ -106,6 +106,11 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView v, String url) {
                 if (url != null && url.startsWith(HOME)) { triedCache = false; v.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT); }
                 v.evaluateJavascript(PATCH_JS, null);
+                Intent it = getIntent();
+                if (it != null && "notes".equals(it.getStringExtra("open"))) {
+                    it.removeExtra("open");
+                    v.postDelayed(() -> v.evaluateJavascript("window.nt91Open&&window.nt91Open()", null), 2500);
+                }
             }
         });
 
@@ -134,8 +139,10 @@ public class MainActivity extends Activity {
             }
         });
 
+        Notifier.channel(this);
         if (state != null) web.restoreState(state);
         else web.loadUrl(HOME);
+        if (PollWorker.prefs(this).getString("url", null) != null) PollWorker.schedule(this);
     }
 
     private static final String OFFLINE_HTML =
@@ -240,6 +247,41 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean isApp() { return true; }
 
+        /* إشعارات التبليغات بصوت */
+        @JavascriptInterface
+        public void notify(String title, String body) { Notifier.show(MainActivity.this, title, body, (int) (System.currentTimeMillis() % 1000000)); }
+
+        @JavascriptInterface
+        public boolean canNotify() { return Notifier.allowed(MainActivity.this); }
+
+        @JavascriptInterface
+        public void enableNotify() {
+            Notifier.channel(MainActivity.this);
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9));
+            }
+            PollWorker.schedule(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void setPoll(String url, String body) {
+            PollWorker.prefs(MainActivity.this).edit().putString("url", url).putString("body", body).apply();
+            PollWorker.schedule(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void knownIds(String csv) {
+            java.util.Set<String> s = new java.util.HashSet<>(PollWorker.prefs(MainActivity.this).getStringSet("known", new java.util.HashSet<>()));
+            for (String x : (csv == null ? "" : csv).split(",")) if (!x.isEmpty()) s.add(x);
+            PollWorker.prefs(MainActivity.this).edit().putStringSet("known", s).putBoolean("init", true).apply();
+        }
+
+        @JavascriptInterface
+        public void stopPoll() {
+            PollWorker.prefs(MainActivity.this).edit().clear().apply();
+            PollWorker.cancel(MainActivity.this);
+        }
+
         @JavascriptInterface
         public void print() {
             runOnUiThread(() -> {
@@ -260,6 +302,13 @@ public class MainActivity extends Activity {
             return;
         }
         super.onActivityResult(req, res, data);
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        if (i != null && "notes".equals(i.getStringExtra("open")) && web != null)
+            web.evaluateJavascript("window.nt91Open&&window.nt91Open()", null);
     }
 
     @Override
