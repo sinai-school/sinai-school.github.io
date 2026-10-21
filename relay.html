@@ -7,7 +7,7 @@
 /* النظام داخل Claude ما يكدر يتصل بالإنترنت، فيفتح هاي الصفحة بمتصفح تطبيق Claude:
    #q=<id>&u=<رابط الخادم>&d=<الطلب مضغوط>  ← ترسل الطلب للخادم وتحفظ الرد
    #g=<id>&i=<رقم القطعة>                    ← تعرض قطعة من الرد (حتى يقراها النظام) */
-const CH = 30000, o = document.getElementById("o");
+const CH = 24000, o = document.getElementById("o");
 const b64u = { enc: b => { let s = ""; const a = new Uint8Array(b); for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode.apply(null, a.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
   dec: s => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; const t = atob(s), a = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) a[i] = t.charCodeAt(i); return a; } };
 const gz = async (u8, mode) => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(mode == "d" ? new DecompressionStream("gzip") : new CompressionStream("gzip"))).arrayBuffer());
@@ -15,23 +15,34 @@ const show = (id, st, n, i, data) => { o.textContent = "⟦R|" + id + "|" + st +
 const keep = {};
 async function run() {
   const h = new URLSearchParams(location.hash.slice(1));
+  const ss = (k, v) => { try { v === undefined ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) { } };
+  const sg = k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
   try {
+    if (h.get("ping")) return show(h.get("ping"), "PONG", 0, 0, "");
+    if (h.get("clr")) { const id = h.get("clr"); delete keep[id]; ss("r_" + id); return show(id, "GONE", 0, 0, ""); }
+    if (h.get("p")) { /* قطعة من طلب كبير */
+      const id = h.get("p"), i = +(h.get("i") || 0);
+      ss("q_" + id + "_" + i, h.get("c") || ""); return show(id, "PART", +(h.get("n") || 1), i, "");
+    }
     if (h.get("q")) {
       const id = h.get("q");
-      if (keep[id]) return part(id, 0);
+      if (keep[id] || sg("r_" + id)) return part(id, 0);
       show(id, "WAIT", 0, 0, "");
-      const body = new TextDecoder().decode(await gz(b64u.dec(h.get("d") || ""), "d"));
+      let d = h.get("d") || "";
+      if (!d && h.get("n")) { const n = +h.get("n"); for (let i = 0; i < n; i++) { const c = sg("q_" + id + "_" + i); if (c == null) return show(id, "ERR", 0, 0, "missing part " + i); d += c; ss("q_" + id + "_" + i); } }
+      if (!/^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[\w-]+\/exec$/.test(h.get("u") || "")) return show(id, "ERR", 0, 0, "bad url");
+      const body = new TextDecoder().decode(await gz(b64u.dec(d), "d"));
       let txt;
       try {
         const r = await fetch(h.get("u"), { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, redirect: "follow" });
         txt = await r.text();
       } catch (e) { txt = JSON.stringify({ err: "net", msg: String(e && e.message || e) }); }
       const enc = b64u.enc(await gz(new TextEncoder().encode(txt)));
-      keep[id] = enc; try { sessionStorage.setItem("r_" + id, enc); } catch (e) { }
+      keep[id] = enc; ss("r_" + id, enc);
       return part(id, 0);
     }
     if (h.get("g")) return part(h.get("g"), +(h.get("i") || 0));
-  } catch (e) { show(h.get("q") || h.get("g") || "", "ERR", 0, 0, String(e && e.message || e)); }
+  } catch (e) { show(h.get("q") || h.get("g") || h.get("p") || "", "ERR", 0, 0, String(e && e.message || e)); }
 }
 function part(id, i) {
   let s = keep[id]; if (!s) { try { s = sessionStorage.getItem("r_" + id); } catch (e) { } }
