@@ -1,0 +1,43 @@
+name: نشر تحديث التطبيق
+# مهمة التحديث التلقائي ترفع النسخة الجديدة لفرع app-update، وهذا ينشرها للتطبيق فوراً.
+# ياخذ من الفرع بس index.html و version.json وملفات الاستمارات tpl/ — وما يلمس أي ملف ثاني.
+on:
+  push:
+    branches: [app-update]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-app
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Take the new app files
+        run: |
+          git fetch --depth 1 origin app-update
+          git checkout FETCH_HEAD -- index.html version.json
+          if git ls-tree -r --name-only FETCH_HEAD | grep -q '^tpl/'; then git checkout FETCH_HEAD -- tpl; fi
+          python3 -c "
+          import json
+          h = open('index.html', encoding='utf-8').read()
+          assert '<script id=\"appjs\">' in h and 'id=\"snap\"' in h, 'not the school app'
+          json.load(open('version.json'))
+          print('ok', len(h))
+          "
+      - name: Publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A index.html version.json
+          [ -d tpl ] && git add -A tpl
+          if git diff --cached --quiet; then echo "already published"; exit 0; fi
+          git commit -q -m "تحديث تلقائي للتطبيق"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1
