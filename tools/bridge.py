@@ -24,6 +24,24 @@ if os.path.exists(ap):
     log.append('ack %s' % json.dumps({k: r.get(k) for k in ('ok', 'n', 'err', 'id')}))
     if r.get('ok') or r.get('err') == 'auth':
         os.remove(ap)
+# المرحّل: أوامر نظام المدرسة (داخل Claude) لخادم البوابة، والرد يرجع لنفس الفرع — كلها مشفّرة
+import glob as _g
+for f in sorted(_g.glob(os.path.join(B, 'relay', 'out-*.json'))):
+    try:
+        o = json.load(open(f))
+    except Exception:
+        os.remove(f); continue
+    try:
+        r = post({'a': 'relay', 'box': o['box']}, tries=2)
+    except SystemExit as e:
+        r = {'err': 'net', 'msg': str(e)[:200]}
+    rid = str(o.get('id') or os.path.basename(f)[4:-5])
+    out = {'id': rid, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+    if r.get('ok') and r.get('box'): out['box'] = r['box']
+    else: out['err'] = str(r.get('err') or 'bad') + (' ' + str(r.get('msg'))[:150] if r.get('msg') else '')
+    json.dump(out, open(os.path.join(B, 'relay', 'in-%s.json' % rid), 'w'))
+    os.remove(f)
+    log.append('relay %s %s' % (rid, 'ok' if 'box' in out else out['err']))
 r = post({'a': 'export'})
 if r.get('err') in ('action', 'nosecret'):
     print('portal server not ready yet:', r.get('err')); sys.exit(0)

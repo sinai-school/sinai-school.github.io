@@ -3,6 +3,9 @@ on:
   schedule:
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+  push:
+    branches: [bridge]
+    paths: ['relay/out-*.json']
 permissions:
   contents: write
 concurrency:
@@ -20,6 +23,7 @@ jobs:
         run: |
           git fetch --depth 1 origin bridge
           git worktree add -B bridge b origin/bridge
+          mkdir -p b/relay
       - name: Sync with the portal server
         run: python3 tools/bridge.py b
       - name: Save
