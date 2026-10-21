@@ -2,12 +2,12 @@
 <html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>مرحّل نظام إعدادية سيناء</title>
 <style>body{font:14px/1.6 system-ui,sans-serif;margin:16px;background:#faf9f5;color:#141413}pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 monospace}</style></head>
-<body><b>مرحّل نظام إعدادية سيناء</b> — صفحة داخلية يستعملها النظام للاتصال بخادم البوابة.<pre id="o">READY</pre>
+<body><b>مرحّل نظام إعدادية سيناء</b> — صفحة داخلية يستعملها النظام للاتصال بخادم البوابة.<textarea id="in" aria-label="relay input" style="width:100%;height:40px"></textarea><pre id="o">READY</pre>
 <script>
 /* النظام داخل Claude ما يكدر يتصل بالإنترنت، فيفتح هاي الصفحة بمتصفح تطبيق Claude:
    #q=<id>&u=<رابط الخادم>&d=<الطلب مضغوط>  ← ترسل الطلب للخادم وتحفظ الرد
    #g=<id>&i=<رقم القطعة>                    ← تعرض قطعة من الرد (حتى يقراها النظام) */
-const CH = 180000, o = document.getElementById("o");
+const CH = 600000, o = document.getElementById("o");
 const b64u = { enc: b => { let s = ""; const a = new Uint8Array(b); for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode.apply(null, a.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
   dec: s => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; const t = atob(s), a = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) a[i] = t.charCodeAt(i); return a; } };
 const gz = async (u8, mode) => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(mode == "d" ? new DecompressionStream("gzip") : new CompressionStream("gzip"))).arrayBuffer());
@@ -29,6 +29,7 @@ async function run() {
       if (keep[id] || sg("r_" + id)) return part(id, 0);
       show(id, "WAIT", 0, 0, "");
       let d = h.get("d") || "";
+      if (!d && h.get("t")) { const ta = document.getElementById("in"); d = (ta.value || "").trim(); ta.value = ""; if (!d) return show(id, "ERR", 0, 0, "empty input"); }
       if (!d && h.get("n")) { const n = +h.get("n"); for (let i = 0; i < n; i++) { const c = sg("q_" + id + "_" + i); if (c == null) return show(id, "ERR", 0, 0, "missing part " + i); d += c; ss("q_" + id + "_" + i); } }
       if (!/^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[\w-]+\/exec$/.test(h.get("u") || "")) return show(id, "ERR", 0, 0, "bad url");
       const body = new TextDecoder().decode(await gz(b64u.dec(d), "d"));
