@@ -302,5 +302,6 @@ if results:
     R = dict(list(R.items())[-200:])
     wdoc('priv/relayr', {'json': json.dumps(R, ensure_ascii=False), 'at': S['at']})
 if pull:
-    wdoc('priv/portalpull', {'json': json.dumps(pull, ensure_ascii=False), 'at': S['at']})
+    # مضغوط: نسخة البوابة تكبر ويا عدد الطلاب، والوثيقة حدها 256 KB
+    wdoc('priv/portalpull', {'z': 1, 'd': base64.b64encode(gzip.compress(json.dumps(pull, ensure_ascii=False).encode('utf-8'), 9)).decode(), 'at': S['at']})
 print(json.dumps({'writes': writes, 'boxes': bn, 'done': done_in, 'sum': info}, ensure_ascii=False))
