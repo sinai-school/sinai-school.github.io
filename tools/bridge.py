@@ -42,14 +42,18 @@ for f in sorted(_g.glob(os.path.join(B, 'relay', 'out-*.json'))):
     json.dump(out, open(os.path.join(B, 'relay', 'in-%s.json' % rid), 'w'))
     os.remove(f)
     log.append('relay %s %s' % (rid, 'ok' if 'box' in out else out['err']))
-r = post({'a': 'export'})
+# التصدير ما يوگف الشغل إذا فشل: الردود والتأكيد اللي خلصت فوك لازم تنحفظ دائماً
+try:
+    r = post({'a': 'export'})
+except SystemExit as e:
+    r = {'err': 'net', 'msg': str(e)[:200]}
 if r.get('err') in ('action', 'nosecret'):
-    print('portal server not ready yet:', r.get('err')); sys.exit(0)
-if not r.get('ok'):
-    raise SystemExit('ERROR: export %s' % r.get('err'))
+    log.append('portal server not ready yet: %s' % r.get('err')); r = {}
+elif not r.get('ok'):
+    log.append('WARN export %s %s' % (r.get('err'), str(r.get('msg') or '')[:150])); r = {}
 pp = os.path.join(B, 'portal.json')
 old = json.load(open(pp)) if os.path.exists(pp) else {}
-if old.get('sig') != r['sig']:
+if r.get('sig') and old.get('sig') != r['sig']:
     json.dump({'sig': r['sig'], 'n': r['n'], 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'box': r['box']}, open(pp, 'w'))
     log.append('portal n=%s' % r['n'])
 print(' | '.join(log) or 'no change')
