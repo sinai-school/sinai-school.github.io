@@ -27,6 +27,7 @@ jobs:
       - name: Sync with the portal server
         run: python3 tools/bridge.py b
       - name: Save
+        if: always()
         working-directory: b
         run: |
           git config user.name "github-actions[bot]"
