@@ -12,7 +12,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -57,7 +57,11 @@ jobs:
           URL=https://sinai.$SUB.workers.dev
           sleep 5
           echo "url=$URL" >> $L
-          echo "test: $(curl -s $URL | head -c 300)" >> $L
+          echo "test: $(curl -s $URL | head -c 400)" >> $L
+          echo "pk: $(curl -s $URL/pk)" >> $L
+          (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.t, count(distinct d.p) n, sum(length(c.d)) bytes from docs d join chunks c on c.id='d_'||d.p group by d.t" 2>/dev/null | python3 -c "import sys,json;print('sizes',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
+          (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.p, sum(length(c.d)) b from docs d join chunks c on c.id='d_'||d.p where d.t='docs' group by d.p order by b desc limit 8" 2>/dev/null | python3 -c "import sys,json;print('biggest',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
+          if [ -f cf/boot.json ]; then python3 -u cf/boot.py $URL roles >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
       - name: Report
         if: always()
         run: |
