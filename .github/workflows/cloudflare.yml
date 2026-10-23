@@ -57,7 +57,9 @@ jobs:
           URL=https://sinai.$SUB.workers.dev
           sleep 5
           echo "url=$URL" >> $L
-          echo "test: $(curl -s $URL | head -c 300)" >> $L
+          echo "test: $(curl -s $URL | head -c 400)" >> $L
+          echo "pk: $(curl -s $URL/pk)" >> $L
+          if [ -f cf/boot.json ]; then python3 cf/boot.py $URL >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
       - name: Report
         if: always()
         run: |

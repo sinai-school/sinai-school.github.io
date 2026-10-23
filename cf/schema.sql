@@ -1,0 +1,15 @@
+create table if not exists kv(k text primary key, v text);
+create table if not exists chunks(id text, i integer, d text, primary key(id,i));
+create table if not exists acc(kind text, key text, name text, phone text, created text, updated text, nid text, primary key(kind,key));
+create table if not exists prof(kind text, key text, name text, json text, photo text, updated text, status text, primary key(kind,key));
+create table if not exists notes(seq integer primary key autoincrement, id text unique, scope text, target text, frm text, title text, body text, date text, cat text, files text);
+create table if not exists reports(id text primary key, kind text, key text, name text, text text, date text, status text);
+create table if not exists seen(id text, kind text, key text, at text, primary key(id,kind,key));
+create table if not exists fails(k text primary key, n integer, exp integer);
+create table if not exists toks(k text primary key, v text, exp integer);
+create table if not exists ups(id text primary key, exp integer);
+create table if not exists files(id text primary key, n text, m text, s integer, at text);
+create table if not exists bk(id text primary key, name text, at text, size integer);
+create table if not exists docs(p text primary key, rev integer, at integer, by text, h text, oh text, n integer, t text);
+create index if not exists docs_rev on docs(rev);
+create index if not exists prof_status on prof(status);
