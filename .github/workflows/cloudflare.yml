@@ -50,7 +50,7 @@ jobs:
           npx -y wrangler@3 d1 create sinai >> ../$L 2>&1 || true
           DBID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai"][0])' || true)
           echo "db=$DBID" >> ../$L
-          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n' "$DBID" > wrangler.toml
+          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n[triggers]\ncrons = ["* * * * *"]\n' "$DBID" > wrangler.toml
           [ -f schema.sql ] && npx -y wrangler@3 d1 execute sinai --remote --file schema.sql -y >> ../$L 2>&1 || true
           npx -y wrangler@3 deploy >> ../$L 2>&1 || echo "DEPLOY FAILED" >> ../$L
           cd ..

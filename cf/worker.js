@@ -201,7 +201,15 @@ async function handle(b) {
   if (a === 'up') { const y = await auth_(b); if (y.err) return y; if (y.kind !== 't') return { err: 'role' }; return upOne_(b); }
   if (a === 'relay') return relay_(b);
   if (a === 'exack') return exack_(b);
-  if (a === 'admin') return admin_(b);
+  if (a === 'admin') {
+    if (String(b.secret || '').startsWith('own:')) {
+      const ac = await stfAcc_(String(b.secret).slice(4));
+      if (!ac || !ac.own || ac.ro) return { err: 'auth' };
+      if (b.op === 'init') return { err: 'op' };
+      b.secret = await secret_();
+    }
+    return admin_(b);
+  }
   if (a === 'boot') return boot_(b);
   if (a === 'migrate') return migrate_(b);
   if (a === 'reg') {
@@ -223,7 +231,7 @@ async function handle(b) {
       const p = await one('select * from prof where kind=? and key=?', y.kind, y.key) || { kind: y.kind, key: y.key, name: y.a.name };
       const cur = p.json ? JSON.parse(p.json) : {};
       for (const k of Object.keys(b.info || {})) cur[k] = String(b.info[k] || '').slice(0, 300);
-      p.json = JSON.stringify(cur); p.updated = now(); p.status = 'new'; await profPut_(p); return { ok: 1 };
+      p.json = JSON.stringify(cur); p.updated = now(); p.status = 'new'; await profPut_(p); let ap = null; try { ap = await applyOne_(y.kind, y.key); } catch (e) { ap = { err: String(e).slice(0, 120) }; } return { ok: 1, ap };
     }
     if (a === 'photo') {
       const m = String(b.data || '').match(/^data:(image\/(jpeg|png|webp));base64,(.+)$/);
@@ -232,6 +240,7 @@ async function handle(b) {
       if (q.photo) await blobDel('ph_' + q.photo);
       q.photo = 'p' + uid().slice(0, 20); q.updated = now(); q.status = 'new';
       await blobPut('ph_' + q.photo, String(b.data)); await profPut_(q);
+      try { await applyOne_(y.kind, y.key); } catch (e) { }
       return { ok: 1, pid: q.photo };
     }
     if (a === 'report') { await run('insert into reports(id,kind,key,name,text,date,status) values(?,?,?,?,?,?,?)', uid().slice(0, 8), y.kind, y.key, y.a.name, String(b.text || '').slice(0, 1000), now(), 'new'); return { ok: 1 }; }
@@ -293,6 +302,7 @@ async function admin_(b) {
   if (b.op === 'bkput') return bkput_(b);
   if (b.op === 'bklist') return { ok: 1, list: await bklist_() };
   if (b.op === 'bkget') return bkget_(b);
+  if (b.op === 'applyAll') return applyAll_();
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
   return { err: 'op' };
 }
@@ -341,7 +351,7 @@ async function bkget_(b) {
 const DOC_RE = /^(school\/(config|timetable|students)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
 const BLOB_RE = /^(archpart|mailimg|qaidimg|staffphoto)\//;
 /* حساب المالك على رابط المدرسة: نفس الملفات + الأختام والتوقيع */
-const OWN_RE = new RegExp(DOC_RE.source.replace('priv\\/official', 'priv\\/(official|st_sch|st_nm|st_sg)'));
+const OWN_RE = new RegExp(DOC_RE.source.replace('priv\\/official', 'priv\\/(official|st_sch|st_nm|st_sg)').replace('school\\/(config|timetable|students)', 'school\\/(config|timetable|students|roles)'));
 const reOf = a => a && a.own ? OWN_RE : DOC_RE;
 async function drev_() { await run("insert into kv(k,v) values('DREV','1') on conflict(k) do update set v=cast(v as integer)+1"); return +(await kvGet('DREV')); }
 const dmeta_ = p => one('select p,rev,at,by,h,oh,n from docs where p=?', p);
@@ -365,6 +375,25 @@ async function droles_() {
 }
 const spub_ = a => ({ id: a.id, u: a.u, name: a.name, sid: a.sid || '', secs: a.secs || [], ro: a.ro ? 1 : 0, own: a.own ? 1 : 0 });
 async function sfake_(u) { const d = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode('sinai-fs|' + u + '|' + ((await secret_()) || 'x')))); return b64(d.slice(0, 16)); }
+async function stfAcc_(tok) {
+  const tr = tok ? await one('select v,exp from toks where k=?', String(tok)) : null;
+  if (!tr || tr.exp < Date.now()) return null;
+  const tv = JSON.parse(tr.v);
+  for (const x of await droles_()) if (x.id === tv.id && x.on !== 0 && x.h === tv.h) return x;
+  return null;
+}
+/* حسابات الموظفين تنحفظ بملف school/roles (يشوفه ويعدّله المالك فقط) ونسخة منه __roles للدخول */
+async function rolesDoc_() {
+  const e = await dmeta_('school/roles'); if (e && e.h !== 'DEL') return;
+  const L = await droles_(); const t = canon_({ json: JSON.stringify({ list: L }) });
+  await dput_('school/roles', t, syH_(t), 'o', syH_(t));
+}
+async function rolesFromDoc_(d) {
+  let L = null; try { L = JSON.parse(JSON.parse(d).json).list; } catch (x) { L = null; }
+  if (!Array.isArray(L)) return 0;
+  if (!L.some(x => x && x.own && x.on !== 0)) return -1; // ما نسمح المالك يقفل على نفسه
+  await dput_('__roles', JSON.stringify({ list: L }), '', 'o', ''); MEMO.roles = null; return 1;
+}
 async function stf_(b) {
   const op = String(b.op || '');
   if (op === 'salt') {
@@ -390,6 +419,7 @@ async function stf_(b) {
   if (tr.exp - Date.now() < 5 * 3600e3) await run('update toks set exp=? where k=?', Date.now() + 6 * 3600e3, String(b.tok));
   const rv = +(await kvGet('DREV')) || 0;
   if (op === 'get') {
+    if (a.own) await rolesDoc_();
     const since = +b.since || 0;
     if (since >= rv) return { ok: 1, rev: rv, docs: [], acc: spub_(a) };
     const o = [];
@@ -404,6 +434,8 @@ async function stf_(b) {
     }
     return { ok: 1, rev: rv, docs: o, acc: spub_(a) };
   }
+  if (op === 'rev') return { ok: 1, rev: rv };
+  if (op === 'snap') { if (!a.own) return { err: 'role' }; return snapPut_(b); }
   if (op === 'one') {
     if (!reOf(a).test(String(b.p || ''))) return { err: 'path' };
     const e = await dmeta_(String(b.p || ''));
@@ -417,7 +449,10 @@ async function stf_(b) {
     const d = String(b.d || '');
     try { if (typeof JSON.parse(d) !== 'object') return { err: 'data' }; } catch (x) { return { err: 'data' }; }
     if (d.length > 4e6) return { err: 'big' };
-    return { ok: 1, rev: (await dput_(p, d, String(b.h || ''), 's:' + a.u, null)).rev };
+    if (p === 'school/roles') { const k = await rolesFromDoc_(d); if (k < 1) return { err: 'data' }; }
+    const rr = await dput_(p, d, String(b.h || ''), 's:' + a.u, null);
+    if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
+    return { ok: 1, rev: rr.rev };
   }
   return { err: 'op' };
 }
@@ -574,8 +609,102 @@ async function migrate_(b) {
   return { err: 'step' };
 }
 
+
+/* ---------- استمارات البوابة توصل لملفات النظام فوراً (بدل Claude والجسر) ---------- */
+function canon_(v) { if (Array.isArray(v)) return '[' + v.map(canon_).join(',') + ']'; if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon_(v[k])).join(',') + '}'; return JSON.stringify(v === undefined ? null : v); }
+function syH_(s) { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0'); }
+const FDEFS = {"s":[{"sec":"اسم الطالب الكامل","n":"اكتب كل اسم بخانته، بالحروف العربية فقط ومطابق للبطاقة الموحدة."},{"k":"n1","l":"اسم الطالب","t":"name","req":1},{"k":"n2","l":"اسم الأب","t":"name","req":1},{"k":"n3","l":"اسم الجد","t":"name","req":1},{"k":"n4","l":"اسم والد الجد","t":"name","req":1},{"k":"laqab","l":"اللقب (إن وجد)","t":"name","max":3},{"sec":"اسم الأم"},{"k":"m1","l":"اسم الأم","t":"name","req":1},{"k":"m2","l":"اسم والد الأم","t":"name","req":1},{"k":"m3","l":"اسم جد الأم","t":"name","req":1},{"sec":"المعلومات الشخصية"},{"k":"dob","l":"المواليد (يوم - شهر - سنة)","t":"date","req":1,"yr":[2001,2014],"w":1},{"k":"nid","l":"رقم البطاقة الموحدة (١٢ رقم)","t":"digits","len":12,"req":1},{"k":"gphone","l":"رقم هاتف ولي الأمر","t":"phone","req":1},{"k":"gr","l":"مشمول بمنحة الرعاية الاجتماعية","t":"sel","o":["نعم","لا"],"req":1},{"sec":"عنوان السكن"},{"k":"city","l":"المدينة","t":"text","req":1},{"k":"hay","l":"الحي","t":"text","req":1},{"k":"mahalla","l":"المحلة (رقم)","t":"digits","min":1,"max":4,"req":1},{"k":"zuqaq","l":"الزقاق (رقم)","t":"digits","min":1,"max":4,"req":1},{"k":"dar","l":"الدار","t":"house","req":1},{"k":"near","l":"أقرب نقطة دالة","t":"text","min":3,"req":1},{"sec":"التواصل"},{"k":"email","l":"البريد الإلكتروني (إن وجد)","t":"email","w":1}],"t":[{"sec":"الاسم","n":"اكتب كل اسم بخانته، بالحروف العربية فقط ومطابق للبطاقة الموحدة."},{"k":"n1","l":"الاسم","t":"name","req":1},{"k":"n2","l":"اسم الأب","t":"name","req":1},{"k":"n3","l":"اسم الجد","t":"name","req":1},{"k":"n4","l":"اسم والد الجد","t":"name","req":1},{"k":"laqab","l":"اللقب (إن وجد)","t":"name","max":3},{"k":"m1","l":"اسم الأم","t":"name","req":1},{"k":"m2","l":"اسم والد الأم","t":"name","req":1},{"k":"m3","l":"اسم جد الأم","t":"name","req":1},{"sec":"المعلومات الشخصية"},{"k":"gender","l":"الجنس","t":"sel","o":["ذكر","أنثى"],"req":1},{"k":"birth","l":"التولد (يوم - شهر - سنة)","t":"date","req":1,"yr":[1956,2006],"w":1},{"k":"birthPlace","l":"محل الولادة","t":"text","req":1},{"k":"blood","l":"فصيلة الدم","t":"sel","o":["A+","A-","B+","B-","AB+","AB-","O+","O-"],"req":1},{"k":"marital","l":"الحالة الاجتماعية","t":"sel","o":["أعزب","متزوج","مطلق","أرمل"],"req":1},{"k":"spouse","l":"اسم الزوج / الزوجة","t":"text","reqIf":"married"},{"k":"marriageDate","l":"تاريخ الزواج","t":"date","yr":[1965,2026],"reqIf":"married","w":1},{"k":"spouseBirth","l":"تولد الزوج / الزوجة","t":"date","yr":[1946,2010],"w":1},{"k":"spouseJob","l":"وظيفة الزوج / الزوجة","t":"text"},{"k":"spouseWork","l":"مكان عمل الزوج / الزوجة","t":"text"},{"k":"children","l":"عدد الأولاد","t":"num","min":0,"max":20,"req":1},{"sec":"المستمسكات"},{"k":"nid","l":"رقم البطاقة الموحدة (١٢ رقم)","t":"digits","len":12,"req":1},{"k":"nidDate","l":"تاريخ إصدار البطاقة الموحدة","t":"date","yr":[2010,2026],"req":1,"w":1},{"k":"resCard","l":"رقم بطاقة السكن","t":"digits","min":3,"max":15},{"k":"resOffice","l":"مكتب المعلومات","t":"text"},{"k":"passport","l":"رقم جواز السفر (إن وجد)","t":"alnum"},{"k":"card","l":"رقم حساب الماستر / كي كارد (إن وجد)","t":"digits","min":8,"max":20},{"sec":"الشهادة والاختصاص"},{"k":"edu","l":"التحصيل الدراسي / الشهادة","t":"sel","o":["دبلوم","بكالوريوس","دبلوم عالي","ماجستير","دكتوراه"],"req":1},{"k":"spec","l":"الاختصاص","t":"text","req":1},{"k":"specFull","l":"التخصص الدقيق","t":"text"},{"k":"college","l":"الكلية","t":"text","req":1},{"k":"dept","l":"القسم","t":"text","req":1},{"k":"univ","l":"الجامعة","t":"text","req":1},{"k":"gradYear","l":"سنة التخرج","t":"year","yr":[1965,2026],"req":1},{"k":"studyCountry","l":"بلد الدراسة","t":"text","req":1,"def":"العراق"},{"sec":"المعلومات الوظيفية"},{"k":"empNo","l":"الرقم الوظيفي","t":"digits","min":1,"max":12},{"k":"type","l":"دائمي / عقد","t":"sel","o":["دائمي","عقد"],"req":1},{"k":"grade","l":"الدرجة الوظيفية","t":"sel","o":["الأولى","الثانية","الثالثة","الرابعة","الخامسة","السادسة","السابعة","الثامنة","التاسعة","العاشرة"]},{"k":"appoint","l":"تاريخ أول تعيين","t":"date","yr":[1975,2026],"req":1,"w":1},{"k":"start","l":"تاريخ المباشرة في المدرسة","t":"date","yr":[1975,2026],"req":1,"w":1},{"k":"subjects","l":"المواد التي يدرسها","t":"text"},{"k":"prevSchool","l":"آخر مدرسة نُقل منها","t":"text"},{"k":"thanks","l":"كتب الشكر (العدد أو التفاصيل)","t":"text","w":1},{"k":"martyr","l":"من ذوي الشهداء","t":"sel","o":["نعم","لا"],"req":1},{"k":"polDism","l":"من المفصولين السياسيين","t":"sel","o":["نعم","لا"],"req":1},{"sec":"عنوان السكن"},{"k":"city","l":"المدينة","t":"text","req":1},{"k":"hay","l":"الحي","t":"text","req":1},{"k":"mahalla","l":"المحلة (رقم)","t":"digits","min":1,"max":4,"req":1},{"k":"zuqaq","l":"الزقاق (رقم)","t":"digits","min":1,"max":4,"req":1},{"k":"dar","l":"الدار","t":"house","req":1},{"k":"near","l":"أقرب نقطة دالة","t":"text","min":3,"req":1},{"sec":"التواصل"},{"k":"phone2","l":"رقم هاتف ثاني (إن وجد)","t":"phone"},{"k":"email","l":"البريد الإلكتروني (إن وجد)","t":"email","w":1}]};
+const ARN = /^[ء-غف-ي ]+$/;
+function dOk_(v) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v); if (!m) return null; const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); if (d.getUTCFullYear() !== +m[1] || d.getUTCMonth() !== +m[2] - 1 || d.getUTCDate() !== +m[3]) return null; return d; }
+function fcheck_(kind, o) {
+  const E = [], today = new Date(Date.now() + 3 * 3600e3), married = o.marital === 'متزوج';
+  for (const f of FDEFS[kind === 's' ? 's' : 't']) {
+    const k = f.k; if (!k) continue;
+    const v = String(o[k] == null ? '' : o[k]).trim();
+    const req = f.req || (f.reqIf === 'married' && married), lab = f.l.replace(/ \(.*\)$/, '');
+    if (!v) { if (req) E.push(lab + ' ناقص'); continue; }
+    const t = f.t;
+    if (t === 'name' && !ARN.test(v)) E.push(lab + ': بيه حروف غير عربية');
+    else if (t === 'digits' && (!/^\d+$/.test(v) || (f.len && v.length !== f.len))) E.push(lab + ': رقم غير صحيح');
+    else if (t === 'phone' && !/^07\d{9}$/.test(v)) E.push(lab + ': رقم هاتف غير صحيح');
+    else if (t === 'date') { const d = dOk_(v); if (!d || d > today) E.push(lab + ': تاريخ غير صحيح'); }
+    else if (t === 'sel' && f.o && !f.o.includes(v)) E.push(lab + ': اختيار غير صحيح');
+    else if (t === 'email' && !/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(v)) E.push(lab + ': بريد غير صحيح');
+  }
+  const by = String(o.dob || o.birth || '').slice(0, 4), nid = String(o.nid || '');
+  if (/^\d{12}$/.test(nid) && /^\d{4}$/.test(by) && nid.slice(0, 4) !== by) E.push('رقم البطاقة الموحدة ما يطابق سنة المواليد');
+  return E;
+}
+const dig_ = x => String(x || '').replace(/[٠-٩]/g, c => c.charCodeAt(0) - 1632).replace(/[۰-۹]/g, c => c.charCodeAt(0) - 1776);
+const phN_ = x => { const t = dig_(x).replace(/\D/g, '').slice(-10); return t.length === 10 && t[0] === '7' ? t : ''; };
+const jn_ = (...a) => a.map(x => x == null ? '' : String(x)).join(' ');
+const TMAP_ = ["gender","birth","birthPlace","blood","marital","spouse","marriageDate","spouseBirth","spouseJob","spouseWork","children","nid","nidDate","resCard","resOffice","passport","card","edu","spec","specFull","college","dept","univ","gradYear","studyCountry","empNo","type","grade","appoint","start","subjects","prevSchool","thanks","martyr","polDism","email"];
+async function docJ_(p) { const e = await dmeta_(p); if (!e || e.h === 'DEL') return null; try { return JSON.parse(await dget_(e)); } catch (x) { return null; } }
+async function docW_(p, obj, by) { const t = canon_(obj); const e = await dmeta_(p); const h = syH_(t); if (e && e.h === h) return 0; await dput_(p, t, h, by || 'portal', null); return 1; }
+async function applyOne_(kind, key) { return applyAll_(); }
+async function applyAll_() {
+  /* قفل حتى ما تتداخل كتابتين على نفس الملف */
+  const t0 = Date.now();
+  await run("insert or ignore into kv(k,v) values('APLOCK','0')");
+  const lk = await run("update kv set v=? where k='APLOCK' and cast(v as integer) < ?", String(t0 + 60000), t0);
+  if (!(lk.meta && lk.meta.changes)) return { ok: 1, busy: 1 };
+  try {
+    const R = await all("select kind,key,name,json,photo from prof where status='new' order by updated desc limit 300");
+    if (!R.length) return { ok: 1, applied: 0 };
+    const stuDoc = await docJ_('school/students'); const ST = stuDoc && Array.isArray(stuDoc.list) ? stuDoc.list : null;
+    const INF = {}, INFG = {}, chG = new Set(); let chST = false;
+    for (const g of ['g4', 'g5', 'g6']) { const d = await docJ_('stuinfo/' + g); let o = {}; try { o = d && d.json ? JSON.parse(d.json) : {}; } catch (x) { o = {}; } INF[g] = o; for (const i in o) INFG[i] = g; }
+    const gk = s => { const g = String(s.s || '').split(' ')[0]; return g === 'الرابع' ? 'g4' : g === 'الخامس' ? 'g5' : 'g6'; };
+    let applied = 0; const invalid = [];
+    for (const p of R) {
+      let o; try { o = JSON.parse(p.json || '{}'); } catch (x) { continue; }
+      if (o.v3 !== '1') { invalid.push([p.kind, p.key]); continue; }
+      const E = fcheck_(p.kind, o); if (E.length) { invalid.push([p.kind, p.key]); continue; }
+      const key = p.key;
+      if (p.kind === 's') {
+        if (!ST) continue;
+        const s = ST.find(x => x.id === key); if (!s) continue;
+        const g = INFG[key] || gk(s); INFG[key] = g;
+        const i = INF[g][key] = INF[g][key] || {};
+        i.m = jn_(o.m1, o.m2, o.m3); i.dob = o.dob; i.nid = o.nid;
+        i.ar = [o.city, o.hay, o.near].filter(Boolean).join(' — ');
+        i.ad = ['محلة ' + String(o.mahalla ?? ''), 'زقاق ' + String(o.zuqaq ?? ''), 'دار ' + String(o.dar ?? '')].join(' / ');
+        i.gr = o.gr;
+        i.x = { n1: o.n1, n2: o.n2, n3: o.n3, n4: o.n4, laqab: o.laqab || '', m1: o.m1, m2: o.m2, m3: o.m3, dob: o.dob, nid: o.nid, gphone: o.gphone, gr: o.gr, city: o.city, hay: o.hay, mahalla: o.mahalla, zuqaq: o.zuqaq, dar: o.dar, near: o.near, email: o.email || '', at: o.at || '' };
+        chG.add(g);
+        const gp = phN_(o.gphone); if (gp && s.p !== '0' + gp) { s.p = '0' + gp; chST = true; }
+      } else {
+        const nm = [o.n1, o.n2, o.n3, o.n4].filter(Boolean).join(' ');
+        let f = await docJ_('staff/' + key);
+        if (!f) {
+          let mx = 0; for (const r of await all("select c.d from chunks c join docs d on c.id='d_'||d.p where d.p like 'staff/%' and d.h<>'DEL' and c.i=0")) { const m = /"ord":"?(-?\d+)/.exec(r.d); if (m) mx = Math.max(mx, +m[1]); }
+          f = { id: key, name: nm, job: 'مدرس', status: 'مستمر', ord: String(mx + 1) };
+        }
+        const nf = Object.assign({}, f, { id: key });
+        if (!nf.name) nf.name = nm;
+        nf.fname = nm + (o.laqab ? ' ' + o.laqab : '');
+        nf.mother = jn_(o.m1, o.m2, o.m3);
+        for (const k of TMAP_) if (o[k]) nf[k] = o[k];
+        nf.address = [o.city, o.hay, 'محلة ' + String(o.mahalla ?? ''), 'زقاق ' + String(o.zuqaq ?? ''), 'دار ' + String(o.dar ?? ''), o.near].filter(Boolean).join(' / ');
+        const ph = [];
+        for (const x of String(nf.phone || '').split(/[\s,،/]+/)) { const q = phN_(x); if (q && !ph.includes('0' + q)) ph.push('0' + q); }
+        const q2 = phN_(o.phone2); if (q2 && !ph.includes('0' + q2)) ph.push('0' + q2);
+        if (ph.length) nf.phone = ph.join(' ، ');
+        await docW_('staff/' + key, nf);
+        if (p.photo) { const d = await photo_(p.photo); if (d) await docW_('staffphoto/' + key, { d }); }
+      }
+      await run("update prof set status='ok' where kind=? and key=? and status='new'", p.kind, key);
+      applied++;
+    }
+    for (const g of chG) await docW_('stuinfo/' + g, { json: JSON.stringify(INF[g]) });
+    if (chST) await docW_('school/students', Object.assign({}, stuDoc, { list: ST }));
+    return { ok: 1, applied, invalid: invalid.length };
+  } finally { await run("update kv set v='0' where k='APLOCK'"); }
+}
+
 /* ---------- الدخول ---------- */
 export default {
+  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
     DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin;
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
