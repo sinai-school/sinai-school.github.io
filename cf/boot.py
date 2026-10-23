@@ -6,7 +6,7 @@ def post(b, t=120):
     with urllib.request.urlopen(req, timeout=t) as r: return json.loads(r.read().decode())
 box = json.load(open('cf/boot.json'))
 print('boot', post(dict(box, a='boot')))
-step, n = 'core', 0
+step, n = (sys.argv[2] if len(sys.argv) > 2 else 'core'), 0
 while step and n < 80:
     n += 1
     try: r = post(dict(box, a='migrate', step=step), 300)

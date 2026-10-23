@@ -340,6 +340,9 @@ async function bkget_(b) {
 /* ---------- حسابات الموظفين + مزامنة بيانات النظام ---------- */
 const DOC_RE = /^(school\/(config|timetable|students)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
 const BLOB_RE = /^(archpart|mailimg|qaidimg|staffphoto)\//;
+/* حساب المالك على رابط المدرسة: نفس الملفات + الأختام والتوقيع */
+const OWN_RE = new RegExp(DOC_RE.source.replace('priv\\/official', 'priv\\/(official|st_sch|st_nm|st_sg)'));
+const reOf = a => a && a.own ? OWN_RE : DOC_RE;
 async function drev_() { await run("insert into kv(k,v) values('DREV','1') on conflict(k) do update set v=cast(v as integer)+1"); return +(await kvGet('DREV')); }
 const dmeta_ = p => one('select p,rev,at,by,h,oh,n from docs where p=?', p);
 async function dget_(e) { if (!e || !e.n || e.h === 'DEL') return ''; return (await blobGet('d_' + e.p)) || ''; }
@@ -360,7 +363,7 @@ async function droles_() {
   try { L = JSON.parse((await dget_(e)) || '{"list":[]}').list || []; } catch (x) { L = []; }
   return MEMO.roles = L;
 }
-const spub_ = a => ({ id: a.id, u: a.u, name: a.name, sid: a.sid || '', secs: a.secs || [], ro: a.ro ? 1 : 0 });
+const spub_ = a => ({ id: a.id, u: a.u, name: a.name, sid: a.sid || '', secs: a.secs || [], ro: a.ro ? 1 : 0, own: a.own ? 1 : 0 });
 async function sfake_(u) { const d = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode('sinai-fs|' + u + '|' + ((await secret_()) || 'x')))); return b64(d.slice(0, 16)); }
 async function stf_(b) {
   const op = String(b.op || '');
@@ -390,20 +393,23 @@ async function stf_(b) {
     const since = +b.since || 0;
     if (since >= rv) return { ok: 1, rev: rv, docs: [], acc: spub_(a) };
     const o = [];
+    const RE = reOf(a);
     for (const e of await all("select p,rev,h,n,t from docs where rev>? and substr(p,1,1)<>'_'", since)) {
+      if (!RE.test(e.p)) continue;
       const del = e.h === 'DEL' ? 1 : 0, lazy = e.t === 'blobs' ? 1 : 0;
       o.push({ p: e.p, rev: e.rev, del, lazy, d: del || lazy ? '' : await dget_(e) });
     }
     return { ok: 1, rev: rv, docs: o, acc: spub_(a) };
   }
   if (op === 'one') {
+    if (!reOf(a).test(String(b.p || ''))) return { err: 'path' };
     const e = await dmeta_(String(b.p || ''));
     if (!e || e.h === 'DEL') return { ok: 1, rev: e ? e.rev : 0, del: 1 };
     return { ok: 1, rev: e.rev, d: await dget_(e) };
   }
   if (op === 'put') {
     if (a.ro) return { err: 'ro' };
-    const p = String(b.p || ''); if (!DOC_RE.test(p)) return { err: 'path' };
+    const p = String(b.p || ''); if (!reOf(a).test(p)) return { err: 'path' };
     if (b.del) { const e = await dmeta_(p); if (e && e.h !== 'DEL') return { ok: 1, rev: (await dput_(p, null, '', 's:' + a.u, null)).rev }; return { ok: 1, rev: e ? e.rev : rv }; }
     const d = String(b.d || '');
     try { if (typeof JSON.parse(d) !== 'object') return { err: 'data' }; } catch (x) { return { err: 'data' }; }
@@ -416,7 +422,7 @@ async function osync_(b) {
   if (b.roles) await dput_('__roles', JSON.stringify({ list: b.roles }), String(b.rh || ''), 'o', '');
   for (const x of (b.ack || [])) { const e = await dmeta_(String(x.p)); if (e && e.h === String(x.h) && e.oh !== e.h) await doh_(e.p, e.h); }
   for (const x of (b.push || [])) {
-    const p = String(x.p || ''); if (!DOC_RE.test(p)) continue;
+    const p = String(x.p || ''); if (!OWN_RE.test(p)) continue;
     const e = await dmeta_(p);
     if (x.del) { if (e && e.h !== 'DEL') await dput_(p, null, '', 'o', 'DEL'); else if (e && e.oh !== 'DEL') await doh_(p, 'DEL'); continue; }
     if (e && e.h === String(x.h)) { if (e.oh !== e.h) await doh_(p, e.h); continue; }
@@ -556,6 +562,11 @@ async function migrate_(b) {
     }
     const cur = +(await kvGet('DREV')) || 0; if ((+r.rev || 0) > cur) await kvPut('DREV', String(r.rev));
     return { ok: 1, step, done: want.length, left: need.length - want.length, rev: r.rev, next: need.length - want.length > 0 ? 'docs' : '' };
+  }
+  if (step === 'roles') {
+    if (m.roles) await dput_('__roles', JSON.stringify({ list: m.roles }), String(m.rh || ''), 'o', '');
+    for (const p in (m.docs || {})) if (OWN_RE.test(p)) { const e = await dmeta_(p); if (!e || e.h !== m.docs[p].h) await dput_(p, m.docs[p].d, m.docs[p].h, 'o', m.docs[p].h); }
+    return { ok: 1, step, roles: (m.roles || []).length, docs: Object.keys(m.docs || {}).length, next: '' };
   }
   return { err: 'step' };
 }
