@@ -10,7 +10,7 @@ def post(body, tries=3):
     last = None
     for i in range(tries):
         try:
-            req = urllib.request.Request(API, data=json.dumps(body).encode(), headers={'Content-Type': 'text/plain;charset=utf-8'})
+            req = urllib.request.Request(API, data=json.dumps(body).encode(), headers={'Content-Type': 'text/plain;charset=utf-8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 sinai-bridge', 'Accept': 'application/json'})
             with urllib.request.urlopen(req, timeout=150) as r:
                 return json.loads(r.read().decode('utf-8'))
         except Exception as e:
