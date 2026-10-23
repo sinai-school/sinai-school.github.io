@@ -1604,6 +1604,12 @@ async function gxPoll(){if(!GX.on||GX.busy)return;GX.busy=1;try{const r=await gx
   if(full){const live=new Set((r.docs||[]).map(x=>x.p));for(const[p,e]of GX.M)if(!live.has(p)&&e.d&&!GX.pend[p]){GX.M.set(p,{d:null,rev:0});ch.push(p)}}
   GX.rev=skip<Infinity?Math.min(+r.rev||0,skip-1):+r.rev||0;gxAcc(r.acc);gxNotify(ch);GX.fails=0;setSync("ok","متصل — بيانات المدرسة")}
  catch(e){if(++GX.fails>1)setSync("off","انقطع الاتصال — يعيد المحاولة وحده")}finally{GX.busy=0}}
+/* مزامنة فورية: كل ٢٫٥ ثانية والمستخدم شغّال، وكل ١٠ ثواني إذا ساكت دقيقة (يوفّر حصة الخادم)، وفوراً أول ما ترجع للصفحة أو ينرجع الإنترنت */
+var GXACT=Date.now(),GXN=0;
+["pointerdown","keydown","touchstart","scroll"].forEach(function(e){addEventListener(e,function(){GXACT=Date.now()},{passive:true,capture:true})});
+function gxTick(){if(document.hidden)return;if(Date.now()-GXACT>6e4&&(++GXN%4))return;gxPoll()}
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&typeof GX!="undefined"&&GX.on){GXACT=Date.now();gxPoll()}});
+addEventListener("focus",function(){if(typeof GX!="undefined"&&GX.on)gxPoll()});
 async function stfLogin(silent){
  const er=$("lgerr"),saved=silent||null;const u=saved?saved.u:($("lgu").value||"").trim().toLowerCase(),p=saved?"":$("lgp").value||"";
  if(!u||!saved&&!p){er.textContent="اكتب اسم المستخدم وكلمة المرور.";return}
@@ -1621,7 +1627,7 @@ async function stfLogin(silent){
   DB=gxDB;READY={cfg:0,tt:0,st:0,at:0,gd:0,stf:1,let:1,off:1};setSync("ok","متصل — بيانات المدرسة");subscribe();
   if(DLG.secs.some(k2=>OPEN90.includes(k2))){OWN=true;subscribeOwner()}
   er.textContent="";$("lgp").value="";sess("a");showAdmin();
-  GX.timer=setInterval(()=>{if(!document.hidden)gxPoll()},8e3);
+  GX.timer=setInterval(gxTick,2500);
  }catch(e){er.textContent="تعذّر الاتصال بخادم المدرسة، تأكد من الإنترنت وحاول مرة ثانية.";GX.on=0}
  finally{$("lgbtn").disabled=false}}
 if(STF_MODE){
@@ -1958,7 +1964,7 @@ async function stfOff120(saved){const c=await IDB120.get("gx_"+saved.u);if(!c||!
  const a=c.acc;DLG={...a,secs:a.secs||[]};RO=a.ro?1:0;ME={...ME,name:a.name,role:RO?"صلاحية عرض فقط":"صلاحيات محددة من مدير المدرسة",av:""};try{paintMe()}catch(e){}
  DB=gxDB;READY={cfg:0,tt:0,st:0,at:0,gd:0,stf:1,let:1,off:1};subscribe();if(DLG.secs.some(k2=>OPEN90.includes(k2))){OWN=true;subscribeOwner()}
  const er=$("lgerr");if(er)er.textContent="";sess("a");showAdmin();mtNav120();
- setSync("off","بدون إنترنت — آخر نسخة محفوظة، والتعديلات تنرسل وحدها");GX.timer=setInterval(()=>{if(!document.hidden)gxPoll()},8e3);toast("تشتغل بدون إنترنت على آخر نسخة محفوظة");return true}
+ setSync("off","بدون إنترنت — آخر نسخة محفوظة، والتعديلات تنرسل وحدها");GX.timer=setInterval(gxTick,2500);toast("تشتغل بدون إنترنت على آخر نسخة محفوظة");return true}
 {const _sl120=stfLogin;stfLogin=async function(silent){
  if(silent&&!navigator.onLine&&await stfOff120(silent))return;
  await _sl120(silent);
