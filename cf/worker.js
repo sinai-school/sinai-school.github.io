@@ -394,10 +394,13 @@ async function stf_(b) {
     if (since >= rv) return { ok: 1, rev: rv, docs: [], acc: spub_(a) };
     const o = [];
     const RE = reOf(a);
+    /* كل البيانات بطلب واحد لقاعدة البيانات بدل طلب لكل ملف */
+    const C = {};
+    for (const r of await all("select c.id,c.d from chunks c join docs d on c.id='d_'||d.p where d.rev>? and d.t='docs' and d.h<>'DEL' and substr(d.p,1,1)<>'_' order by c.id,c.i", since)) C[r.id] = (C[r.id] || '') + r.d;
     for (const e of await all("select p,rev,h,n,t from docs where rev>? and substr(p,1,1)<>'_'", since)) {
       if (!RE.test(e.p)) continue;
       const del = e.h === 'DEL' ? 1 : 0, lazy = e.t === 'blobs' ? 1 : 0;
-      o.push({ p: e.p, rev: e.rev, del, lazy, d: del || lazy ? '' : await dget_(e) });
+      o.push({ p: e.p, rev: e.rev, del, lazy, d: del || lazy ? '' : (C['d_' + e.p] || '') });
     }
     return { ok: 1, rev: rv, docs: o, acc: spub_(a) };
   }
