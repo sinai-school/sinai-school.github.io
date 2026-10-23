@@ -14,3 +14,8 @@ while step and n < 80:
     print(step, json.dumps({k: v for k, v in r.items() if k != 'r'}, ensure_ascii=False)[:400])
     if r.get('err'): print('detail', json.dumps(r.get('r'), ensure_ascii=False)[:300]); break
     step = r.get('next')
+# فحص بعد النقل
+r = post({'a': 'export'}); print('export', {k: r.get(k) for k in ('ok', 'n', 'err', 'msg')})
+r = post({'a': 'stf', 'op': 'salt', 'u': 'test'}); print('stf-salt', 'ok' if r.get('salt') else r)
+r = post({'a': 'snap'}); print('snap', {k: r.get(k) for k in ('ok', 'none', 'at', 'err')})
+import time as _t; t0 = _t.time(); post({'a': 'status', 'kind': 's', 'key': 'x'}); print('speed-ms', int((_t.time() - t0) * 1000))
