@@ -12,7 +12,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -59,7 +59,7 @@ jobs:
           echo "url=$URL" >> $L
           echo "test: $(curl -s $URL | head -c 400)" >> $L
           echo "pk: $(curl -s $URL/pk)" >> $L
-          if [ -f cf/boot.json ]; then python3 cf/boot.py $URL >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
+          if [ -f cf/boot.json ]; then python3 -u cf/boot.py $URL >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
       - name: Report
         if: always()
         run: |
