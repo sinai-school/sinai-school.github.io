@@ -26,11 +26,15 @@ jobs:
         run: |
           set -o pipefail
           L=log.txt; : > $L
+          CLOUDFLARE_API_TOKEN=$(printf %s "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]"' | sed 's/^Bearer//')
+          CLOUDFLARE_ACCOUNT_ID=$(printf %s "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]"')
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          echo "tok-len=${#CLOUDFLARE_API_TOKEN} acc-len=${#CLOUDFLARE_ACCOUNT_ID} acc-hex=$(printf %s "$CLOUDFLARE_ACCOUNT_ID" | grep -qE '^[0-9a-f]{32}$' && echo yes || echo no) tok-shape=$(printf %s "$CLOUDFLARE_API_TOKEN" | grep -qE '^[A-Za-z0-9_-]{30,60}$' && echo ok || echo odd)" >> $L
           [ -n "$CLOUDFLARE_API_TOKEN" ] || echo "MISSING CLOUDFLARE_API_TOKEN" >> $L
           [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || echo "MISSING CLOUDFLARE_ACCOUNT_ID" >> $L
           API=https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID
           AH="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
-          echo "verify: $(curl -s -H "$AH" https://api.cloudflare.com/client/v4/user/tokens/verify | head -c 300)" >> $L
+          echo "check: $(curl -s -H "$AH" https://api.cloudflare.com/client/v4/user/tokens/verify | head -c 300)" >> $L
           SUB=$(curl -s -H "$AH" $API/workers/subdomain | python3 -c 'import sys,json;print((json.load(sys.stdin).get("result") or {}).get("subdomain") or "")' || true)
           if [ -z "$SUB" ]; then
             for s in sinai-school sinai-school-iq sinai-iq-$RANDOM; do
@@ -58,7 +62,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sed -i "s/$CLOUDFLARE_ACCOUNT_ID/ACC/g" log.txt || true
-          grep -v -i 'token' log.txt > cf-status.txt || true
+          grep -v -i 'api_token' log.txt > cf-status.txt || true
           git checkout --orphan cf-status-tmp
           git rm -rfq --cached . >/dev/null
           git add cf-status.txt
