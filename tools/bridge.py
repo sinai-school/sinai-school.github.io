@@ -4,7 +4,7 @@
 2) يسحب الاستمارات الجديدة من خادم البوابة مشفّرة بالرمز السري، ويحطها بفرع bridge (ما يكدر أحد يقراها غير نظام المدرسة).
 usage: python3 tools/bridge.py BRIDGE_DIR"""
 import sys, os, json, time, urllib.request
-API = 'https://script.google.com/macros/s/AKfycbyAwbqwl0TD2A4aKl6eTy0SGicGFj23XW2xp82OXVyVgcN9cv1nZOegWU2oO4ybmrVLaw/exec'
+API = 'https://sinai.7svyn82yzr.workers.dev'
 B = sys.argv[1]
 def post(body, tries=3):
     last = None
