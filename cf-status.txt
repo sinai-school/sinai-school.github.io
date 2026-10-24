@@ -1,0 +1,108 @@
+has-bearer=1
+tok-len=53 acc-len=32 acc-hex=yes tok-shape=ok
+check: {"result":{"id":"90553433ec17b364776daf0ed1119613","status":"active"},"success":true,"errors":[],"messages":[{"code":10000,"message":"This API Token is valid and active","type":null}]}
+subdomain=7svyn82yzr
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+npm warn deprecated rollup-plugin-inject@3.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
+
+ ⛅️ wrangler 3.114.17 (update available 4.152.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-24_00-11-01_441.log"
+db=99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0
+
+ ⛅️ wrangler 3.114.17 (update available 4.152.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1m⚠️ This process may take some time, during which your D1 database will be unavailable to serve queries.[0m
+
+
+🌀 Executing on remote database sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+Note: if the execution fails to complete, your DB will return to its original state and you can safely retry.
+├ Checking if file needs uploading
+│
+🌀 File already uploaded. Processing.
+🌀 Starting import...
+🌀 Processed 15 queries.
+🚣 Executed 15 queries in 3.85ms (0 rows read, 0 rows written)
+   Database is currently at bookmark 00000049-00000152-0000510e-5ba2a7fc62bfc372dffd5361f918b507.
+[
+  {
+    "results": [
+      {
+        "Total queries executed": 15,
+        "Rows read": 0,
+        "Rows written": 0,
+        "Database size (MB)": "24.11"
+      }
+    ],
+    "success": true,
+    "finalBookmark": "00000049-00000152-0000510e-5ba2a7fc62bfc372dffd5361f918b507",
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "WNAM",
+      "served_by_colo": "SJC",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 3.8538
+      },
+      "duration": 3.8538,
+      "changes": 1,
+      "last_row_id": 0,
+      "changed_db": true,
+      "size_after": 24113152,
+      "rows_read": 0,
+      "rows_written": 0,
+      "num_tables": 13,
+      "total_attempts": 1
+    }
+  }
+]
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 3.114.17 (update available 4.152.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+Total Upload: 69.32 KiB / gzip: 17.73 KiB
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0)
+Uploaded sinai (1.73 sec)
+Deployed sinai triggers (0.41 sec)
+  https://sinai.7svyn82yzr.workers.dev
+  schedule: * * * * *
+Current Version ID: 0356be54-ffb8-40e7-926e-8259980a5c08
+url=https://sinai.7svyn82yzr.workers.dev
+test: {"ok":1,"service":"sinai-portal","host":"cloudflare","v":5,"nid":1,"bk":1,"stf":1,"fast":1,"bridge":1,"files":1,"seen":1,"relay":1,"v6":1,"fget":1,"snap":1,"v7":1,"sent":1,"v8":1,"up":1,"ready":1}
+pk: {"ok":1,"pub":{"kty":"RSA","key_ops":["encrypt"],"alg":"RSA-OAEP-256","ext":true,"n":"t6w2ik9hAAUlx1g0mXy3oRVurBda17_18DMIiQAdG9THSG2LEn_DlvcEkdlTe8DmFw-Zi8LDGt1rjCP_1Hh1eNGI27UBNwCIldbV6xpfEXHYt7iN7HwpfKLZiyL7IZB_XM4vs9i2NtoI7EbQzRWbTZrYbo7jZYdQjKC2oftnbg0LJmkAXsn_AambZbFkljkc9prhI-fxOU46QtODqmOhfuIULiE6AZuYxNz50KPUBOHRwWFJu-Q4_UVLKusKf-4TYMJnOiuzpyAzkDyZ04ynBQo5_9baJm-0-uSgdw8SXkbYT-cTPehbRQ50UG4lfyLEuzKhm33N28vHufH0wbOCEw","e":"AQAB"}}
+sizes [{'t': 'blobs', 'n': 74, 'bytes': 2423230}, {'t': 'docs', 'n': 112, 'bytes': 1696905}]
+biggest [{'p': 'stuinfo/g5', 'b': 96181}, {'p': 'stuinfo/g6', 'b': 70090}, {'p': 'school/students', 'b': 67123}, {'p': 'qaid/c017', 'b': 59264}, {'p': 'qaid/c018', 'b': 59245}, {'p': 'formreplies/students2026', 'b': 58487}, {'p': 'qaid/c016', 'b': 58275}, {'p': 'qaid/c008', 'b': 57316}]
+recent [{'p': 'staff/st018', 'by': 's:sinai100', 't': '2026-10-24 00:08:10'}, {'p': 'school/m70', 'by': 'o', 't': '2026-10-24 00:01:04'}, {'p': 'school/lcnt', 'by': 'o', 't': '2026-10-24 00:01:04'}, {'p': 'school/config', 'by': 'o', 't': '2026-10-24 00:01:04'}, {'p': 'priv/sal_2026-10', 'by': 'o', 't': '2026-10-24 00:01:02'}, {'p': 'priv/sal_2026-08', 'by': 'o', 't': '2026-10-24 00:01:01'}, {'p': 'priv/gh', 'by': 'o', 't': '2026-10-24 00:01:01'}, {'p': 'priv/bk', 'by': 'o', 't': '2026-10-24 00:01:01'}, {'p': 'priv/backup_tt_20261014_pm', 'by': 'o', 't': '2026-10-24 00:01:01'}, {'p': 'priv/backup_tt_20261014', 'by': 'o', 't': '2026-10-24 00:01:00'}, {'p': 'priv/backup_staff_deleted_20261019', 'by': 'o', 't': '2026-10-24 00:01:00'}, {'p': 'priv/backup_staff_deleted_20261014', 'by': 'o', 't': '2026-10-24 00:01:00'}, {'p': 'priv/api', 'by': 'o', 't': '2026-10-24 00:01:00'}, {'p': 'forms/r_hr', 'by': 'o', 't': '2026-10-24 00:00:59'}, {'p': 'forms/j_malak', 'by': 'o', 't': '2026-10-24 00:00:58'}, {'p': 'forms/f_med', 'by': 'o', 't': '2026-10-24 00:00:58'}, {'p': 'formreplies/students2026', 'by': 'o', 't': '2026-10-24 00:00:58'}]
+kv [{'k': 'DREV', 'v': '260'}, {'k': 'snapat', 'v': '2026-10-24T00:08:13.428Z'}]
