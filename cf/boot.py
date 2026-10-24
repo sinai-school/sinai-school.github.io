@@ -12,6 +12,10 @@ if len(sys.argv) > 2 and sys.argv[2] == 'imp':
             except Exception as e: r = {'err': str(e)}; time.sleep(5)
         print('imp', f[-7:], json.dumps({k: v for k, v in r.items() if k != 'r'}, ensure_ascii=False)[:600])
     sys.exit(0)
+if len(sys.argv) > 2 and sys.argv[2] == 'cmp':
+    r = post(dict(json.load(open('cf/cmp.json')), a='migrate', step='cmp'), 300)
+    print('cmp', json.dumps(r, ensure_ascii=False)[:6000])
+    sys.exit(0)
 box = json.load(open('cf/boot.json'))
 print('boot', post(dict(box, a='boot')))
 step, n = (sys.argv[2] if len(sys.argv) > 2 else 'core'), 0

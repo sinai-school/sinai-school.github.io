@@ -602,6 +602,23 @@ async function migrate_(b) {
     const cur = +(await kvGet('DREV')) || 0; if ((+r.rev || 0) > cur) await kvPut('DREV', String(r.rev));
     return { ok: 1, step, done: want.length, left: need.length - want.length, rev: r.rev, next: need.length - want.length > 0 ? 'docs' : '' };
   }
+  if (step === 'cmp') {
+    /* مقارنة نسخة Claude بنسخة الخادم (أرقام تعريف وأسماء حقول فقط، بدون بيانات) */
+    const R = {};
+    const unj = v => { if (v && typeof v.json === 'string') { try { return JSON.parse(v.json); } catch (x) {} } return v; };
+    const asMap = v => { v = unj(v); if (v && Array.isArray(v.list)) { const o = {}; for (const x of v.list) if (x && x.id) o[x.id] = x; return o; } return v && typeof v === 'object' ? v : {}; };
+    for (const p in (m.docs || {})) {
+      if (!(m.only || []).includes(p)) continue;
+      const e = await dmeta_(p); let sv = {}; try { sv = JSON.parse(await dget_(e)); } catch (x) {}
+      let cv = {}; try { cv = JSON.parse(m.docs[p]); } catch (x) {}
+      const A = asMap(cv), B = asMap(sv), oc = [], os = [], ch = {};
+      for (const k in A) if (!(k in B)) oc.push(k);
+      for (const k in B) if (!(k in A)) os.push(k);
+      for (const k in A) if (k in B && canon_(A[k]) !== canon_(B[k])) { const a = A[k] || {}, b = B[k] || {}; const f = typeof a === 'object' ? [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(x => canon_(a[x]) !== canon_(b[x])) : ['v']; ch[k] = f; }
+      R[p] = { claude: Object.keys(A).length, server: Object.keys(B).length, onlyClaude: oc, onlyServer: os, changed: ch, at: e && e.at, by: e && e.by };
+    }
+    return { ok: 1, step, R, next: '' };
+  }
   if (step === 'imp') {
     /* نقل نظام Claude كامل: ملف ناقص ينضاف، ملف ما تغيّر على الخادم من آخر مزامنة يتحدّث، وملف عدّله موظف على الخادم يبقى مثل ما هو */
     const L = { add: 0, upd: 0, same: 0, kept: [] };
