@@ -351,7 +351,8 @@ async function bkget_(b) {
 const DOC_RE = /^(school\/(config|timetable|students)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
 const BLOB_RE = /^(archpart|mailimg|qaidimg|staffphoto)\//;
 /* حساب المالك على رابط المدرسة: نفس الملفات + الأختام والتوقيع */
-const OWN_RE = new RegExp(DOC_RE.source.replace('priv\\/official', 'priv\\/(official|st_sch|st_nm|st_sg)').replace('school\\/(config|timetable|students)', 'school\\/(config|timetable|students|roles)'));
+/* مدير النظام: كل ملفات النظام بدون استثناء (عدا الملفات الداخلية للخادم) */
+const OWN_RE = /^(?!_)[A-Za-z0-9_\-]{1,40}\/[A-Za-z0-9_\-.~:@+]{1,200}$/;
 const reOf = a => a && a.own ? OWN_RE : DOC_RE;
 async function drev_() { await run("insert into kv(k,v) values('DREV','1') on conflict(k) do update set v=cast(v as integer)+1"); return +(await kvGet('DREV')); }
 const dmeta_ = p => one('select p,rev,at,by,h,oh,n from docs where p=?', p);
@@ -600,6 +601,19 @@ async function migrate_(b) {
     }
     const cur = +(await kvGet('DREV')) || 0; if ((+r.rev || 0) > cur) await kvPut('DREV', String(r.rev));
     return { ok: 1, step, done: want.length, left: need.length - want.length, rev: r.rev, next: need.length - want.length > 0 ? 'docs' : '' };
+  }
+  if (step === 'imp') {
+    /* نقل نظام Claude كامل: ملف ناقص ينضاف، ملف ما تغيّر على الخادم من آخر مزامنة يتحدّث، وملف عدّله موظف على الخادم يبقى مثل ما هو */
+    const L = { add: 0, upd: 0, same: 0, kept: [] };
+    for (const p in (m.docs || {})) {
+      if (!OWN_RE.test(p) || p === 'school/roles') continue;
+      let o; try { o = JSON.parse(m.docs[p]); } catch (x) { continue; }
+      const t = canon_(o), h = syH_(t), e = await dmeta_(p);
+      if (e && e.h === h) { if (e.oh !== h) await doh_(p, h); L.same++; continue; }
+      if (e && e.h !== 'DEL' && e.oh && e.h !== e.oh) { L.kept.push(p); continue; }
+      await dput_(p, t, h, 'o', h); e ? L.upd++ : L.add++;
+    }
+    return { ok: 1, step, log: L, next: '' };
   }
   if (step === 'roles') {
     if (m.roles) await dput_('__roles', JSON.stringify({ list: m.roles }), String(m.rh || ''), 'o', '');
