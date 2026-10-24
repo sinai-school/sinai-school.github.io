@@ -62,6 +62,8 @@ jobs:
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.t, count(distinct d.p) n, sum(length(c.d)) bytes from docs d join chunks c on c.id='d_'||d.p group by d.t" 2>/dev/null | python3 -c "import sys,json;print('sizes',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.p, sum(length(c.d)) b from docs d join chunks c on c.id='d_'||d.p where d.t='docs' group by d.p order by b desc limit 8" 2>/dev/null | python3 -c "import sys,json;print('biggest',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           if [ -f cf/boot.json ]; then python3 -u cf/boot.py $URL roles >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
+          (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select p, by, datetime(at/1000,'unixepoch') t from docs where at > (strftime('%s','now')-7200)*1000 order by at desc limit 25" 2>/dev/null | python3 -c "import sys,json;print('recent',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
+          (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select k, substr(v,1,40) v from kv where k in ('snapat','DREV')" 2>/dev/null | python3 -c "import sys,json;print('kv',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           if [ -d cf/box ]; then python3 -u cf/boot.py $URL imp >> $L 2>&1 || echo "IMP FAILED" >> $L; fi
           if [ -f cf/cmp.json ]; then python3 -u cf/boot.py $URL cmp >> $L 2>&1 || echo "CMP FAILED" >> $L; fi
       - name: Report
