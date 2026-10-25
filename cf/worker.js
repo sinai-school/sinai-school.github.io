@@ -41,12 +41,19 @@ async function gunz(u8) { return new Uint8Array(await new Response(new Blob([u8]
 
 /* ---------- الإعدادات ---------- */
 async function secret_() { if (MEMO.sec === undefined) MEMO.sec = await kvGet('SECRET'); return MEMO.sec; }
+let G_PRIV = null, E202 = 0;
 async function private_() {
   if (MEMO.priv) return MEMO.priv;
+  const pv = (await kvGet('PRIVV')) || '0';
+  if (G_PRIV && G_PRIV.v === pv) return MEMO.priv = G_PRIV.P;
+  const P0 = await private0_(); G_PRIV = { v: pv, P: P0 }; return P0;
+}
+async function private0_() {
   const P = await kvJ('priv', null) || { s: {}, t: {} }, X = await kvJ('privx', {});
   for (const k of ['s', 't']) { P[k] = P[k] || {}; for (const id in (X[k] || {})) if (!P[k][id]) P[k][id] = X[k][id]; }
   return MEMO.priv = P;
 }
+const privBump_ = () => kvPut('PRIVV', uid().slice(0, 10)).then(() => { G_PRIV = null; MEMO.priv = null; });
 async function gas_(body) {
   const u = await kvGet('GAS'); if (!u) return null;
   try { const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' }); return JSON.parse(await r.text()); } catch (e) { return null; }
@@ -62,6 +69,7 @@ async function profPut_(p) {
 async function tooMany_(kind, key) { const r = await one('select n,exp from fails where k=?', 'f_' + kind + '_' + key); return r && r.exp > Date.now() && r.n >= 6; }
 async function fail_(k, ttl) { const r = await one('select n,exp from fails where k=?', k); const n = r && r.exp > Date.now() ? r.n + 1 : 1; await run('insert into fails(k,n,exp) values(?,?,?) on conflict(k) do update set n=excluded.n,exp=excluded.exp', k, n, Date.now() + ttl * 1000); return n; }
 async function nidOf_(kind, key, a) {
+  const fx = (await kvJ('NIDFIX', {}))[kind + ':' + key]; if (nid_(fx)) return nid_(fx);
   const pv = ((await private_())[kind] || {})[key] || {};
   const s = nid_(pv.pre && pv.pre.nid) || nid_(pv.nid2); if (s) return s;
   if (a && a.nid) return a.nid;
@@ -79,7 +87,7 @@ async function auth_(b) {
     const r = await gas_({ a: 'login', kind, key, phone: b.phone, nid: b.nid, pid: 'none' });
     if (r && /^(wrong|wrongnid|locked|neednid)$/.test(r.err || '')) { if (r.err !== 'neednid') await fail_('f_' + kind + '_' + key, 900); return { err: r.err }; }
     if (r && r.ok) {
-      if (r.private && Object.keys(r.private).length) { const X = await kvJ('privx', {}); (X[kind] = X[kind] || {})[key] = r.private; await kvPut('privx', X); MEMO.priv = null; }
+      if (r.private && Object.keys(r.private).length) { const X = await kvJ('privx', {}); (X[kind] = X[kind] || {})[key] = r.private; await kvPut('privx', X); await privBump_(); }
       const g0 = nid_(b.nid); if (g0) { await accNid_(kind, key, g0); a.nid = g0; }
     }
   }
@@ -95,7 +103,7 @@ async function privHeal_(x, b) {
   if ((P[x.kind] || {})[x.key]) return;
   const r = await gas_({ a: 'login', kind: x.kind, key: x.key, phone: b.phone, nid: b.nid, pid: 'none' });
   if (r && r.ok && r.private && Object.keys(r.private).length) {
-    const X = await kvJ('privx', {}); (X[x.kind] = X[x.kind] || {})[x.key] = r.private; await kvPut('privx', X);
+    const X = await kvJ('privx', {}); (X[x.kind] = X[x.kind] || {})[x.key] = r.private; await kvPut('privx', X); await privBump_();
     (P[x.kind] = P[x.kind] || {})[x.key] = r.private;
   }
 }
@@ -129,8 +137,6 @@ async function allFiles_(b) { const R = { out: [], n: 0, err: [] }; await files_
 async function upOne_(b) {
   const d = String(b.d || ''); if (!d) return { err: 'file' };
   if (d.length > 36000000) return { err: 'big' };
-  const r = await gas_(b);
-  if (r && r.ok && r.f && r.f.id) { await run('insert or replace into ups(id,exp) values(?,?)', String(r.f.id), Date.now() + 6 * 3600e3); return r; }
   const name = String(b.n || 'ملف').replace(/[\/\\]/g, '-').slice(0, 120), mime = String(b.m || 'application/octet-stream').slice(0, 100);
   const f = await storeFile_(name, mime, d);
   await run('insert or replace into ups(id,exp) values(?,?)', f.id, Date.now() + 6 * 3600e3);
@@ -150,7 +156,9 @@ async function notesFor_(kind, key, secs) {
     const ok = sc === 'all' || (sc === 'allS' && kind === 's') || (sc === 'allT' && kind === 't') || (sc === 'sec' && kind === 's' && secs.includes(t)) || (sc === 'one' && t === kind + ':' + key);
     if (ok) o.push({ id: n.id, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files || [] });
   }
-  return o.reverse().slice(0, 100);
+  const sn = new Set, r = [];
+  for (const n of o.reverse()) { const k = [n.from, n.title, n.body, (n.files || []).length].join('|'); if (sn.has(k)) continue; sn.add(k); r.push(n); }
+  return r.slice(0, 150);
 }
 const noteAdd_ = o => run('insert into notes(id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?)', o.id, o.scope, o.target, o.from, o.title, o.body, o.date, o.cat, o.files);
 const noteHas_ = async id => !!id && !!(await one('select id from notes where id=?', id));
@@ -173,9 +181,11 @@ async function bundle_(x, b) {
   const o = { ok: 1, phone: x.a.phone, private: pv, profile: pr ? JSON.parse(pr.json || '{}') : {}, status: pr ? pr.status : '', photo: same ? '' : (pr ? await photo_(pid) : ''), pid, notes: await notesFor_(x.kind, x.key, secs), at: now() };
   if (same) o.ph1 = 1;
   if (x.kind === 't') { try { o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { o.sent = []; } }
+  try { await extra202_(o, x); } catch (e) { }
   return o;
 }
 async function fget_(b) {
+  if (b.rid) { const x0 = await auth_(b); if (x0.err) return x0; const r = await one('select * from reports where id=?', String(b.rid)); if (!r || !((r.kind === x0.kind && r.key === x0.key) || r.tgt === 't:' + x0.key)) return { err: 'nofile' }; const f = fl_(r.files).find(z => String(z.id) === String(b.id)); if (!f) return { err: 'nofile' }; const d = await blobGet('f_' + f.id); return d ? { ok: 1, n: f.n, m: f.m, d } : { err: 'nofile' }; }
   const x = await auth_(b); if (x.err) return x;
   const P = await private_(), pv = (P[x.kind] || {})[x.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []), id = String(b.id || '');
   let f = null; for (const n of await notesFor_(x.kind, x.key, secs)) for (const z of (n.files || [])) if (String(z.id) === id) f = z;
@@ -185,9 +195,98 @@ async function fget_(b) {
   return { err: 'nofile' };
 }
 
+
+/* ---------- v202: بلاغات للإدارة أو لمدرس معيّن، رد سريع، درجات المدرسين، اعتماد النتائج، تصحيح الهاتف والبطاقة ---------- */
+async function ens202_() {
+  if (E202) return; E202 = 1;
+  if ((await kvGet('E202')) === '3') return;
+  for (const q of ['alter table reports add column tgt text', 'alter table reports add column files text', 'alter table reports add column reply text', 'alter table reports add column rdate text', 'alter table reports add column cid text',
+    'create table if not exists tgr(id text primary key, tkey text, tname text, subj text, label text, skey text, val text, note text, date text)',
+    'create index if not exists tgr_s on tgr(skey)', 'create index if not exists tgr_t on tgr(tkey)']) { try { await run(q); } catch (e) { } }
+  await kvPut('E202', '3');
+}
+async function noteDup_(scope, target, title, body) {
+  const t = new Date(Date.now() - 30 * 60e3).toISOString();
+  return !!(await one('select id from notes where scope=? and target=? and title=? and body=? and date>? limit 1', String(scope), String(target || ''), String(title || '').slice(0, 120), String(body || ''), t));
+}
+async function report202_(y, b) {
+  const ci = cid_(b); if (ci && await one('select id from reports where cid=?', ci)) return { ok: 1, dup: 1 };
+  const text = String(b.text || '').trim().slice(0, 4000); if (text.length < 2) return { err: 'text' };
+  let tgt = String(b.to || 'adm');
+  if (tgt !== 'adm') {
+    const k = tgt.replace(/^t:/, ''), P = await private_(), t = (P.t || {})[k];
+    if (!t || (y.kind === 's' && !(t.studs || []).includes(y.key))) return { err: 'to' };
+    tgt = 't:' + k;
+  }
+  const since = new Date(Date.now() - 10 * 60e3).toISOString();
+  if (await one('select id from reports where kind=? and key=? and text=? and date>? limit 1', y.kind, y.key, text, since)) return { ok: 1, dup: 1 };
+  const F = await allFiles_(b);
+  await run('insert into reports(id,kind,key,name,text,date,status,tgt,files,cid) values(?,?,?,?,?,?,?,?,?,?)', uid().slice(0, 10), y.kind, y.key, y.a.name, text, now(), 'new', tgt, F.out.length ? JSON.stringify(F.out) : '', ci || null);
+  return { ok: 1, nf: F.n, ferr: F.err };
+}
+/* الرد على البلاغ بخطوة وحدة: يوصل للطالب كتبليغ + يبين تحت بلاغه + يتعلّم «تم» */
+async function repReply202_(b, y) {
+  const r = await one('select * from reports where id=?', String(b.id || '')); if (!r) return { err: 'nofile' };
+  if (y && r.tgt !== 't:' + y.key) return { err: 'role' };
+  const body = String(b.body || '').trim().slice(0, 8000); if (!body) return { err: 'text' };
+  const from = y ? (y.a.name || 'المدرس') : String(b.from || 'إدارة المدرسة');
+  const ci = cid_(b) || uid().slice(0, 10);
+  if (!(await noteHas_(ci))) {
+    const F = await allFiles_(b);
+    await noteAdd_({ id: ci, scope: 'one', target: r.kind + ':' + r.key, from, title: String(b.title || 'رد على بلاغك').slice(0, 120), body, date: now(), cat: y ? 'tch' : 'adm', files: F.out.length ? JSON.stringify(F.out) : '' });
+  }
+  await run('update reports set reply=?,rdate=?,status=? where id=?', body, now(), b.keep ? r.status : 'done', r.id);
+  return { ok: 1 };
+}
+async function tgrade202_(b, y) {
+  if (y.kind !== 't') return { err: 'role' };
+  const P = await private_(), me = (P.t || {})[y.key] || {}, studs = new Set(me.studs || []);
+  const label = String(b.label || '').trim().slice(0, 60), subj = String(b.subj || '').trim().slice(0, 60);
+  if (!label) return { err: 'text' };
+  const st = [], t = now();
+  for (const r of (b.rows || []).slice(0, 600)) {
+    const sk = String(r[0] || ''), v = String(r[1] == null ? '' : r[1]).trim().slice(0, 20), nt = String(r[2] || '').slice(0, 200);
+    if (!studs.has(sk)) continue;
+    const id = [...new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(y.key + '|' + label + '|' + subj + '|' + sk)))].slice(0, 12).map(x => x.toString(16).padStart(2, '0')).join('');
+    if (v === '' && !nt) st.push(DB.prepare('delete from tgr where id=?').bind(id));
+    else st.push(DB.prepare('insert into tgr(id,tkey,tname,subj,label,skey,val,note,date) values(?,?,?,?,?,?,?,?,?) on conflict(id) do update set val=excluded.val,note=excluded.note,date=excluded.date,tname=excluded.tname').bind(id, y.key, y.a.name || me.n || '', subj, label, sk, v, nt, t));
+  }
+  for (let i = 0; i < st.length; i += 80) await DB.batch(st.slice(i, i + 80));
+  return { ok: 1, n: st.length };
+}
+async function extra202_(o, x) {
+  const R = x.kind === 's'
+    ? await all("select id,text,date,status,tgt,files,reply,rdate from reports where kind=? and key=? order by date desc limit 60", x.kind, x.key)
+    : await all("select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports where (kind=? and key=?) or tgt=? order by date desc limit 150", x.kind, x.key, 't:' + x.key);
+  const mine = R.filter(r => !r.kind || (r.kind === x.kind && r.key === x.key)).map(r => ({ id: r.id, text: r.text, date: r.date, status: r.status, to: r.tgt || 'adm', files: fl_(r.files), reply: r.reply || '', rdate: r.rdate || '' }));
+  o.myreps = mine;
+  if (x.kind === 't') o.reps = R.filter(r => r.tgt === 't:' + x.key).map(r => ({ id: r.id, kind: r.kind, key: r.key, name: r.name, text: r.text, date: r.date, status: r.status, files: fl_(r.files), reply: r.reply || '', rdate: r.rdate || '' }));
+  if (x.kind === 's') {
+    o.tg = await all('select tname,subj,label,val,note,date from tgr where skey=? order by date desc limit 300', x.key);
+    const rel = (await kvJ('REL', { c: [] })).c || [], pv = o.private;
+    if (pv && Array.isArray(pv.g)) { o.private = { ...pv, g: pv.g.map(r => r.map((v, i) => i === 0 || rel.includes(i) ? v : '')), rel }; }
+  }
+}
+async function editAcc202_(b) {
+  const kind = String(b.kind), key = String(b.key), a0 = await accGet_(kind, key);
+  if (!a0) return { err: 'notreg' };
+  let ph = a0.phone; if (b.phone != null && String(b.phone).trim() !== '') { ph = phone_(b.phone); if (!ph) return { err: 'phone' }; }
+  let nd = a0.nid || '';
+  if (b.nid != null && String(b.nid).trim() !== '') {
+    nd = nid_(b.nid); if (!nd) return { err: 'nid' };
+    const F = await kvJ('NIDFIX', {}); F[kind + ':' + key] = nd; await kvPut('NIDFIX', F);
+    const p = await one('select json from prof where kind=? and key=?', kind, key);
+    if (p) { try { const o = JSON.parse(p.json || '{}'); o.nid = nd; await run('update prof set json=? where kind=? and key=?', JSON.stringify(o), kind, key); } catch (e) { } }
+  }
+  await run('update acc set phone=?,nid=?,updated=? where kind=? and key=?', ph, nd, now(), kind, key);
+  await run('delete from fails where k=?', 'f_' + kind + '_' + key);
+  return { ok: 1, phone: ph, nid: nd };
+}
+
 /* ---------- الأوامر ---------- */
 async function handle(b) {
   const a = String(b.a || '');
+  await ens202_();
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -198,7 +297,7 @@ async function handle(b) {
   if (a === 'export') return export_();
   if (a === 'fget') return fget_(b);
   if (a === 'snap') return snapGet_(b);
-  if (a === 'up') { const y = await auth_(b); if (y.err) return y; if (y.kind !== 't') return { err: 'role' }; return upOne_(b); }
+  if (a === 'up') { const y = await auth_(b); if (y.err) return y; return upOne_(b); }
   if (a === 'relay') return relay_(b);
   if (a === 'exack') return exack_(b);
   if (a === 'admin') {
@@ -224,7 +323,7 @@ async function handle(b) {
     await run('insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', kind, key, acc.name, ph, t, t, gn);
     return bundle_({ a: acc, kind, key }, b);
   }
-  if (['save', 'photo', 'report', 'notify', 'seen'].includes(a)) {
+  if (['save', 'photo', 'report', 'notify', 'seen', 'inbox', 'repReply', 'tgrade', 'tgrades'].includes(a)) {
     const y = await auth_(b); if (y.err) return y;
     if (y.bind) await accNid_(y.kind, y.key, y.bind);
     if (a === 'save') {
@@ -243,7 +342,7 @@ async function handle(b) {
       try { await applyOne_(y.kind, y.key); } catch (e) { }
       return { ok: 1, pid: q.photo };
     }
-    if (a === 'report') { await run('insert into reports(id,kind,key,name,text,date,status) values(?,?,?,?,?,?,?)', uid().slice(0, 8), y.kind, y.key, y.a.name, String(b.text || '').slice(0, 1000), now(), 'new'); return { ok: 1 }; }
+    if (a === 'report') return report202_(y, b);
     if (a === 'notify') {
       if (y.kind !== 't') return { err: 'role' };
       const P = await private_(), me = (P.t || {})[y.key] || {}, secs = me.secs || [], studs = me.studs || [];
@@ -252,10 +351,15 @@ async function handle(b) {
       if (sc === 'one' && !studs.includes(tg.replace(/^s:/, ''))) return { err: 'scope' };
       if (sc !== 'sec' && sc !== 'one') return { err: 'scope' };
       const ci = cid_(b); if (await noteHas_(ci)) return { ok: 1, dup: 1, nf: -1 };
+      if (await noteDup_(sc, tg, b.title, b.body)) return { ok: 1, dup: 1, nf: -1 };
       const F = await allFiles_(b);
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); return o; }
+    if (a === 'repReply') return repReply202_(b, y);
+    if (a === 'tgrade') return tgrade202_(b, y);
+    if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
     if (a === 'seen') {
       const st = []; for (const id of (b.ids || []).slice(0, 200)) st.push(DB.prepare('insert or ignore into seen(id,kind,key,at) values(?,?,?,?)').bind(String(id), y.kind, y.key, now()));
       let n = 0; if (st.length) { const r = await DB.batch(st); n = r.reduce((s, x) => s + (x.meta && x.meta.changes || 0), 0); }
@@ -270,14 +374,16 @@ async function admin_(b) {
   const sec = await secret_();
   if (b.op === 'init') { if (sec && sec !== b.secret) return { err: 'claimed' }; if (!sec) { await kvPut('SECRET', String(b.secret)); MEMO.sec = String(b.secret); } return { ok: 1, sheet: '' }; }
   if (!sec || b.secret !== sec) return { err: 'auth' };
-  if (b.op === 'push') { await kvPut('priv', b.data || {}); await kvPut('privx', {}); MEMO.priv = null; return { ok: 1 }; }
+  if (b.op === 'push') { await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
   if (b.op === 'pull') {
     const seen = {}; for (const r of await all('select id,kind,key from seen')) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
     return { ok: 1, sheet: '',
       acc: (await all('select * from acc')).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
       prof: (await all('select kind,key,name,json,photo,updated,status from prof')).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
       notes: (await notesAll_()).map(n => ({ id: n.id, scope: n.scope, target: n.target, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files })),
-      seen, reports: await all('select id,kind,key,name,text,date,status from reports order by date') };
+      seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
+      nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
+      rel: await kvJ('REL', { c: [] }), tgc: (await all('select label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
   }
   if (b.op === 'photo') { const q = await profGet_(String(b.kind), String(b.key)); return { ok: 1, photo: q ? await photo_(q.photo) : '' }; }
   if (b.op === 'setPhone') {
@@ -292,6 +398,7 @@ async function admin_(b) {
   if (b.op === 'profStatus') { await run('update prof set status=? where kind=? and key=?', String(b.status), String(b.kind), String(b.key)); return { ok: 1 }; }
   if (b.op === 'note') {
     const ci = cid_(b); if (await noteHas_(ci)) return { ok: 1, dup: 1, nf: -1 };
+    if (await noteDup_(String(b.scope), String(b.target || ''), b.title, b.body)) return { ok: 1, dup: 1, nf: -1 };
     const F = await allFiles_(b);
     await noteAdd_({ id: ci || uid().slice(0, 8), scope: String(b.scope), target: String(b.target || ''), from: String(b.from || 'إدارة المدرسة'), title: String(b.title || ''), body: String(b.body || ''), date: now(), cat: String(b.cat || 'adm'), files: F.out.length ? JSON.stringify(F.out) : '' });
     return { ok: 1, nf: F.n, ferr: F.err };
@@ -303,6 +410,10 @@ async function admin_(b) {
   if (b.op === 'bklist') return { ok: 1, list: await bklist_() };
   if (b.op === 'bkget') return bkget_(b);
   if (b.op === 'applyAll') return applyAll_();
+  if (b.op === 'editAcc') return editAcc202_(b);
+  if (b.op === 'repReply') return repReply202_(b, null);
+  if (b.op === 'up') return upOne_(b);
+  if (b.op === 'rel') { const c = (b.c || []).map(Number).filter(n => n >= 1 && n <= 6); await kvPut('REL', { c, at: now() }); return { ok: 1, c }; }
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
   return { err: 'op' };
 }
@@ -348,7 +459,7 @@ async function bkget_(b) {
 }
 
 /* ---------- حسابات الموظفين + مزامنة بيانات النظام ---------- */
-const DOC_RE = /^(school\/(config|timetable|students)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
+const DOC_RE = /^(school\/(config|timetable|students|custom)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
 const BLOB_RE = /^(archpart|mailimg|qaidimg|staffphoto)\//;
 /* حساب المالك على رابط المدرسة: نفس الملفات + الأختام والتوقيع */
 /* مدير النظام: كل ملفات النظام بدون استثناء (عدا الملفات الداخلية للخادم) */
@@ -451,6 +562,7 @@ async function stf_(b) {
     try { if (typeof JSON.parse(d) !== 'object') return { err: 'data' }; } catch (x) { return { err: 'data' }; }
     if (d.length > 4e6) return { err: 'big' };
     if (p === 'school/roles') { const k = await rolesFromDoc_(d); if (k < 1) return { err: 'data' }; }
+    if (p === 'school/custom' && !a.own) return { err: 'role' };
     const rr = await dput_(p, d, String(b.h || ''), 's:' + a.u, null);
     if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
     return { ok: 1, rev: rr.rev };
@@ -632,6 +744,23 @@ async function migrate_(b) {
     }
     return { ok: 1, step, log: L, next: '' };
   }
+  if (step === 'imp2') {
+    /* تعديلات صارت داخل Claude بعد النقل: تنضاف أو تحدّث بس الملفات اللي ما انلمست على الخادم من آخر نقل (والقديم ينحفظ نسخة) */
+    const L = { add: 0, upd: 0, same: 0, kept: [] };
+    for (const p in (m.docs || {})) {
+      if (!OWN_RE.test(p) || p === 'school/roles') continue;
+      let o; try { o = JSON.parse(m.docs[p]); } catch (x) { continue; }
+      const t = canon_(o), h = syH_(t), e = await dmeta_(p);
+      if (e && e.h === h) { L.same++; continue; }
+      if (!e) { await dput_(p, t, h, 'o', h); L.add++; continue; }
+      if (e.h !== 'DEL' && e.by === 'o' && e.oh && e.h === e.oh) {
+        const old = await dget_(e); await dput_('_imp202/' + p, old, e.h, 'imp', e.h);
+        await dput_(p, t, h, 'o', h); L.upd++; continue;
+      }
+      L.kept.push(p + ' (' + (e.by || '') + ')');
+    }
+    return { ok: 1, step, log: L, next: '' };
+  }
   if (step === 'roles') {
     if (m.roles) await dput_('__roles', JSON.stringify({ list: m.roles }), String(m.rh || ''), 'o', '');
     for (const p in (m.docs || {})) if (OWN_RE.test(p)) { const e = await dmeta_(p); if (!e || e.h !== m.docs[p].h) await dput_(p, m.docs[p].d, m.docs[p].h, 'o', m.docs[p].h); }
@@ -746,7 +875,7 @@ export default {
         if (m) { const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); return new Response(unb64(d), { headers: { 'Content-Type': f.m || 'application/octet-stream', 'Content-Disposition': 'inline; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*' } }); }
         m = u.pathname.match(/^\/bk\/([A-Za-z0-9_-]+)$/);
         if (m) { const k = await exK_('mac'); if (!k || u.searchParams.get('k') !== (await hm_(k, 'bk|' + m[1])).slice(0, 22)) return new Response('no', { status: 403 }); const s = await blobGet('bk_' + m[1]); const f = await one('select name from bk where id=?', m[1]); return new Response(s || '', { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(f ? f.name : 'backup.json') } }); }
-        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, ready: (await secret_()) ? 1 : 0 });
+        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, ready: (await secret_()) ? 1 : 0 });
       }
       let b; try { b = JSON.parse(await req.text() || '{}'); } catch (x) { return out({ err: 'action' }); }
       return out(await handle(b));

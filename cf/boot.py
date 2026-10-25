@@ -8,7 +8,8 @@ if len(sys.argv) > 2 and sys.argv[2] == 'imp':
     import glob
     for f in sorted(glob.glob('cf/box/*.json')):
         for t in range(3):
-            try: r = post(dict(json.load(open(f)), a='migrate', step='imp'), 300); break
+            bx = json.load(open(f)); bx.setdefault('step', 'imp')
+            try: r = post(dict(bx, a='migrate'), 300); break
             except Exception as e: r = {'err': str(e)}; time.sleep(5)
         print('imp', f[-7:], json.dumps({k: v for k, v in r.items() if k != 'r'}, ensure_ascii=False)[:600])
     sys.exit(0)
