@@ -133,7 +133,10 @@ export function eff(p) {
   const r = { ...a, ...o, id: p.id, post: p.post, src: p.src, dt: p.dt };
   if (ai && ai.title && !o.name && p.src === 'tg') r.name = ai.title;
   r.ai = ai ? { specs: ai.specs || [], desc: ai.desc || '', uses: ai.uses || [] } : null;
-  const imgs = o.imgs || media.map(x => x.k);
+  let imgs = o.imgs || media.filter(x => !x.v).map(x => x.k);
+  // أول صورة بالألبوم غالباً بوستر «عرض يوم…» فنخلي صورة المنتج نفسه هي الغلاف
+  if (!o.imgs && imgs.length >= 3) imgs = [...imgs.slice(1), imgs[0]];
+  if (!imgs.length && !o.imgs) imgs = media.map(x => x.k);
   r.imgs = imgs;
   r.videos = media.filter(x => x.v).map(x => x.k);
   if (r.offer && (r.until || p.src === 'tg') && p.dt && now() - Date.parse(p.dt) > 3 * 864e5 && !('offer' in o)) r.offer = 0;
@@ -312,7 +315,7 @@ async function publicData(env) {
 // ---------- صفحات ----------
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 async function page(env, url, prod) {
-  const origin = url.origin;
+  const origin = ORIGIN || url.origin;
   let title = 'مجمع H&H — إكسسوارات الهواتف والتقنية في بغداد', desc = 'كل منتجات مجمع H&H بالأسعار والمواصفات والضمان: شواحن، سماعات، باوربانك، كفرات، ساعات ذكية وأكثر. توصيل لكل العراق.', img = origin + '/icon.png';
   let ld = '';
   if (prod) {
@@ -327,11 +330,14 @@ async function page(env, url, prod) {
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#161A20"/><rect x="40" y="40" width="432" height="432" rx="84" fill="none" stroke="#C9A57C" stroke-opacity=".35" stroke-width="4"/><text x="256" y="318" font-family="Georgia,serif" font-size="190" fill="#D9B98F" text-anchor="middle" font-weight="700">H&amp;H</text></svg>`;
 
+let ORIGIN = '';
 export default {
   async scheduled(ev, env, ctx) { ctx.waitUntil(sync(env).catch(e => log(env, 'خطأ مزامنة: ' + e.message))); },
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const p = url.pathname;
+    const xh = req.headers.get('x-hh-host');
+    ORIGIN = xh && /^[a-z0-9.-]+$/i.test(xh) ? 'https://' + xh : '';
     try {
       if (p === '/api/data') {
         const cache = caches.default, key = new Request(url.origin + '/api/data?v=' + Math.floor(now() / 60000));
@@ -360,15 +366,15 @@ export default {
       }
       if (p === '/icon.svg' || p === '/icon.png' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
       if (p === '/manifest.webmanifest') return J({ name: 'مجمع H&H', short_name: 'H&H', start_url: '/', display: 'standalone', background_color: '#13161B', theme_color: '#13161B', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }] }, 200, { 'cache-control': 'public, max-age=86400' });
-      if (p === '/robots.txt') return new Response(`User-agent: *\nDisallow: /admin\nSitemap: ${url.origin}/sitemap.xml\n`);
-      if (p === '/sitemap.xml') { const l = await allProducts(env, false); return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${url.origin}/</loc></url>${l.map(x => `<url><loc>${url.origin}/p/${x.id}</loc></url>`).join('')}</urlset>`, { headers: { 'content-type': 'application/xml' } }); }
+      if (p === '/robots.txt') return new Response(`User-agent: *\nDisallow: /admin\nSitemap: ${ORIGIN || url.origin}/sitemap.xml\n`);
+      if (p === '/sitemap.xml') { const l = await allProducts(env, false); return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${ORIGIN || url.origin}/</loc></url>${l.map(x => `<url><loc>${ORIGIN || url.origin}/p/${x.id}</loc></url>`).join('')}</urlset>`, { headers: { 'content-type': 'application/xml' } }); }
       if (p === '/admin' || p === '/admin/') return new Response(ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
 
       if (p.startsWith('/api/admin/')) {
         const op = p.slice(11);
         if (req.method !== 'POST') return J({ err: 'method' }, 405);
         if (op === 'login') {
-          const ip = req.headers.get('cf-connecting-ip') || '';
+          const ip = req.headers.get('x-hh-ip') || req.headers.get('cf-connecting-ip') || '';
           const s = await getSettings(env);
           const fails = (s._fails || {})[ip] || [];
           const recent = fails.filter(t => now() - t < 15 * 60000);
