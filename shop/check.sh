@@ -15,3 +15,14 @@ curl -s https://handhst.com/p/tg28979 | grep -o '<title>[^<]*' | head -1
 echo "http: $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://handhst.com/)"
 for i in 1 2 3; do curl -s -o /dev/null -w "home %{time_total}s\n" https://handhst.com/; done
 echo "img: $(curl -s -o /dev/null -w '%{http_code} %{time_total}s %{content_type}' $D/img/t30448)"
+echo "--- snapshot"
+mkdir -p out/snap
+curl -s "$D/api/data" -o out/snap/data.json
+python3 - <<'P'
+import json,subprocess
+d=json.load(open('out/snap/data.json'))
+ks=[p['img'] for p in d['p'] if p['img']][:40]
+for k in ks: subprocess.run(['curl','-s','-o',f'out/snap/{k}.jpg',f'https://hh-shop.7svyn82yzr.workers.dev/img/{k}'])
+for p in d['p'][:6]: subprocess.run(['curl','-s','-o',f"out/snap/p_{p['id']}.json",f"https://hh-shop.7svyn82yzr.workers.dev/api/p/{p['id']}"])
+P
+ls out/snap | wc -l; du -sh out/snap
