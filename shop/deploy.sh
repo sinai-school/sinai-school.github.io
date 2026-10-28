@@ -21,10 +21,11 @@ if [ ! -f ../out/seeded ]; then
 fi
 mk $'[ai]\nbinding = "AI"\n'
 if ! $W deploy 2>&1 | tee dep.log | tail -8; then :; fi
-if ! grep -q "Current Version ID\|Deployed hh-shop\|Uploaded hh-shop" dep.log || grep -qi "error" dep.log; then
+if ! grep -q "Current Version ID" dep.log; then
   echo "== AI binding failed, deploying without AI"; cat dep.log | grep -i error | head -5
   mk ""; $W deploy 2>&1 | tail -8
 fi
+grep -q "AI" wrangler.toml && echo "AI=on" || echo "AI=off"
 URL=https://hh-shop.$SUB.workers.dev
 echo "url=$URL"
 sleep 6
