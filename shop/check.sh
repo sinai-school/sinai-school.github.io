@@ -30,3 +30,11 @@ while i<len(d):
   i+=2+l" 2>/dev/null
 curl -s $D/ | grep -o '<title>[^<]*\|hhd' | head -3
 curl -s "$D/sitemap.xml" | grep -o '<loc>' | wc -l
+echo "--- live pages"
+mkdir -p out/live
+curl -s "$D/" -o out/live/home.html
+curl -s "$D/admin" -o out/live/admin.html
+P=$(python3 -c "import json,sys;d=json.load(open('out/live/d.json')) if False else None" 2>/dev/null; curl -s $D/api/data | python3 -c "import sys,json;d=json.load(sys.stdin);print(' '.join(p['id'] for p in d['p'][:3]))")
+for id in $P; do curl -s "$D/p/$id" -o out/live/p_$id.html; done
+for k in $(curl -s $D/api/data | python3 -c "import sys,json;d=json.load(sys.stdin);print(' '.join([p['img'] for p in d['p'][:14] if p['img']]+['logo']))"); do curl -s -o out/live/$k.jpg $D/img/$k; done
+ls out/live | wc -l
