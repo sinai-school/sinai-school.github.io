@@ -36,18 +36,6 @@ echo "home: $(curl -s -o /dev/null -w '%{http_code}' $URL/)"
 echo "data: $(curl -s $URL/api/data | head -c 300)"
 $W d1 execute hhshop --remote --json --command "select (select count(*) from products) p,(select count(*) from msgs) m,(select count(*) from imgs) i,(select count(*) from imgq) q,(select count(*) from products where ai is not null and ai not like '%err%') ai" 2>/dev/null | python3 -c 'import sys,json;print("db",json.load(sys.stdin)[0]["results"])'
 $W d1 execute hhshop --remote --json --command "select at,msg from log order by at desc limit 8" 2>/dev/null | python3 -c 'import sys,json;print("log",json.load(sys.stdin)[0]["results"])'
-# ---- الدومين handhst.com على Cloudflare ----
-CFA=https://api.cloudflare.com/client/v4
-Z=$(curl -s -H "$AH" "$CFA/zones?name=handhst.com" | python3 -c 'import sys,json;r=json.load(sys.stdin).get("result") or [];print(r[0]["id"]+" "+r[0]["status"]+" "+",".join(r[0]["name_servers"]) if r else "")')
-if [ -z "$Z" ]; then
-  echo "zone create: $(curl -s -X POST -H "$AH" -H 'Content-Type: application/json' -d "{\"name\":\"handhst.com\",\"account\":{\"id\":\"$CLOUDFLARE_ACCOUNT_ID\"},\"type\":\"full\"}" $CFA/zones | head -c 600)"
-  Z=$(curl -s -H "$AH" "$CFA/zones?name=handhst.com" | python3 -c 'import sys,json;r=json.load(sys.stdin).get("result") or [];print(r[0]["id"]+" "+r[0]["status"]+" "+",".join(r[0]["name_servers"]) if r else "")')
-fi
-echo "zone=$Z"
-ZID=${Z%% *}
-if [ -n "$ZID" ]; then
-  for h in handhst.com www.handhst.com; do
-    echo "domain $h: $(curl -s -X PUT -H "$AH" -H 'Content-Type: application/json' -d "{\"hostname\":\"$h\",\"service\":\"hh-shop\",\"environment\":\"production\",\"zone_id\":\"$ZID\"}" $API/workers/domains | head -c 300)"
-  done
-  echo "ssl: $(curl -s -X PATCH -H "$AH" -H 'Content-Type: application/json' -d '{"value":"on"}' $CFA/zones/$ZID/settings/always_use_https | head -c 120)"
-fi
+echo "--- handhst ssl:"; curl -sS -o /dev/null -w "https %{http_code} ssl_verify=%{ssl_verify_result}\n" -m 20 https://handhst.com/ 2>&1 | head -3
+curl -sS -o /dev/null -w "www %{http_code}\n" -m 20 https://www.handhst.com/ 2>&1 | head -2
+echo | openssl s_client -connect handhst.com:443 -servername handhst.com 2>/dev/null | openssl x509 -noout -subject -issuer -enddate 2>&1 | head -4
