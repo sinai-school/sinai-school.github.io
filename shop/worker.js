@@ -77,6 +77,8 @@ export function parseText(raw) {
   const txt = String(raw || '').replace(/\r/g, '');
   const price = parsePrice(txt);
   if (!price) return null;
+  // منشورات مو منتجات: تشويق، أو عروض داخل المحل بس بسعر رمزي
+  if (/ترقبوا/.test(txt) || (price <= 2000 && /داخل المحل/.test(txt))) return null;
   const all = txt.split('\n').map(s => s.replace(/\s+/g, ' ').trim());
   const block = [];
   for (const l of all) { if (SEP.test(l) || /^-{3,}|—{2,}/.test(l)) { if (block.length) break; else continue; } if (/السعر/.test(l)) break; block.push(l); }
@@ -262,12 +264,12 @@ async function aiEnrich(env, n) {
   return ok;
 }
 
-const PARSE_V = 3;
+const PARSE_V = 4;
 export async function migrate(env) {
   // يعيد قراءة أسعار وأوصاف منشورات القناة بالقواعد المحسّنة، ويدمج المكرر مع منتجات الجدول
   const tg = (await env.DB.prepare("select p.id,p.post,p.auto,p.media,m.txt from products p join msgs m on m.id=p.post where p.src='tg'").all()).results || [];
   const ops = [];
-  for (const r of tg) { const a = parseText(r.txt); if (a) ops.push(env.DB.prepare('update products set auto=? where id=?').bind(JSON.stringify(a), r.id)); }
+  for (const r of tg) { const a = parseText(r.txt); if (a) ops.push(env.DB.prepare('update products set auto=? where id=?').bind(JSON.stringify(a), r.id)); else ops.push(env.DB.prepare("update products set ov=json_set(coalesce(ov,'{}'),'$.dup',1) where id=?").bind(r.id)); }
   const sheet = ((await env.DB.prepare("select id,auto,media,ov from products where src='sheet'").all()).results || []).filter(x => JSON.parse(x.media || '[]').length === 0);
   const tgs = tg.map(r => ({ ...r, a: parseText(r.txt) || JSON.parse(r.auto) }));
   for (const sp of sheet) {
