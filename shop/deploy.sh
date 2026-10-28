@@ -9,7 +9,7 @@ echo "subdomain=$SUB"
 $W d1 create hhshop 2>&1 | tail -2
 DBID=$($W d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="hhshop"][0])')
 echo "db=$DBID"
-mk(){ printf 'name = "hh-shop"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\nrules = [{ type = "Text", globs = ["**/*.html"], fallthrough = true }]\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "hhshop"\ndatabase_id = "%s"\n[triggers]\ncrons = ["*/3 * * * *"]\n%s' "$DBID" "$1" > wrangler.toml; }
+mk(){ printf 'name = "hh-shop"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\nrules = [{ type = "Text", globs = ["**/*.html", "host/index.php", "host/htaccess.txt"], fallthrough = true }]\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "hhshop"\ndatabase_id = "%s"\n[triggers]\ncrons = ["*/3 * * * *"]\n%s' "$DBID" "$1" > wrangler.toml; }
 $W d1 execute hhshop --remote --file schema.sql -y 2>&1 | tail -3
 if [ ! -f ../out/seeded ]; then
   N=$($W d1 execute hhshop --remote --json --command "select count(*) n from products" 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)[0]["results"][0]["n"])')

@@ -1,6 +1,8 @@
 // متجر مجمع H&H — خادم Cloudflare (واجهة + مزامنة قناة تلگرام + صور دائمية + لوحة تحكم)
 import APP from './app.html';
 import ADMIN from './admin.html';
+import HOST_PHP from './host/index.php';
+import HOST_HT from './host/htaccess.txt';
 
 const CH = 'husseinhandh';
 const BACKFILL_DAYS = 120;
@@ -16,7 +18,8 @@ export const DEF = {
   notice: '',
   waGroup: 'https://chat.whatsapp.com/FvFJNN4B3DU3r8Zw96uhig',
   waChannel: 'https://whatsapp.com/channel/0029VbCZofYISTkPK9NW1729',
-  goat: 'hh-mobile',
+  hours: 'يومياً من ١٠ الصبح لحد ١١ بالليل',
+  mapQ: 'مطعم الكوخ شارع فلسطين بغداد',
 };
 
 export const CATS = [
@@ -242,9 +245,9 @@ async function drainImgs(env, n) {
   return ok;
 }
 
-async function aiEnrich(env, n) {
+async function aiEnrich(env, n, only) {
   if (!env.AI) return 0;
-  const rows = (await env.DB.prepare("select id,auto,ov from products where ai is null and json_extract(ov,'$.del') is null order by dt desc limit ?").bind(n).all()).results || [];
+  const rows = only ? ((await env.DB.prepare('select id,auto,ov from products where id=?').bind(only).all()).results || []) : ((await env.DB.prepare("select id,auto,ov from products where ai is null and json_extract(ov,'$.del') is null order by dt desc limit ?").bind(n).all()).results || []);
   let ok = 0;
   for (const p of rows) {
     const a = { ...JSON.parse(p.auto), ...JSON.parse(p.ov || '{}') };
@@ -320,12 +323,112 @@ export async function sync(env, opt = {}) {
   for (const l of [cur, old]) if (l.length) { const ids = l.map(x => x.id); made += await rebuild(env, Math.min(...ids), Math.max(...ids)); }
   if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
   if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
+  await syncLogo(env, html, st);
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   await setSetting(env, '_lastSync', now());
+  if (made) { await bump(env); await purgeHost(env); }
+  if (!st._prunedD || st._prunedD !== bgDay()) await pruneStats(env);
   const res = { pages, msgs, made, imgs, ai };
   if (made || imgs || ai) await log(env, 'مزامنة: ' + JSON.stringify(res));
   return res;
+}
+
+// ---------- مساعدات النسخة والكاش ----------
+export const bgDay = (t = now()) => new Date(t + 3 * 3600e3).toISOString().slice(0, 10);
+export const slug = s => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 70);
+let MEMO = null;
+async function getVer(env) { const r = await env.DB.prepare("select v from settings where k='_ver'").first(); return r ? String(r.v) : '0'; }
+async function bump(env) { await env.DB.prepare("insert into settings(k,v) values('_ver','1') on conflict(k) do update set v=cast(v as integer)+1").run(); MEMO = null; }
+async function purgeHost(env, path) {
+  try {
+    const r = await env.DB.prepare("select v from settings where k='siteHost'").first();
+    const host = r ? JSON.parse(r.v) : 'handhst.com';
+    await fetch(`https://${host}/__hh/purge` + (path ? '?p=' + encodeURIComponent(path) : ''), { headers: { 'user-agent': 'hh-worker' }, signal: AbortSignal.timeout(9000) });
+  } catch { }
+}
+async function syncLogo(env, html, st) {
+  // أعلى دقة متوفرة لصورة القناة: صفحة القناة الرئيسية تعطي الصورة الكبيرة، وصفحة المعاينة صورة أصغر
+  if (st._logo2At && now() - st._logo2At < 864e5) return;
+  try {
+    const cands = [];
+    try {
+      const r0 = await fetch(`https://t.me/${CH}`, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' } });
+      const h0 = r0.ok ? await r0.text() : '';
+      for (const re of [/<img class="tgme_page_photo_image" src="([^"]+)"/, /<meta property="og:image" content="([^"]+)"/]) { const m = h0.match(re); if (m) cands.push(m[1]); }
+    } catch { }
+    for (const re of [/tgme_page_photo_image[^>]*>\s*<img src="([^"]+)"/, /<meta property="og:image" content="([^"]+)"/]) { const m = html.match(re); if (m) cands.push(m[1]); }
+    let best = null;
+    for (const u of cands) {
+      try {
+        const r = await fetch(unesc(u));
+        if (!r.ok || !/image/.test(r.headers.get('content-type') || '')) continue;
+        const buf = await r.arrayBuffer();
+        if (buf.byteLength < 300 || buf.byteLength > 1.9e6) continue;
+        if (!best || buf.byteLength > best.buf.byteLength) best = { buf, ct: r.headers.get('content-type') };
+      } catch { }
+    }
+    if (!best) return;
+    await env.DB.prepare('insert into imgs(k,ct,data,at) values(?,?,?,?) on conflict(k) do update set data=excluded.data, ct=excluded.ct, at=excluded.at').bind('logo', best.ct, best.buf, now()).run();
+    await setSetting(env, '_logoAt', now()); await setSetting(env, '_logo2At', now());
+    await bump(env);
+  } catch { }
+}
+
+// ---------- الإحصائيات (بدون كوكيز، بدون أي خدمة خارجية) ----------
+const CHN = ['wa1', 'wa2', 'tg', 'ig', 'fb', 'tt', 'tgc', 'wac', 'wag', 'map', 'dir', 'call', 'share', 'vtg', 'vig', 'vtt', 'vfb'];
+const normQ = s => digits(s).toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ًٌٍَُِّْـ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+function srcOf(r) {
+  r = String(r || '').toLowerCase();
+  if (!r) return 'direct';
+  for (const [k, re] of [['google', /google\./], ['bing', /bing\.|msn\./], ['instagram', /instagram|ig\.me/], ['facebook', /facebook|fb\.|m\.me|messenger/], ['tiktok', /tiktok/], ['telegram', /t\.me|telegram/], ['whatsapp', /whatsapp|wa\.me/], ['youtube', /youtube|youtu\.be/], ['self', /handhst|hh-shop/]]) if (re.test(r)) return k;
+  return 'other';
+}
+async function track(req, env) {
+  const ua = req.headers.get('user-agent') || '';
+  if (!ua || /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|curl|python|headless|lighthouse|wget|go-http/i.test(ua)) return;
+  let b; try { b = JSON.parse(await req.text()); } catch { return; }
+  const v = String(b.v || '').replace(/[^\w-]/g, '').slice(0, 40); if (v.length < 6) return;
+  const d = bgDay(), ops = [];
+  const inc = (k, n = 1) => ops.push(env.DB.prepare('insert into st_day(d,k,n) values(?,?,?) on conflict(d,k) do update set n=n+excluded.n').bind(d, k, n));
+  const pid = String(b.p || '').replace(/[^\w]/g, '').slice(0, 24);
+  const prod = col => ops.push(env.DB.prepare(`insert into st_prod(d,p,${col}) values(?,?,1) on conflict(d,p) do update set ${col}=${col}+1`).bind(d, pid));
+  const c = CHN.includes(b.c) ? b.c : '';
+  if (b.e === 'pv') {
+    inc('pv');
+    const r = await env.DB.prepare('insert or ignore into st_vis(d,v) values(?,?)').bind(d, v).run();
+    if (r.meta && r.meta.changes) { inc('uv'); inc('src:' + srcOf(b.r)); inc('dev:' + (b.m ? 'm' : 'd')); if (b.nw) inc('new'); }
+  } else if (b.e === 'v' && pid) prod('v');
+  else if (b.e === 'o' && pid) { prod('o'); inc('o'); if (c) inc('o:' + c); }
+  else if (b.e === 'q') { const q = normQ(b.q); if (q.length >= 2) ops.push(env.DB.prepare('insert into st_q(d,q,n,z) values(?,?,1,?) on conflict(d,q) do update set n=n+1, z=excluded.z').bind(d, q, b.n ? 0 : 1)); }
+  else if (b.e === 's' && c) inc('s:' + c);
+  if (ops.length) await env.DB.batch(ops);
+}
+async function pruneStats(env) {
+  try {
+    await env.DB.batch([
+      env.DB.prepare('delete from st_vis where d < ?').bind(bgDay(now() - 40 * 864e5)),
+      env.DB.prepare('delete from st_q where d < ?').bind(bgDay(now() - 120 * 864e5)),
+      env.DB.prepare('delete from st_prod where d < ?').bind(bgDay(now() - 400 * 864e5)),
+    ]);
+    await setSetting(env, '_prunedD', bgDay());
+  } catch { }
+}
+async function topIds(env, days = 14) {
+  try {
+    const r = await env.DB.prepare('select p, sum(o)*6+sum(v) s from st_prod where d>=? group by p having s>=3 order by s desc limit 40').bind(bgDay(now() - days * 864e5)).all();
+    return (r.results || []).map(x => x.p);
+  } catch { return []; }
+}
+async function statsFor(env, days) {
+  const since = bgDay(now() - (days - 1) * 864e5);
+  const q = (sql, ...a) => env.DB.prepare(sql).bind(...a).all().then(r => r.results || []).catch(() => []);
+  const [day, prod, srch] = await Promise.all([
+    q('select d,k,n from st_day where d>=? order by d', since),
+    q('select p, sum(v) v, sum(o) o from st_prod where d>=? group by p order by o desc, v desc limit 300', since),
+    q('select q, sum(n) n, max(z) z from st_q where d>=? group by q order by n desc limit 40', since),
+  ]);
+  return { since, days, today: bgDay(), day, prod, srch };
 }
 
 // ---------- الإدارة ----------
@@ -338,170 +441,268 @@ async function authed(req, env) {
   return r && r.exp > now();
 }
 
-function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', pin: p.pin ? 1 : 0 }; }
+function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', back: p.back || '', pin: p.pin ? 1 : 0 }; }
 
 async function allProducts(env, admin) {
   const rows = (await env.DB.prepare('select * from products').all()).results || [];
-  const have = new Set(((await env.DB.prepare('select k from imgs').all()).results || []).map(x => x.k));
-  let list = rows.map(eff).filter(p => admin || (!p.del && !p.hidden && !p.dup));
-  for (const p of list) { p.ready = p.imgs.filter(k => have.has(k)).length; }
+  let list = rows.map(eff).filter(p => !p.purge && (admin || (!p.del && !p.hidden && !p.dup)));
+  if (admin) { const have = new Set(((await env.DB.prepare('select k from imgs').all()).results || []).map(x => x.k)); for (const p of list) p.ready = p.imgs.filter(k => have.has(k)).length; }
   if (!admin) list = list.filter(p => p.price > 0 && p.imgs.length);
   list.sort((a, b) => (b.pin || 0) - (a.pin || 0) || String(b.dt || '').localeCompare(String(a.dt || '')));
   return list;
 }
 
+function pubSettings(s) {
+  const o = {}; for (const k in s) if (!k.startsWith('_') && k !== 'pw' && k !== 'salt' && k !== 'gsv' && k !== 'goat') o[k] = s[k];
+  o.logo = s.logoU || (s._logoAt ? 'logo' : '');
+  return o;
+}
 async function publicData(env) {
+  const ver = await getVer(env), b = Math.floor(now() / 600000);
+  if (MEMO && MEMO.ver === ver && MEMO.b === b) return MEMO.d;
   const s = await getSettings(env);
   const list = await allProducts(env, false);
+  const ids = new Set(list.map(p => p.id));
+  const top = (await topIds(env)).filter(id => ids.has(id)).slice(0, 12);
   const cats = (s.cats || CATS.map(c => ({ n: c[0], i: c[1] })));
-  const pubSet = {}; for (const k in s) if (!k.startsWith('_') && k !== 'pw' && k !== 'salt') pubSet[k] = s[k];
-  return { s: pubSet, cats, p: list.map(pub), t: now() };
+  const d = { s: pubSettings(s), cats, p: list.map(pub), top, t: now(), ver };
+  MEMO = { ver, b, d };
+  return d;
 }
 
 // ---------- صفحات ----------
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-async function page(env, url, prod) {
-  const origin = ORIGIN || url.origin;
-  let title = 'مجمع H&H | اكسسوارات موبايل في بغداد — شواحن، سماعات، باوربانك، كفرات', desc = 'متجر مجمع H&H في بغداد شارع فلسطين: اكسسوارات الهواتف والتقنية الأصلية بالأسعار والمواصفات والضمان — شواحن، سماعات، باوربانك، كفرات، ساعات ذكية وعروض يومية. توصيل لكل العراق.', img = origin + '/icon.png';
-  let ld = '';
+const js = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028|\u2029/g, '');
+export const prodPath = p => '/p/' + p.id + (slug(p.name) ? '/' + slug(p.name) : '');
+async function page(env, url, O, prod) {
+  const origin = O || url.origin;
+  const D = await publicData(env), st = D.s;
+  const path = decodeURIComponent(url.pathname);
+  const fmt = n => (+n || 0).toLocaleString('en');
+  let title = 'مجمع H&H | اكسسوارات موبايل في بغداد — شواحن، سماعات، باوربانك، كفرات', desc = 'مجمع H&H في بغداد شارع فلسطين: اكسسوارات الهواتف والتقنية الأصلية بالأسعار والمواصفات والضمان — شواحن، سماعات، باوربانك، كفرات، ساعات ذكية وعروض يومية. توصيل لكل العراق.';
+  let img = st.logo ? origin + '/img/' + st.logo : origin + '/icon.png', canon = origin + '/', ld = [], ns = '';
+  const crumbs = [['الرئيسية', origin + '/']];
   if (prod) {
-    title = prod.name + ' — مجمع H&H';
-    desc = `${prod.name} بسعر ${(prod.price || 0).toLocaleString('en')} دينار. ${String(prod.desc || '').replace(/\s+/g, ' ').slice(0, 140)}`;
+    title = `${prod.name} بسعر ${fmt(prod.price)} دينار — مجمع H&H`;
+    desc = `${prod.name} بسعر ${fmt(prod.price)} دينار${prod.warranty === 'سنة' ? '، ضمان سنة' : ''}. ${String(prod.desc || (prod.ai && prod.ai.desc) || '').replace(/\s+/g, ' ').slice(0, 120)} توصيل لكل العراق.`;
     if (prod.imgs[0]) img = origin + '/img/' + prod.imgs[0];
-    ld = `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: prod.name, image: prod.imgs.map(k => origin + '/img/' + k), description: prod.desc || prod.name, brand: prod.brand || 'H&H', offers: { '@type': 'Offer', priceCurrency: 'IQD', price: prod.price, availability: prod.avail ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', url: origin + '/p/' + prod.id } }).replace(/</g, '\\u003c')}</script>`;
+    canon = origin + encodeURI(prodPath(prod));
+    crumbs.push([prod.cat, origin + '/c/' + encodeURIComponent(prod.cat)], [prod.name, canon]);
+    const specs = (prod.specs && prod.specs.length ? prod.specs : (prod.ai && prod.ai.specs) || []);
+    ld.push({ '@context': 'https://schema.org', '@type': 'Product', name: prod.name, sku: prod.id, image: prod.imgs.slice(0, 6).map(k => origin + '/img/' + k), description: prod.desc || (prod.ai && prod.ai.desc) || prod.name, brand: { '@type': 'Brand', name: prod.brand || 'H&H' }, category: prod.cat, additionalProperty: specs.slice(0, 8).map(x => ({ '@type': 'PropertyValue', name: x[0], value: x[1] })), offers: { '@type': 'Offer', priceCurrency: 'IQD', price: prod.price, itemCondition: 'https://schema.org/NewCondition', availability: prod.avail ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', url: canon, seller: { '@type': 'Organization', name: 'مجمع H&H' } } });
+    ns = `<h1>${esc(prod.name)}</h1><p>${fmt(prod.price)} دينار</p><p>${esc(prod.desc || '')}</p>${prod.imgs.slice(0, 3).map(k => `<img src="${origin}/img/${k}" alt="${esc(prod.name)}">`).join('')}`;
+  } else if (path.startsWith('/c/') && path.length > 3) {
+    const c = path.slice(3), n = c === 'new' ? 'وصل حديثاً' : c === 'offers' ? 'العروض' : c === 'top' ? 'الأكثر طلباً' : c;
+    const l = c === 'new' ? D.p : c === 'offers' ? D.p.filter(p => p.offer) : c === 'top' ? D.top.map(id => D.p.find(p => p.id === id)).filter(Boolean) : D.p.filter(p => p.cat === c);
+    title = `${n} — أسعار ${n} في بغداد | مجمع H&H`; desc = `تسوق ${n} من مجمع H&H في بغداد: ${l.length} منتج بأسعار واضحة ومواصفات وضمان. ${l.slice(0, 4).map(p => p.name).join('، ')}. توصيل لكل العراق.`.slice(0, 300);
+    canon = origin + '/c/' + encodeURIComponent(c); crumbs.push([n, canon]);
+    ns = `<h1>${esc(n)}</h1><ul>${l.slice(0, 60).map(x => `<li><a href="${esc(encodeURI(prodPath(x)))}">${esc(x.name)}</a> — ${fmt(x.price)} دينار</li>`).join('')}</ul>`;
+  } else if (path === '/contact') {
+    title = 'تواصل ويانا وموقعنا على الخريطة — مجمع H&H بغداد'; desc = `${st.address}. ${st.hours || ''}. راسلنا على واتساب أو تليجرام أو انستغرام.`; canon = origin + '/contact'; crumbs.push(['تواصل', canon]);
+  } else if (path === '/c' || path === '/c/') {
+    title = 'كل الأقسام — مجمع H&H'; canon = origin + '/c'; crumbs.push(['الأقسام', canon]);
+  } else {
+    ns = `<h1>مجمع H&H — اكسسوارات الهواتف في بغداد</h1><ul>${D.p.slice(0, 30).map(x => `<li><a href="${esc(encodeURI(prodPath(x)))}">${esc(x.name)}</a> — ${fmt(x.price)} دينار</li>`).join('')}</ul>`;
   }
-  const head = `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(img)}"><meta property="og:type" content="${prod ? 'product' : 'website'}"><meta property="og:url" content="${esc(url.href)}"><link rel="canonical" href="${esc(origin + url.pathname)}"><meta name="twitter:card" content="summary_large_image">${ld}`;
-  const inj = ORIGIN ? `<script>window.HHAPI=${JSON.stringify(url.origin)}</script>` : '';
-  const st = await getSettings(env);
-  let gsv = st.gsv ? `<meta name="google-site-verification" content="${esc(st.gsv)}">` : '';
-  // نسخة نصية للمحركات (تظهر بس لو JavaScript مطفي)
-  let ns = '';
-  if (prod) ns = `<noscript><h1>${esc(prod.name)}</h1><p>${(prod.price || 0).toLocaleString('en')} دينار</p><p>${esc(prod.desc || '')}</p>${(prod.imgs || []).slice(0, 3).map(k => `<img src="${origin}/img/${k}" alt="${esc(prod.name)}">`).join('')}</noscript>`;
-  else if (url.pathname === '/' || url.pathname.startsWith('/c')) { const l = await allProducts(env, false); ns = `<noscript><h1>مجمع H&H — اكسسوارات الهواتف في بغداد</h1><ul>${l.map(x => `<li><a href="/p/${x.id}">${esc(x.name)}</a> — ${(x.price || 0).toLocaleString('en')} دينار</li>`).join('')}</ul></noscript>`; }
-  const local = `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Store', name: 'مجمع H&H', url: origin + '/', image: origin + '/icon.png', telephone: '+' + (st.wa1 || DEF.wa1), address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`] })}</script>`;
-  return new Response(APP.replace('<!--HEAD-->', () => head + gsv + local + inj).replace('<main id="view" class="wrap" tabindex="-1"></main>', () => `<main id="view" class="wrap" tabindex="-1">${ns}</main>`), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
+  const geo = st.mapLat && st.mapLng ? { geo: { '@type': 'GeoCoordinates', latitude: +st.mapLat, longitude: +st.mapLng } } : {};
+  ld.push({ '@context': 'https://schema.org', '@type': 'ElectronicsStore', '@id': origin + '/#store', name: 'مجمع H&H', alternateName: 'H&H Mobile', url: origin + '/', logo: img, image: img, telephone: '+' + (st.wa1 || DEF.wa1), priceRange: 'IQD', currenciesAccepted: 'IQD', address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, ...geo, sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`, `https://www.facebook.com/${st.fb || DEF.fb}`] });
+  if (crumbs.length > 1) ld.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) });
+  if (!prod && path === '/') ld.push({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'مجمع H&H', url: origin + '/', inLanguage: 'ar', potentialAction: { '@type': 'SearchAction', target: origin + '/?q={q}', 'query-input': 'required name=q' } });
+  const s0 = await getSettings(env);
+  const api = O ? url.origin : '';
+  const head = `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(canon)}"><meta property="og:site_name" content="مجمع H&amp;H"><meta property="og:locale" content="ar_IQ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(img)}"><meta property="og:type" content="${prod ? 'product' : 'website'}"><meta property="og:url" content="${esc(canon)}"><meta name="twitter:card" content="summary_large_image">`
+    + (s0.gsv ? `<meta name="google-site-verification" content="${esc(s0.gsv)}">` : '') + (s0.bsv ? `<meta name="msvalidate.01" content="${esc(s0.bsv)}">` : '')
+    + (api ? `<link rel="preconnect" href="${api}"><script>window.HHAPI=${js(api)}</script>` : '')
+    + (prod && prod.imgs[0] ? `<link rel="preload" as="image" href="${api}/img/${prod.imgs[0]}" fetchpriority="high">` : '')
+    + ld.map(x => `<script type="application/ld+json">${js(x)}</script>`).join('')
+    + `<script id="hhd" type="application/json">${js(D)}</script>` + (prod ? `<script id="hhp" type="application/json">${js(prod)}</script>` : '');
+  const html = APP.replace('<!--HEAD-->', () => head).replace('<main id="view" class="wrap" tabindex="-1"></main>', () => `<main id="view" class="wrap" tabindex="-1"><noscript>${ns}</noscript></main>`);
+  return new Response(html, { status: prod === undefined || prod ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=30', 'x-hh-ver': D.ver } });
 }
 
-const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#161A20"/><rect x="40" y="40" width="432" height="432" rx="84" fill="none" stroke="#C9A57C" stroke-opacity=".35" stroke-width="4"/><text x="256" y="318" font-family="Georgia,serif" font-size="190" fill="#D9B98F" text-anchor="middle" font-weight="700">H&amp;H</text></svg>`;
+const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A45"/><stop offset="1" stop-color="#FF4D6D"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="#141B33"/><text x="256" y="318" font-family="Arial,sans-serif" font-size="176" fill="url(#g)" text-anchor="middle" font-weight="800">H&amp;H</text></svg>`;
+let HOSTV = '';
 
-let ORIGIN = '';
+async function aiOne(env, id) { await env.DB.prepare('update products set ai=null where id=?').bind(id).run(); return aiEnrichIds(env, [id]); }
+async function aiEnrichIds(env, ids) {
+  const rows = (await env.DB.prepare(`select id from products where id in (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results || [];
+  if (!rows.length || !env.AI) return 0;
+  let n = 0; for (const r of rows) n += await aiEnrich(env, 1, r.id); return n;
+}
+
+async function admin(req, env, op, O) {
+  if (op === 'login') {
+    const ip = req.headers.get('x-hh-ip') || req.headers.get('cf-connecting-ip') || '';
+    const s = await getSettings(env);
+    const fails = (s._fails || {})[ip] || [];
+    const recent = fails.filter(t => now() - t < 15 * 60000);
+    if (recent.length >= 8) return J({ err: 'wait' }, 429);
+    const { pw } = await req.json();
+    if (!s.salt || !s.pw || await pwHash(String(pw || ''), s.salt) !== s.pw) {
+      await setSetting(env, '_fails', { ...(s._fails || {}), [ip]: [...recent, now()] });
+      return J({ err: 'bad' }, 401);
+    }
+    const tok = crypto.randomUUID() + crypto.randomUUID();
+    await env.DB.prepare('insert into sess(tok,exp) values(?,?)').bind(tok, now() + 60 * 864e5).run();
+    await env.DB.prepare('delete from sess where exp < ?').bind(now()).run();
+    return J({ ok: 1, tok });
+  }
+  if (!(await authed(req, env))) return J({ err: 'auth' }, 401);
+  const changed = async (path) => { await bump(env); await purgeHost(env, path); };
+  if (op === 'state') {
+    const s = await getSettings(env);
+    const list = await allProducts(env, true);
+    const q = await env.DB.prepare('select count(*) n from imgq where tries < 6').first();
+    const lg = (await env.DB.prepare('select at,msg from log order by at desc limit 15').all()).results;
+    const st = {}; for (const r of ((await env.DB.prepare('select p, sum(v) v, sum(o) o from st_prod where d>=? group by p').bind(bgDay(now() - 29 * 864e5)).all().catch(() => ({}))).results || [])) st[r.p] = [r.v, r.o];
+    const ps = pubSettings(s); for (const k of ['gsv', 'bsv']) ps[k] = s[k] || '';
+    ps._lastSync = s._lastSync;
+    return J({ s: ps, cats: s.cats || CATS.map(c => ({ n: c[0], i: c[1] })), p: list, st, queue: q.n, log: lg, ai: !!env.AI, today: bgDay() });
+  }
+  if (op === 'save') {
+    const b = await req.json();
+    const row = b.id ? await env.DB.prepare('select * from products where id=?').bind(b.id).first() : null;
+    const id = b.id || ('m' + now().toString(36));
+    const old = row ? JSON.parse(row.ov || '{}') : {};
+    const ov = { ...old, ...b.ov };
+    if (row && b.ov && b.ov.avail === 1 && !eff(row).avail) ov.back = new Date().toISOString();
+    for (const k in ov) if (ov[k] === null) delete ov[k];
+    if (row) await env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(ov), id).run();
+    else await env.DB.prepare('insert into products(id,src,auto,ov,media,dt,at) values(?,?,?,?,?,?,?)').bind(id, 'admin', '{}', JSON.stringify(ov), '[]', new Date().toISOString(), now()).run();
+    if (Array.isArray(old.imgs) && Array.isArray(ov.imgs)) await dropOrphans(env, old.imgs.filter(k => !ov.imgs.includes(k)));
+    await changed('/p/' + id);
+    return J({ ok: 1, id });
+  }
+  if (op === 'bulk') {
+    const { ids, ov } = await req.json();
+    const rows = (await env.DB.prepare(`select * from products where id in (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results || [];
+    const ops = rows.map(r => { const o = { ...JSON.parse(r.ov || '{}'), ...ov }; if (ov.avail === 1 && !eff(r).avail) o.back = new Date().toISOString(); for (const k in o) if (o[k] === null) delete o[k]; return env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(o), r.id); });
+    for (let i = 0; i < ops.length; i += 50) await env.DB.batch(ops.slice(i, i + 50));
+    await changed();
+    return J({ ok: 1, n: rows.length });
+  }
+  if (op === 'purge') {
+    const { ids } = await req.json();
+    for (const id of ids) {
+      const r = await env.DB.prepare('select src,ov,media from products where id=?').bind(id).first(); if (!r) continue;
+      const o = JSON.parse(r.ov || '{}');
+      if (r.src === 'admin') { await env.DB.prepare('delete from products where id=?').bind(id).run(); await dropOrphans(env, o.imgs || []); }
+      else { await env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify({ ...o, del: 1, purge: 1 }), id).run(); }
+    }
+    await changed();
+    return J({ ok: 1 });
+  }
+  if (op === 'reset') {
+    const { id } = await req.json();
+    const r = await env.DB.prepare('select ov from products where id=?').bind(id).first();
+    if (r) { const o = JSON.parse(r.ov || '{}'); await env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(o.del ? { del: 1 } : {}), id).run(); await dropOrphans(env, o.imgs || []); }
+    await changed('/p/' + id);
+    return J({ ok: 1 });
+  }
+  if (op === 'stats') { const { days } = await req.json(); return J(await statsFor(env, Math.min(400, Math.max(1, +days || 7)))); }
+  if (op === 'upload') {
+    const ct = req.headers.get('content-type') || 'image/jpeg';
+    if (!/^image\//.test(ct)) return J({ err: 'type' }, 400);
+    const buf = await req.arrayBuffer();
+    if (buf.byteLength > 1.9e6) return J({ err: 'big' }, 413);
+    const k = 'u' + now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await env.DB.prepare('insert into imgs(k,ct,data,at) values(?,?,?,?)').bind(k, ct, buf, now()).run();
+    return J({ ok: 1, k });
+  }
+  if (op === 'settings') {
+    const b = await req.json();
+    const s0 = await getSettings(env);
+    for (const k in b) if (!k.startsWith('_') && k !== 'pw' && k !== 'salt') await setSetting(env, k, b[k]);
+    if ('logoU' in b && s0.logoU && s0.logoU !== b.logoU) await dropOrphans(env, [s0.logoU]);
+    await changed();
+    return J({ ok: 1 });
+  }
+  if (op === 'password') {
+    const { pw } = await req.json();
+    if (String(pw || '').length < 8) return J({ err: 'short' }, 400);
+    const salt = crypto.randomUUID();
+    await setSetting(env, 'salt', salt); await setSetting(env, 'pw', await pwHash(pw, salt));
+    await env.DB.prepare('delete from sess').run();
+    return J({ ok: 1 });
+  }
+  if (op === 'sync') { const r = await sync(env, { imgs: 20, ai: 2 }); await changed(); return J({ ok: 1, ...r }); }
+  if (op === 'ai') { const { id } = await req.json(); const n = await aiOne(env, id); await changed('/p/' + id); return J({ ok: 1, n }); }
+  if (op === 'logout') { await env.DB.prepare('delete from sess where tok=?').bind((req.headers.get('authorization') || '').slice(7)).run(); return J({ ok: 1 }); }
+  return J({ err: 'op' }, 404);
+}
+// يمسح الصور المرفوعة من اللوحة إذا ما بقى منتج يستعملها
+async function dropOrphans(env, keys) {
+  for (const k of keys) {
+    if (!/^u[a-z0-9]+$/.test(k)) continue;
+    const used = await env.DB.prepare("select count(*) n from products where ov like ?").bind('%"' + k + '"%').first();
+    const lg = await env.DB.prepare("select count(*) n from settings where k='logoU' and v=?").bind(JSON.stringify(k)).first();
+    if (!used.n && !lg.n) await env.DB.prepare('delete from imgs where k=?').bind(k).run();
+  }
+}
+
 export default {
   async scheduled(ev, env, ctx) { ctx.waitUntil(sync(env).catch(e => log(env, 'خطأ مزامنة: ' + e.message))); },
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const p = url.pathname;
     const xh = req.headers.get('x-hh-host');
-    ORIGIN = xh && /^[a-z0-9.-]+$/i.test(xh) ? 'https://' + xh : '';
+    const O = xh && /^[a-z0-9.-]+$/i.test(xh) ? 'https://' + xh : '';
     try {
       if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+      if (p === '/api/ev') { if (req.method === 'POST') await track(req, env).catch(() => { }); return new Response(null, { status: 204, headers: CORS }); }
+      if (p === '/api/v') return J({ v: await getVer(env) }, 200, { 'cache-control': 'no-store' });
       if (p === '/api/data') {
-        const cache = caches.default, key = new Request(url.origin + '/api/data?v=' + Math.floor(now() / 60000));
-        let r = await cache.match(key);
-        if (!r) { r = J(await publicData(env), 200, { 'cache-control': 'public, max-age=60' }); ctx.waitUntil(cache.put(key, r.clone())); }
-        return r;
+        const D = await publicData(env);
+        return J(D, 200, { 'cache-control': 'public, max-age=30' });
       }
       if (p.startsWith('/api/p/')) {
-        const row = await env.DB.prepare('select * from products where id=?').bind(decodeURIComponent(p.slice(7))).first();
+        const row = await env.DB.prepare('select * from products where id=?').bind(decodeURIComponent(p.slice(7)).split('/')[0]).first();
         if (!row) return J({ err: 'missing' }, 404);
-        const e = eff(row); if (e.del) return J({ err: 'missing' }, 404);
-        return J(e, 200, { 'cache-control': 'public, max-age=60' });
+        const e = eff(row); if (e.del || e.purge || e.hidden) return J({ err: 'missing' }, 404);
+        return J(e, 200, { 'cache-control': 'public, max-age=30' });
       }
       if (p.startsWith('/img/')) {
         const k = p.slice(5).replace(/\W/g, '');
-        const cache = caches.default, key = new Request(url.origin + '/img/' + k);
+        const cache = caches.default, key = new Request(url.origin + '/img3/' + k + (k === 'logo' ? '?' + Math.floor(now() / 864e5) : ''));
         let r = await cache.match(key); if (r) return r;
         let row = await env.DB.prepare('select ct,data from imgs where k=?').bind(k).first();
         let data, ct;
         if (row) { data = row.data; ct = row.ct; }
         else if (/^[tv]\d+$/.test(k)) { const q = await env.DB.prepare('select url from imgq where k=?').bind(k).first(); const f = await fetchImg(env, k, q && q.url); if (f) { data = f.buf; ct = f.ct; } }
-        if (!data) return new Response(ICON, { status: 404, headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-store' } });
-        r = new Response(data instanceof ArrayBuffer ? data : new Uint8Array(data), { headers: { 'content-type': ct, 'cache-control': 'public, max-age=31536000, immutable' } });
+        if (!data) return new Response(ICON, { status: 404, headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
+        r = new Response(data instanceof ArrayBuffer ? data : new Uint8Array(data), { headers: { 'content-type': ct, 'cache-control': k === 'logo' ? 'public, max-age=86400' : 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*', 'timing-allow-origin': '*' } });
         ctx.waitUntil(cache.put(key, r.clone()));
         return r;
       }
+      if (p.startsWith('/__hh/')) return new Response(null, { status: 204 });
+      if (p === '/host/v' || p === '/host/index.php' || p === '/host/htaccess') {
+        if (!HOSTV) HOSTV = (await sha(HOST_PHP + '\n' + HOST_HT)).slice(0, 16);
+        return new Response(p === '/host/v' ? HOSTV : p === '/host/htaccess' ? HOST_HT : HOST_PHP, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-hh-hostv': HOSTV } });
+      }
       if (p === '/' + INDEXNOW_KEY + '.txt') return new Response(INDEXNOW_KEY, { headers: { 'content-type': 'text/plain' } });
-      if (p === '/icon.svg' || p === '/icon.png' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
-      if (p === '/manifest.webmanifest') return J({ name: 'مجمع H&H', short_name: 'H&H', start_url: '/', display: 'standalone', background_color: '#13161B', theme_color: '#13161B', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }] }, 200, { 'cache-control': 'public, max-age=86400' });
-      if (p === '/robots.txt') return new Response(`User-agent: *\nDisallow: /admin\nSitemap: ${ORIGIN || url.origin}/sitemap.xml\n`);
-      if (p === '/sitemap.xml') { const l = await allProducts(env, false); return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${ORIGIN || url.origin}/</loc></url>${l.map(x => `<url><loc>${ORIGIN || url.origin}/p/${x.id}</loc></url>`).join('')}</urlset>`, { headers: { 'content-type': 'application/xml' } }); }
-      if (p === '/admin' || p === '/admin/') return new Response(ORIGIN ? ADMIN.replace('</head>', () => `<script>window.HHAPI=${JSON.stringify(url.origin)}</script></head>`) : ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
-
+      if (p === '/icon.svg' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
+      if (p === '/icon.png') { const s = await getSettings(env); const k = s.logoU || (s._logoAt ? 'logo' : ''); if (k) return Response.redirect(url.origin + '/img/' + k, 302); return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } }); }
+      if (p === '/manifest.webmanifest') { const s = await getSettings(env); const lk = s.logoU || (s._logoAt ? 'logo' : ''); return J({ name: 'مجمع H&H', short_name: 'H&H', start_url: '/', display: 'standalone', background_color: '#141B33', theme_color: '#141B33', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }].concat(lk ? [{ src: (O ? url.origin : '') + '/img/' + lk, sizes: '512x512', type: 'image/jpeg' }] : []) }, 200, { 'cache-control': 'public, max-age=86400' }); }
+      if (p === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: ${O || url.origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+      if (p === '/sitemap.xml') {
+        const D = await publicData(env), base = O || url.origin;
+        const u = (loc, lm, imgs = [], pr = '0.7') => `<url><loc>${esc(loc)}</loc>${lm ? `<lastmod>${lm.slice(0, 10)}</lastmod>` : ''}<priority>${pr}</priority>${imgs.map(k => `<image:image><image:loc>${esc(base + '/img/' + k)}</image:loc></image:image>`).join('')}</url>`;
+        const cats = [...new Set(D.p.map(x => x.cat))];
+        const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${u(base + '/', D.p[0] && D.p[0].dt, [], '1.0')}${u(base + '/c', '', [], '0.8')}${u(base + '/c/offers', '', [], '0.8')}${u(base + '/contact', '', [], '0.6')}${cats.map(c => u(base + '/c/' + encodeURIComponent(c), '', [], '0.8')).join('')}${D.p.map(x => u(base + encodeURI(prodPath(x)), x.dt, x.img ? [x.img] : [])).join('')}</urlset>`;
+        return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=600' } });
+      }
+      if (p === '/admin' || p === '/admin/') return new Response(O ? ADMIN.replace('</head>', () => `<script>window.HHAPI=${js(url.origin)}</script></head>`) : ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
       if (p.startsWith('/api/admin/')) {
-        const op = p.slice(11);
         if (req.method !== 'POST') return J({ err: 'method' }, 405);
-        if (op === 'login') {
-          const ip = req.headers.get('x-hh-ip') || req.headers.get('cf-connecting-ip') || '';
-          const s = await getSettings(env);
-          const fails = (s._fails || {})[ip] || [];
-          const recent = fails.filter(t => now() - t < 15 * 60000);
-          if (recent.length >= 8) return J({ err: 'wait' }, 429);
-          const { pw } = await req.json();
-          if (!s.salt || !s.pw || await pwHash(String(pw || ''), s.salt) !== s.pw) {
-            await setSetting(env, '_fails', { ...(s._fails || {}), [ip]: [...recent, now()] });
-            return J({ err: 'bad' }, 401);
-          }
-          const tok = crypto.randomUUID() + crypto.randomUUID();
-          await env.DB.prepare('insert into sess(tok,exp) values(?,?)').bind(tok, now() + 30 * 864e5).run();
-          await env.DB.prepare('delete from sess where exp < ?').bind(now()).run();
-          return J({ ok: 1, tok });
-        }
-        if (!(await authed(req, env))) return J({ err: 'auth' }, 401);
-        if (op === 'state') {
-          const s = await getSettings(env);
-          const list = await allProducts(env, true);
-          const q = await env.DB.prepare('select count(*) n from imgq where tries < 6').first();
-          const lg = (await env.DB.prepare('select at,msg from log order by at desc limit 15').all()).results;
-          delete s.pw; delete s.salt; delete s._fails;
-          return J({ s, cats: s.cats || CATS.map(c => ({ n: c[0], i: c[1] })), p: list, queue: q.n, log: lg, ai: !!env.AI });
-        }
-        if (op === 'save') {
-          const b = await req.json();
-          const row = b.id ? await env.DB.prepare('select ov from products where id=?').bind(b.id).first() : null;
-          const id = b.id || ('m' + now().toString(36));
-          const ov = { ...(row ? JSON.parse(row.ov || '{}') : {}), ...b.ov };
-          for (const k in ov) if (ov[k] === null) delete ov[k];
-          if (row) await env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(ov), id).run();
-          else await env.DB.prepare('insert into products(id,src,auto,ov,media,dt,at) values(?,?,?,?,?,?,?)').bind(id, 'admin', '{}', JSON.stringify(ov), '[]', new Date().toISOString(), now()).run();
-          return J({ ok: 1, id });
-        }
-        if (op === 'upload') {
-          const ct = req.headers.get('content-type') || 'image/jpeg';
-          const buf = await req.arrayBuffer();
-          if (buf.byteLength > 1.9e6) return J({ err: 'big' }, 413);
-          const k = 'u' + now().toString(36) + Math.random().toString(36).slice(2, 6);
-          await env.DB.prepare('insert into imgs(k,ct,data,at) values(?,?,?,?)').bind(k, ct, buf, now()).run();
-          return J({ ok: 1, k });
-        }
-        if (op === 'settings') {
-          const b = await req.json();
-          for (const k in b) if (!k.startsWith('_') && k !== 'pw' && k !== 'salt') await setSetting(env, k, b[k]);
-          return J({ ok: 1 });
-        }
-        if (op === 'password') {
-          const { pw } = await req.json();
-          if (String(pw || '').length < 8) return J({ err: 'short' }, 400);
-          const salt = crypto.randomUUID();
-          await setSetting(env, 'salt', salt); await setSetting(env, 'pw', await pwHash(pw, salt));
-          await env.DB.prepare('delete from sess').run();
-          return J({ ok: 1 });
-        }
-        if (op === 'sync') { const r = await sync(env, { imgs: 20, ai: 2 }); return J({ ok: 1, ...r }); }
-        if (op === 'ai') {
-          const { id } = await req.json();
-          await env.DB.prepare('update products set ai=null where id=?').bind(id).run();
-          if (env.AI) { const row = await env.DB.prepare('select id from products where id=?').bind(id).first(); if (row) { await env.DB.prepare("update products set dt=dt where id=?").bind(id).run(); } }
-          return J({ ok: 1 });
-        }
-        if (op === 'logout') { await env.DB.prepare('delete from sess where tok=?').bind((req.headers.get('authorization') || '').slice(7)).run(); return J({ ok: 1 }); }
-        return J({ err: 'op' }, 404);
+        return await admin(req, env, p.slice(11), O);
       }
-
       if (p.startsWith('/p/')) {
-        const row = await env.DB.prepare('select * from products where id=?').bind(decodeURIComponent(p.slice(3))).first();
+        const id = decodeURIComponent(p.slice(3)).split('/')[0];
+        const row = await env.DB.prepare('select * from products where id=?').bind(id).first();
         const e = row ? eff(row) : null;
-        return page(env, url, e && !e.del ? e : null);
+        return page(env, url, O, e && !e.del && !e.purge && !e.hidden ? e : null);
       }
-      return page(env, url, null);
+      return page(env, url, O, undefined);
     } catch (e) {
       return J({ err: 'server', m: String(e && e.message || e) }, 500);
     }

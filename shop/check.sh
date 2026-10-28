@@ -15,14 +15,18 @@ curl -s https://handhst.com/p/tg28979 | grep -o '<title>[^<]*' | head -1
 echo "http: $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://handhst.com/)"
 for i in 1 2 3; do curl -s -o /dev/null -w "home %{time_total}s\n" https://handhst.com/; done
 echo "img: $(curl -s -o /dev/null -w '%{http_code} %{time_total}s %{content_type}' $D/img/t30448)"
-echo "--- snapshot"
-mkdir -p out/snap
-curl -s "$D/api/data" -o out/snap/data.json
-python3 - <<'P'
-import json,subprocess
-d=json.load(open('out/snap/data.json'))
-ks=[p['img'] for p in d['p'] if p['img']][:40]
-for k in ks: subprocess.run(['curl','-s','-o',f'out/snap/{k}.jpg',f'https://hh-shop.7svyn82yzr.workers.dev/img/{k}'])
-for p in d['p'][:6]: subprocess.run(['curl','-s','-o',f"out/snap/p_{p['id']}.json",f"https://hh-shop.7svyn82yzr.workers.dev/api/p/{p['id']}"])
-P
-ls out/snap | wc -l; du -sh out/snap
+echo "--- new checks"
+curl -s -o /dev/null -w "ev %{http_code}\n" -A "Mozilla/5.0 test" -X POST -d '{"e":"q","v":"checkrun1","q":"check","n":1}' $D/api/ev
+echo "v: $(curl -s $D/api/v)"
+echo "hostv: $(curl -s $D/host/v)"
+curl -s -D - -o /dev/null https://handhst.com/ | grep -i 'etag\|x-hh' | tr -d '\r'
+echo "logo: $(curl -s -o /tmp/lg -w '%{http_code} %{content_type} %{size_download}' $D/img/logo)"; python3 -c "
+import struct;d=open('/tmp/lg','rb').read()
+i=2
+while i<len(d):
+  if d[i]!=0xFF: break
+  m=d[i+1];l=struct.unpack('>H',d[i+2:i+4])[0]
+  if m in (0xC0,0xC2): print('logo size',struct.unpack('>HH',d[i+5:i+9])); break
+  i+=2+l" 2>/dev/null
+curl -s $D/ | grep -o '<title>[^<]*\|hhd' | head -3
+curl -s "$D/sitemap.xml" | grep -o '<loc>' | wc -l
