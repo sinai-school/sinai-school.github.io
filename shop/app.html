@@ -45,8 +45,8 @@ img{display:block;max-width:100%}
 .hero{padding:22px 0 8px}
 .case{position:relative;display:grid;grid-template-columns:1fr;border-radius:28px;background:linear-gradient(180deg,#1C2128,#171B21);border:1px solid var(--line2);overflow:hidden}
 .case:before{content:"";position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 22%,rgba(228,203,166,.16),transparent 70%);pointer-events:none}
-.case .stage{position:relative;aspect-ratio:1/0.82;display:grid;place-items:center;padding:26px 30px 0}
-.case .stage img{width:100%;height:100%;object-fit:contain;border-radius:18px;filter:drop-shadow(0 26px 30px rgba(0,0,0,.45))}
+.case .stage{position:relative;display:block;aspect-ratio:1/0.9;overflow:hidden}
+.case .stage img{position:absolute;inset:22px 22px 14px;width:calc(100% - 44px);height:calc(100% - 36px);object-fit:contain;border-radius:18px;filter:drop-shadow(0 22px 26px rgba(0,0,0,.45))}
 .case .stage:after{content:"";position:absolute;left:18%;right:18%;bottom:6px;height:18px;background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.55),transparent);filter:blur(4px)}
 .case .info{position:relative;padding:20px 22px 22px}
 .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:999px;background:var(--br3);color:var(--br2);font-size:12.5px;font-weight:500}
@@ -97,7 +97,8 @@ img{display:block;max-width:100%}
 .pc{display:flex;flex-direction:column;border-radius:var(--r1);background:var(--card);border:1px solid var(--line);overflow:hidden;position:relative;min-width:0}
 .pc .im{position:relative;aspect-ratio:1;background:radial-gradient(75% 70% at 50% 35%,#2A3038,#1D2229 75%);display:grid;place-items:center;overflow:hidden}
 .pc .im img{width:100%;height:100%;object-fit:cover}
-.pc .im .ph{color:#4A525C}
+.ph{display:grid;place-items:center;width:100%;height:100%;font:700 26px var(--disp);color:rgba(228,203,166,.22);letter-spacing:.5px}
+.ph:before{content:'H&H'}
 .pc .bd{padding:11px 13px 13px;display:flex;flex-direction:column;gap:6px;flex:1}
 .pc h3{margin:0;font:500 14px/1.55 var(--body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.95em}
 .pc .pr{display:flex;align-items:baseline;gap:7px;margin-top:auto;flex-wrap:wrap}
@@ -202,6 +203,7 @@ img{display:block;max-width:100%}
 .res{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 .res a{display:flex;gap:12px;align-items:center;padding:8px;border-radius:14px}
 .res a:hover,.res a:focus-visible{background:var(--card)}
+.res .ph,.mini .ph{font-size:12px}
 .res img,.res .ph{width:52px;height:52px;border-radius:11px;object-fit:cover;background:var(--card2);flex:none;display:grid;place-items:center;color:#4A525C}
 .res span{font-size:14px;line-height:1.5;flex:1;min-width:0}
 .res b{color:var(--br2);font:600 14px var(--disp);white-space:nowrap}
@@ -227,7 +229,7 @@ body.pp .bnav{display:none}
   .wrap{padding:0 28px}
   .tnav{display:flex}
   .case{grid-template-columns:1.05fr 1fr;align-items:center;min-height:440px}
-  .case .stage{aspect-ratio:auto;height:440px;padding:36px 36px 30px}
+  .case .stage{aspect-ratio:auto;height:440px}
   .case .info{padding:36px 40px 36px 10px}
   .row{grid-auto-columns:minmax(200px,1fr);grid-auto-flow:row;grid-template-columns:repeat(4,1fr);overflow:visible;margin:0;padding:0}
   .row>*:nth-child(n+9){display:none}
@@ -303,7 +305,7 @@ const I={
  care:'<path d="M8 3h8v5a4 4 0 0 1-8 0zM12 12v9M9 21h6"/>',
  home:'<path d="M4 11 12 4l8 7M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
  bag:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
- spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'
+ spark:'<path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5z"/><path d="M18.5 15.5c.2 1.4.8 2 2.2 2.2-1.4.2-2 .8-2.2 2.2-.2-1.4-.8-2-2.2-2.2 1.4-.2 2-.8 2.2-2.2z"/>'
 };
 const ic=(k,s=22)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]||I.spark}</svg>`;
 const catIcon=n=>(CATS.find(c=>c.n===n)||{}).i||'spark';
@@ -333,11 +335,11 @@ async function load(){
   if(S.notice) $('#notice').innerHTML=`<div class="notice">${esc(S.notice)}</div>`;
   foot();route();
 }
-const img=(p,cls='')=>p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" class="${cls}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',innerHTML:this.dataset.ph||''}))" data-ph='${ic(catIcon(p.cat),40).replace(/'/g,"&#39;")}'>`:`<span class="ph">${ic(catIcon(p.cat),40)}</span>`;
+const img=(p,cls='')=>p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" class="${cls}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">`:`<span class="ph"></span>`;
 function card(p){
   return `<a class="pc${p.avail?'':' out'}" href="/p/${esc(p.id)}" data-l>
    <div class="im">${img(p)}${!p.avail?'<span class="tag no">غير متوفر حالياً</span>':p.offer?'<span class="tag">عرض</span>':''}</div>
-   <div class="bd"><h3>${esc(p.name)}</h3><div class="pr"><b>${fmt(p.price)} د.ع</b>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}</div></div></a>`;
+   <div class="bd"><h3>${esc(p.name)}</h3><div class="pr">${p.from?'<s style="text-decoration:none">يبدأ من</s>':''}<b>${fmt(p.price)} د.ع</b>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}</div></div></a>`;
 }
 const counts=()=>{const c={};P.forEach(p=>c[p.cat]=(c[p.cat]||0)+1);return c};
 
@@ -361,7 +363,7 @@ function home(){
   bindCase();
 }
 function caseInner(p,isOffer){
-  return `<a class="stage" href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" fetchpriority="high">`:ic(catIcon(p.cat),90)}</a>
+  return `<a class="stage" href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" fetchpriority="high">`:'<span class="ph"></span>'}</a>
   <div class="info"><span class="chip">${isOffer?'عرض اليوم':'وصل حديثاً'}${p.warranty==='سنة'?' · ضمان سنة':''}</span>
   <h1>${esc(p.name)}</h1>${p.feats?`<p class="lead">${esc(p.feats.split('|').join(' — '))}</p>`:''}
   <div class="pricebig"><b>${fmt(p.price)}</b><small>دينار</small>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}</div>
@@ -397,7 +399,7 @@ async function prodPage(id){
   document.title=p.name+' — مجمع H&H';
   const rel=P.filter(x=>x.cat===p.cat&&x.id!==p.id).slice(0,8);
   view(`<article class="pv fadein"><div class="lay">
-   <div class="gcol"><div class="gal">${imgs.length?`<div class="tr" id="tr">${imgs.map((k,i)=>`<div class="sl"><img src="${A}/img/${esc(k)}" alt="${esc(p.name)} — صورة ${i+1}" ${i?'loading="lazy"':'fetchpriority="high"'}></div>`).join('')}</div>${imgs.length>1?`<div class="dots">${imgs.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}`:`<div class="sl" style="aspect-ratio:1;display:grid;place-items:center;color:#4A525C">${ic(catIcon(p.cat),90)}</div>`}</div>
+   <div class="gcol"><div class="gal">${imgs.length?`<div class="tr" id="tr">${imgs.map((k,i)=>`<div class="sl"><img src="${A}/img/${esc(k)}" alt="${esc(p.name)} — صورة ${i+1}" ${i?'loading="lazy"':'fetchpriority="high"'}></div>`).join('')}</div>${imgs.length>1?`<div class="dots">${imgs.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}`:`<div class="sl" style="aspect-ratio:1"><span class="ph" style="font-size:54px"></span></div>`}</div>
     ${imgs.length>1?`<div class="thumbs">${imgs.slice(0,12).map((k,i)=>`<button data-i="${i}" class="${i?'':'on'}" aria-label="صورة ${i+1}"><img src="${A}/img/${esc(k)}" alt="" loading="lazy"></button>`).join('')}</div>`:''}
     ${(p.videos||[]).slice(0,2).map(v=>`<a class="vid" href="https://t.me/${esc(S.tgChannel)}/${esc(v.slice(1))}" target="_blank" rel="noopener"><i><svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></i>شاهد فيديو المنتج على قناتنا</a>`).join('')}
    </div>
@@ -405,7 +407,7 @@ async function prodPage(id){
     <a class="crumb" href="/c/${encodeURIComponent(p.cat)}" data-l>${esc(p.cat)}</a>
     <h1>${esc(p.name)}</h1>
     <div class="meta">${p.brand?`<span>${esc(p.brand)}</span>`:''}<span class="${p.avail?'ok':'no'}">${p.avail?'● متوفر':'● غير متوفر حالياً'}</span>${p.warranty?`<span>${p.warranty==='سنة'?'ضمان سنة كاملة':esc(p.warranty)}</span>`:''}${p.offer?'<span style="color:var(--br2)">عرض</span>':''}</div>
-    <div class="pbox"><b>${fmt(p.price)}</b><span>دينار</span>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}<small>${esc(S.delivery||'')}</small></div>
+    <div class="pbox">${p.from?'<span>يبدأ من</span>':''}<b>${fmt(p.price)}</b><span>دينار</span>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}<small>${esc(S.delivery||'')}</small></div>
     ${p.feats?`<div class="feats">${String(p.feats).split('|').filter(Boolean).map(f=>`<span>${esc(f)}</span>`).join('')}</div>`:''}
     ${p.desc?`<p class="desc">${esc(p.desc)}</p>`:''}
     ${specs.length?`<section class="blk"><h2>المواصفات</h2><dl class="specs">${specs.map(s=>`<div><dt>${esc(s[0])}</dt><dd>${esc(s[1])}</dd></div>`).join('')}</dl></section>`:''}
@@ -467,7 +469,7 @@ $('#sOpen').onclick=openS;$('#sOpen2').onclick=openS;$('#sX').onclick=()=>hide($
 function doS(){const q=norm($('#sIn').value.trim());const box=$('#sRes');
   if(!q){box.innerHTML=`<div class="chips" style="margin:4px 0;flex-wrap:wrap">${CATS.slice(0,8).map(x=>`<a href="/c/${encodeURIComponent(x.n)}" data-l>${esc(x.n)}</a>`).join('')}</div>`;return}
   const ws=q.split(/\s+/);const r=P.map(p=>{const h=norm(p.name+' '+p.brand+' '+p.cat+' '+p.feats);let s=0;for(const w of ws){if(h.includes(w))s+=w.length;else return null}return [s,p]}).filter(Boolean).sort((a,b)=>b[0]-a[0]).slice(0,30).map(x=>x[1]);
-  box.innerHTML=r.length?r.map(p=>`<a href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="" loading="lazy">`:`<span class="ph">${ic(catIcon(p.cat),24)}</span>`}<span>${esc(p.name)}</span><b>${fmt(p.price)}</b></a>`).join(''):'<div class="empty">ما لگينا منتج بهذا الاسم. جرّب كلمة ثانية، أو راسلنا ونگلك إذا متوفر.</div>';}
+  box.innerHTML=r.length?r.map(p=>`<a href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="" loading="lazy">`:`<span class="ph"></span>`}<span>${esc(p.name)}</span><b>${fmt(p.price)}</b></a>`).join(''):'<div class="empty">ما لگينا منتج بهذا الاسم. جرّب كلمة ثانية، أو راسلنا ونگلك إذا متوفر.</div>';}
 $('#sIn').addEventListener('input',doS);
 
 /* التنقل */

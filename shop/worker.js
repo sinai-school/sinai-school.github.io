@@ -49,15 +49,22 @@ const NOISE = /^(عرض يوم|عرض اليوم|عروض اليوم|اللهم|
 
 export function parsePrice(txt) {
   const lines = digits(txt).split('\n');
+  const K = '(?:الف|ألف|الاف|آلاف|ألاف|اﻻف)';
   const pick = l => {
-    const m = l.match(/(\d[\d,.]*)\s*(الف|ألف|الاف|آلاف|ألاف|k)?/i);
-    if (!m) return 0;
-    let n = parseFloat(m[1].replace(/,/g, '').replace(/\.(?=\d{3}\b)/g, ''));
-    if (m[2] || n < 1000) n = Math.round(n * 1000);
+    // رقم ملاصق لكلمة «ألف» أولاً، وما ناخذ رقم ملزوگ بحروف إنگليزية مثل mobile7
+    let m = l.match(new RegExp('(?<![A-Za-z\\d.,])(\\d[\\d,.]*)\\s*' + K));
+    let n;
+    if (m) n = parseFloat(m[1].replace(/,/g, '')) * (parseFloat(m[1].replace(/,/g, '')) < 1000 ? 1000 : 1);
+    else {
+      m = l.match(/(?<![A-Za-z\d.,])(\d{1,3}(?:[,.]\d{3})+|\d{4,7})(?![A-Za-z\d])/);
+      if (!m) { m = l.match(/(?<![A-Za-z\d.,])(\d{1,3})(?![A-Za-z\d.,])/); if (!m) return 0; n = +m[1] * 1000; }
+      else n = parseFloat(m[1].replace(/[,.]/g, ''));
+    }
+    n = Math.round(n);
     return n >= 1000 && n < 5e7 ? n : 0;
   };
-  for (const l of lines) if (/السعر|سعر|بسعر/.test(l) && !/توصيل/.test(l)) { const p = pick(l.replace(/.*?سعر/, '')); if (p) return p; }
-  for (const l of lines) if (/(الف|ألف|الاف|آلاف|دينار)/.test(l) && !/توصيل|توفير/.test(l)) { const p = pick(l); if (p) return p; }
+  for (const l of lines) if (/سعر/.test(l) && !/توصيل/.test(l)) { const p = pick(l.replace(/.*?سعر[ه]?/, '')); if (p) return p; }
+  for (const l of lines) if (new RegExp(K + '|دينار').test(l) && !/توصيل|توفير/.test(l)) { const p = pick(l); if (p) return p; }
   return 0;
 }
 
@@ -85,7 +92,8 @@ export function parseText(raw) {
   const until = /فقط يوم|ضمن يوم|لحين نفاد/.test(txt);
   const warranty = /ضمان\s*(سن[ةه]|عام)/.test(txt) ? 'سنة' : /فحص/.test(txt) ? 'فحص وتشغيل' : '';
   const desc = clean.join('\n').replace(/\n\+\n/g, '\n+ ');
-  return { name, price, cat: classify(name, desc), desc, offer: isOffer ? 1 : 0, until: until ? 1 : 0, warranty, brand: brandOf(desc) };
+  const from = digits(txt).split('\n').filter(l => /سعر/.test(l) && !/توصيل/.test(l) && parsePrice(l)).length > 1 ? 1 : 0;
+  return { name, price, from, cat: classify(name, desc), desc, offer: isOffer ? 1 : 0, until: until ? 1 : 0, warranty, brand: brandOf(desc) };
 }
 
 const BRANDS = ['Anker', 'Baseus', 'Porodo', 'Green Lion', 'Green', 'XO', 'Joyroom', 'Ugreen', 'Hoco', 'Xiaomi', 'Samsung', 'Apple', 'Noxo', 'Master', 'Lenovo', 'Remax', 'Awei', 'Recci', 'Borofone', 'Powerology', 'Oraimo', 'Huawei', 'JBL', 'Soundcore', 'Haylou', 'QCY'];
@@ -254,8 +262,41 @@ async function aiEnrich(env, n) {
   return ok;
 }
 
+const PARSE_V = 3;
+export async function migrate(env) {
+  // يعيد قراءة أسعار وأوصاف منشورات القناة بالقواعد المحسّنة، ويدمج المكرر مع منتجات الجدول
+  const tg = (await env.DB.prepare("select p.id,p.post,p.auto,p.media,m.txt from products p join msgs m on m.id=p.post where p.src='tg'").all()).results || [];
+  const ops = [];
+  for (const r of tg) { const a = parseText(r.txt); if (a) ops.push(env.DB.prepare('update products set auto=? where id=?').bind(JSON.stringify(a), r.id)); }
+  const sheet = ((await env.DB.prepare("select id,auto,media,ov from products where src='sheet'").all()).results || []).filter(x => JSON.parse(x.media || '[]').length === 0);
+  const tgs = tg.map(r => ({ ...r, a: parseText(r.txt) || JSON.parse(r.auto) }));
+  for (const sp of sheet) {
+    const a = JSON.parse(sp.auto); let best = null, bs = 0;
+    for (const t of tgs) { if (Math.abs((t.a.price || 0) - (a.price || 0)) > 1000) continue; const v = sim(a.name, t.a.name + ' ' + (t.a.desc || '')); if (v > bs) { bs = v; best = t; } }
+    if (best && bs >= 0.3) {
+      ops.push(env.DB.prepare('update products set media=?, post=? where id=?').bind(best.media, best.post, sp.id));
+      ops.push(env.DB.prepare("update products set ov=json_set(coalesce(ov,'{}'),'$.dup',1) where id=?").bind(best.id));
+    }
+  }
+  for (let i = 0; i < ops.length; i += 50) await env.DB.batch(ops.slice(i, i + 50));
+  await setSetting(env, '_parsev', PARSE_V);
+  await log(env, 'تحديث قراءة الأسعار والمواصفات: ' + tg.length + ' منتج');
+}
+
+// ---------- أرشفة سريعة بمحركات البحث (IndexNow: Bing وYandex وغيرهم) ----------
+export const INDEXNOW_KEY = 'hh7c1f0e5a9b2d4c3e8f6a1b0d9c2e7f4';
+async function indexNow(env, urls) {
+  const s = await getSettings(env);
+  const host = s.siteHost || 'handhst.com';
+  if (!urls.length) return;
+  try {
+    await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ host, key: INDEXNOW_KEY, keyLocation: `https://${host}/${INDEXNOW_KEY}.txt`, urlList: urls.slice(0, 1000).map(u => `https://${host}${u}`) }) });
+  } catch { }
+}
+
 export async function sync(env, opt = {}) {
-  const st = await getSettings(env);
+  let st = await getSettings(env);
+  if (st._parsev !== PARSE_V) { await migrate(env); st = await getSettings(env); }
   let pages = 0, msgs = 0;
   const html = await fetchPage(0); pages++;
   const cur = parseChannel(html);
@@ -275,6 +316,8 @@ export async function sync(env, opt = {}) {
   }
   let made = 0;
   for (const l of [cur, old]) if (l.length) { const ids = l.map(x => x.id); made += await rebuild(env, Math.min(...ids), Math.max(...ids)); }
+  if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
+  if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   await setSetting(env, '_lastSync', now());
@@ -293,14 +336,14 @@ async function authed(req, env) {
   return r && r.exp > now();
 }
 
-function pub(p) { return { id: p.id, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', pin: p.pin ? 1 : 0 }; }
+function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', pin: p.pin ? 1 : 0 }; }
 
 async function allProducts(env, admin) {
   const rows = (await env.DB.prepare('select * from products').all()).results || [];
   const have = new Set(((await env.DB.prepare('select k from imgs').all()).results || []).map(x => x.k));
-  let list = rows.map(eff).filter(p => admin || (!p.del && !p.hidden));
+  let list = rows.map(eff).filter(p => admin || (!p.del && !p.hidden && !p.dup));
   for (const p of list) { p.ready = p.imgs.filter(k => have.has(k)).length; }
-  if (!admin) list = list.filter(p => p.price > 0 && (p.imgs.length || p.src === 'sheet'));
+  if (!admin) list = list.filter(p => p.price > 0 && p.imgs.length);
   list.sort((a, b) => (b.pin || 0) - (a.pin || 0) || String(b.dt || '').localeCompare(String(a.dt || '')));
   return list;
 }
@@ -317,7 +360,7 @@ async function publicData(env) {
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 async function page(env, url, prod) {
   const origin = ORIGIN || url.origin;
-  let title = 'مجمع H&H — إكسسوارات الهواتف والتقنية في بغداد', desc = 'كل منتجات مجمع H&H بالأسعار والمواصفات والضمان: شواحن، سماعات، باوربانك، كفرات، ساعات ذكية وأكثر. توصيل لكل العراق.', img = origin + '/icon.png';
+  let title = 'مجمع H&H | اكسسوارات موبايل في بغداد — شواحن، سماعات، باوربانك، كفرات', desc = 'متجر مجمع H&H في بغداد شارع فلسطين: اكسسوارات الهواتف والتقنية الأصلية بالأسعار والمواصفات والضمان — شواحن، سماعات، باوربانك، كفرات، ساعات ذكية وعروض يومية. توصيل لكل العراق.', img = origin + '/icon.png';
   let ld = '';
   if (prod) {
     title = prod.name + ' — مجمع H&H';
@@ -327,7 +370,14 @@ async function page(env, url, prod) {
   }
   const head = `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(img)}"><meta property="og:type" content="${prod ? 'product' : 'website'}"><meta property="og:url" content="${esc(url.href)}"><link rel="canonical" href="${esc(origin + url.pathname)}"><meta name="twitter:card" content="summary_large_image">${ld}`;
   const inj = ORIGIN ? `<script>window.HHAPI=${JSON.stringify(url.origin)}</script>` : '';
-  return new Response(APP.replace('<!--HEAD-->', () => head + inj), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
+  const st = await getSettings(env);
+  let gsv = st.gsv ? `<meta name="google-site-verification" content="${esc(st.gsv)}">` : '';
+  // نسخة نصية للمحركات (تظهر بس لو JavaScript مطفي)
+  let ns = '';
+  if (prod) ns = `<noscript><h1>${esc(prod.name)}</h1><p>${(prod.price || 0).toLocaleString('en')} دينار</p><p>${esc(prod.desc || '')}</p>${(prod.imgs || []).slice(0, 3).map(k => `<img src="${origin}/img/${k}" alt="${esc(prod.name)}">`).join('')}</noscript>`;
+  else if (url.pathname === '/' || url.pathname.startsWith('/c')) { const l = await allProducts(env, false); ns = `<noscript><h1>مجمع H&H — اكسسوارات الهواتف في بغداد</h1><ul>${l.map(x => `<li><a href="/p/${x.id}">${esc(x.name)}</a> — ${(x.price || 0).toLocaleString('en')} دينار</li>`).join('')}</ul></noscript>`; }
+  const local = `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Store', name: 'مجمع H&H', url: origin + '/', image: origin + '/icon.png', telephone: '+' + (st.wa1 || DEF.wa1), address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`] })}</script>`;
+  return new Response(APP.replace('<!--HEAD-->', () => head + gsv + local + inj).replace('<main id="view" class="wrap" tabindex="-1"></main>', () => `<main id="view" class="wrap" tabindex="-1">${ns}</main>`), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
 }
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#161A20"/><rect x="40" y="40" width="432" height="432" rx="84" fill="none" stroke="#C9A57C" stroke-opacity=".35" stroke-width="4"/><text x="256" y="318" font-family="Georgia,serif" font-size="190" fill="#D9B98F" text-anchor="middle" font-weight="700">H&amp;H</text></svg>`;
@@ -367,6 +417,7 @@ export default {
         ctx.waitUntil(cache.put(key, r.clone()));
         return r;
       }
+      if (p === '/' + INDEXNOW_KEY + '.txt') return new Response(INDEXNOW_KEY, { headers: { 'content-type': 'text/plain' } });
       if (p === '/icon.svg' || p === '/icon.png' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
       if (p === '/manifest.webmanifest') return J({ name: 'مجمع H&H', short_name: 'H&H', start_url: '/', display: 'standalone', background_color: '#13161B', theme_color: '#13161B', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }] }, 200, { 'cache-control': 'public, max-age=86400' });
       if (p === '/robots.txt') return new Response(`User-agent: *\nDisallow: /admin\nSitemap: ${ORIGIN || url.origin}/sitemap.xml\n`);
