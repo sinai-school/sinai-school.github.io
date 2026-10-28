@@ -19,6 +19,9 @@ if [ ! -f ../out/seeded ]; then
     $W d1 execute hhshop --remote --file msgs.sql -y 2>&1 | tail -2
   fi
 fi
+B=$($W d1 execute hhshop --remote --json --command "select count(*) n from settings where k='_built'" 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)[0]["results"][0]["n"])')
+echo "built=$B"
+if [ "$B" = "0" ]; then $W d1 execute hhshop --remote --file build.sql -y 2>&1 | tail -2; $W d1 execute hhshop --remote --command "insert or ignore into settings(k,v) values('_built','1')" -y >/dev/null 2>&1; fi
 mk $'[ai]\nbinding = "AI"\n'
 if ! $W deploy 2>&1 | tee dep.log | tail -8; then :; fi
 if ! grep -q "Current Version ID" dep.log; then

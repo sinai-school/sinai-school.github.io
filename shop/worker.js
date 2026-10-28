@@ -163,17 +163,19 @@ async function saveMsgs(env, msgs) {
 export function normTokens(s) { return new Set(digits(s).toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 1 && !/^(مع|من|الى|على|او|و|فقط|عرض|يوم|هديه|جدا|روعه)$/.test(w))); }
 export function sim(a, b) { const A = normTokens(a), B = normTokens(b); if (!A.size || !B.size) return 0; let n = 0; for (const w of A) if (B.has(w)) n++; return n / Math.min(A.size, B.size); }
 
-async function rebuild(env) {
+export async function rebuild(env, lo, hi) {
   // يبني المنتجات من الرسائل: كل نص بيه سعر = منتج، وصوره = الوسائط اللي قبله لحد آخر فاصل
-  const rows = (await env.DB.prepare('select id,kind,txt,dt from msgs order by id').all()).results || [];
-  const prods = (await env.DB.prepare('select id,src,post,auto,ov,media from products').all()).results || [];
+  const rows = (await env.DB.prepare('select id,kind,txt,dt from msgs where id between ? and ? order by id').bind(lo - 40, hi + 40).all()).results || [];
+  const prods = (await env.DB.prepare('select id,src,post,auto,media from products where post between ? and ? or (src=\'sheet\' and post is null)').bind(lo - 40, hi + 40).all()).results || [];
   const byPost = new Map(prods.filter(p => p.post).map(p => [p.post, p]));
   const sheet = prods.filter(p => p.src === 'sheet');
   let pend = [], made = 0;
   const ops = [];
   const up = env.DB.prepare('insert into products(id,src,post,auto,media,dt,at) values(?,?,?,?,?,?,?) on conflict(id) do update set auto=excluded.auto, media=excluded.media, dt=excluded.dt');
   const link = env.DB.prepare('update products set post=?, media=?, dt=coalesce(dt,?) where id=?');
+  let started = false;
   for (const r of rows) {
+    if (!started) { if (r.kind === 'text' || r.kind === 'sticker' || r.kind === 'other' || r.txt) { started = true; pend = []; } continue; }
     const isMedia = r.kind === 'photo' || r.kind === 'video';
     if (isMedia) pend.push({ k: (r.kind === 'video' ? 'v' : 't') + r.id, v: r.kind === 'video' ? 1 : 0 });
     if (isMedia && !r.txt) continue;
@@ -256,17 +258,19 @@ export async function sync(env, opt = {}) {
   msgs += await saveMsgs(env, cur);
   // تكملة الأرشيف القديم صفحة بكل دورة
   const bf = st._backfill;
+  let old = [];
   if (bf !== 'done') {
     const before = bf || Math.min(...cur.map(x => x.id));
     const h2 = await fetchPage(before); pages++;
-    const old = parseChannel(h2);
+    old = parseChannel(h2);
     msgs += await saveMsgs(env, old);
     const minId = old.length ? Math.min(...old.map(x => x.id)) : 0;
     const oldest = old.find(x => x.dt);
     const tooOld = oldest && now() - Date.parse(oldest.dt) > BACKFILL_DAYS * 864e5;
     await setSetting(env, '_backfill', !minId || minId >= before || tooOld ? 'done' : minId);
   }
-  const made = await rebuild(env);
+  let made = 0;
+  for (const l of [cur, old]) if (l.length) { const ids = l.map(x => x.id); made += await rebuild(env, Math.min(...ids), Math.max(...ids)); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   await setSetting(env, '_lastSync', now());
