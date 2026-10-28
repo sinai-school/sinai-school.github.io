@@ -84,7 +84,7 @@ export function parseText(raw) {
   name = name.replace(/فقط$/, '').trim().slice(0, 90);
   const until = /فقط يوم|ضمن يوم|لحين نفاد/.test(txt);
   const warranty = /ضمان\s*(سن[ةه]|عام)/.test(txt) ? 'سنة' : /فحص/.test(txt) ? 'فحص وتشغيل' : '';
-  const desc = clean.join('\n');
+  const desc = clean.join('\n').replace(/\n\+\n/g, '\n+ ');
   return { name, price, cat: classify(name, desc), desc, offer: isOffer ? 1 : 0, until: until ? 1 : 0, warranty, brand: brandOf(desc) };
 }
 
