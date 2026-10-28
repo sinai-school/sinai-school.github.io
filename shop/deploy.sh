@@ -36,6 +36,15 @@ echo "home: $(curl -s -o /dev/null -w '%{http_code}' $URL/)"
 echo "data: $(curl -s $URL/api/data | head -c 300)"
 $W d1 execute hhshop --remote --json --command "select (select count(*) from products) p,(select count(*) from msgs) m,(select count(*) from imgs) i,(select count(*) from imgq) q,(select count(*) from products where ai is not null and ai not like '%err%') ai" 2>/dev/null | python3 -c 'import sys,json;print("db",json.load(sys.stdin)[0]["results"])'
 $W d1 execute hhshop --remote --json --command "select at,msg from log order by at desc limit 8" 2>/dev/null | python3 -c 'import sys,json;print("log",json.load(sys.stdin)[0]["results"])'
-echo "--- handhst ssl:"; curl -sS -o /dev/null -w "https %{http_code} ssl_verify=%{ssl_verify_result}\n" -m 20 https://handhst.com/ 2>&1 | head -3
-curl -sS -o /dev/null -w "www %{http_code}\n" -m 20 https://www.handhst.com/ 2>&1 | head -2
-echo | openssl s_client -connect handhst.com:443 -servername handhst.com 2>/dev/null | openssl x509 -noout -subject -issuer -enddate 2>&1 | head -4
+echo "--- handhst.com check"
+for u in / /p/s001 /c/%D8%B3%D9%85%D8%A7%D8%B9%D8%A7%D8%AA /contact /admin /robots.txt /sitemap.xml; do
+  curl -sS -o /tmp/b -D /tmp/h -w "$u -> %{http_code} %{time_total}s %{size_download}B\n" -m 30 -H 'accept-encoding: gzip' "https://handhst.com$u" 2>&1; grep -i '^x-hh\|^content-type\|^content-encoding' /tmp/h | tr -d '\r' | tr '\n' ' '; echo
+done
+curl -s https://handhst.com/ | grep -o 'HHAPI=[^<]*\|canonical" href="[^"]*' | head -3
+curl -s https://handhst.com/p/s001 | grep -o '<title>[^<]*' | head -1
+echo "http->https: $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://handhst.com/)"
+echo "www: $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' https://www.handhst.com/x)"
+for i in 1 2 3; do curl -s -o /dev/null -w "repeat home %{time_total}s\n" https://handhst.com/; done
+curl -s -o /dev/null -w "worker data %{time_total}s\n" https://hh-shop.7svyn82yzr.workers.dev/api/data
+curl -s -o /dev/null -w "options %{http_code}\n" -X OPTIONS -H 'origin: https://handhst.com' -H 'access-control-request-headers: authorization' https://hh-shop.7svyn82yzr.workers.dev/api/admin/state
+curl -s https://handhst.com/.hhcache/ -o /dev/null -w "cache dir %{http_code}\n"
