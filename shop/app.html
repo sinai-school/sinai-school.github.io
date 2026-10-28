@@ -282,6 +282,7 @@ body.pp .bnav{display:none}
 
 <script>
 (()=>{
+const A=window.HHAPI||'';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>(+n||0).toLocaleString('en');
@@ -326,13 +327,13 @@ function chans(){return [
 const loc=n=>String(n||'').replace(/^964/,'0').replace(/(\d{4})(\d{3})(\d{4})/,'$1 $2 $3');
 
 async function load(){
-  try{const r=await fetch('/api/data');D=await r.json();}catch(e){D=null}
+  try{const r=await fetch(A+'/api/data');D=await r.json();}catch(e){D=null}
   if(!D){$('#view').innerHTML='<div class="empty">ما گدرنا نحمّل المنتجات. تأكد من الإنترنت وحدّث الصفحة.</div>';return}
   S=D.s;CATS=D.cats;P=D.p;byId={};P.forEach(p=>byId[p.id]=p);
   if(S.notice) $('#notice').innerHTML=`<div class="notice">${esc(S.notice)}</div>`;
   foot();route();
 }
-const img=(p,cls='')=>p.img?`<img src="/img/${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" class="${cls}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',innerHTML:this.dataset.ph||''}))" data-ph='${ic(catIcon(p.cat),40).replace(/'/g,"&#39;")}'>`:`<span class="ph">${ic(catIcon(p.cat),40)}</span>`;
+const img=(p,cls='')=>p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" class="${cls}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',innerHTML:this.dataset.ph||''}))" data-ph='${ic(catIcon(p.cat),40).replace(/'/g,"&#39;")}'>`:`<span class="ph">${ic(catIcon(p.cat),40)}</span>`;
 function card(p){
   return `<a class="pc${p.avail?'':' out'}" href="/p/${esc(p.id)}" data-l>
    <div class="im">${img(p)}${!p.avail?'<span class="tag no">غير متوفر حالياً</span>':p.offer?'<span class="tag">عرض</span>':''}</div>
@@ -348,7 +349,7 @@ function home(){
   let html='';
   if(h){
     html+=`<section class="hero fadein"><div class="case" id="case">${caseInner(h,!!offers.length)}</div>
-    ${feat.length>1?`<div class="mini" role="list">${feat.map((p,i)=>`<a href="/p/${esc(p.id)}" data-pick="${esc(p.id)}" class="${i?'':'on'}" role="listitem">${p.img?`<img src="/img/${esc(p.img)}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span>${esc(p.name)}<em>${fmt(p.price)} د.ع</em></span></a>`).join('')}</div>`:''}
+    ${feat.length>1?`<div class="mini" role="list">${feat.map((p,i)=>`<a href="/p/${esc(p.id)}" data-pick="${esc(p.id)}" class="${i?'':'on'}" role="listitem">${p.img?`<img src="${A}/img/${esc(p.img)}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span>${esc(p.name)}<em>${fmt(p.price)} د.ع</em></span></a>`).join('')}</div>`:''}
     <div class="trust"><div><b>ضمان حقيقي</b>سنة كاملة على منتجات الوكالة</div><div><b>توصيل</b>لكل محافظات العراق</div><div><b>محل فعلي</b>شارع فلسطين، بغداد</div></div></section>`;
   }
   html+=`<section class="sec"><div class="sh"><h2>الأقسام</h2></div><div class="cats">${CATS.filter(x=>c[x.n]).map(x=>`<a class="cat" href="/c/${encodeURIComponent(x.n)}" data-l><i>${ic(x.i)}</i><span>${esc(x.n)}</span><small>${c[x.n]} منتج</small></a>`).join('')}</div></section>`;
@@ -360,7 +361,7 @@ function home(){
   bindCase();
 }
 function caseInner(p,isOffer){
-  return `<a class="stage" href="/p/${esc(p.id)}" data-l>${p.img?`<img src="/img/${esc(p.img)}" alt="${esc(p.name)}" fetchpriority="high">`:ic(catIcon(p.cat),90)}</a>
+  return `<a class="stage" href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="${esc(p.name)}" fetchpriority="high">`:ic(catIcon(p.cat),90)}</a>
   <div class="info"><span class="chip">${isOffer?'عرض اليوم':'وصل حديثاً'}${p.warranty==='سنة'?' · ضمان سنة':''}</span>
   <h1>${esc(p.name)}</h1>${p.feats?`<p class="lead">${esc(p.feats.split('|').join(' — '))}</p>`:''}
   <div class="pricebig"><b>${fmt(p.price)}</b><small>دينار</small>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}</div>
@@ -389,15 +390,15 @@ function catPage(name){
 async function prodPage(id){
   let p=cache[id];
   if(!p){view(`<div class="pv"><div class="lay"><div class="skel" style="aspect-ratio:1"></div><div><div class="skel" style="height:34px;width:70%;margin:10px 0"></div><div class="skel" style="height:70px;margin:18px 0"></div><div class="skel" style="height:200px"></div></div></div></div>`,'p');
-    try{const r=await fetch('/api/p/'+encodeURIComponent(id));if(!r.ok)throw 0;p=cache[id]=await r.json();}catch(e){view('<div class="empty" style="padding:80px 10px">هذا المنتج غير موجود أو انشال من المتجر. <br><br><a class="btn ghost" href="/" data-l>ارجع للرئيسية</a></div>','p');return}}
+    try{const r=await fetch(A+'/api/p/'+encodeURIComponent(id));if(!r.ok)throw 0;p=cache[id]=await r.json();}catch(e){view('<div class="empty" style="padding:80px 10px">هذا المنتج غير موجود أو انشال من المتجر. <br><br><a class="btn ghost" href="/" data-l>ارجع للرئيسية</a></div>','p');return}}
   if(location.pathname!=='/p/'+id)return;
   const specs=Array.isArray(p.specs)?p.specs:[];const ai=p.ai&&(p.ai.specs&&p.ai.specs.length||p.ai.desc)?p.ai:null;
   const imgs=p.imgs||[];
   document.title=p.name+' — مجمع H&H';
   const rel=P.filter(x=>x.cat===p.cat&&x.id!==p.id).slice(0,8);
   view(`<article class="pv fadein"><div class="lay">
-   <div class="gcol"><div class="gal">${imgs.length?`<div class="tr" id="tr">${imgs.map((k,i)=>`<div class="sl"><img src="/img/${esc(k)}" alt="${esc(p.name)} — صورة ${i+1}" ${i?'loading="lazy"':'fetchpriority="high"'}></div>`).join('')}</div>${imgs.length>1?`<div class="dots">${imgs.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}`:`<div class="sl" style="aspect-ratio:1;display:grid;place-items:center;color:#4A525C">${ic(catIcon(p.cat),90)}</div>`}</div>
-    ${imgs.length>1?`<div class="thumbs">${imgs.slice(0,12).map((k,i)=>`<button data-i="${i}" class="${i?'':'on'}" aria-label="صورة ${i+1}"><img src="/img/${esc(k)}" alt="" loading="lazy"></button>`).join('')}</div>`:''}
+   <div class="gcol"><div class="gal">${imgs.length?`<div class="tr" id="tr">${imgs.map((k,i)=>`<div class="sl"><img src="${A}/img/${esc(k)}" alt="${esc(p.name)} — صورة ${i+1}" ${i?'loading="lazy"':'fetchpriority="high"'}></div>`).join('')}</div>${imgs.length>1?`<div class="dots">${imgs.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}`:`<div class="sl" style="aspect-ratio:1;display:grid;place-items:center;color:#4A525C">${ic(catIcon(p.cat),90)}</div>`}</div>
+    ${imgs.length>1?`<div class="thumbs">${imgs.slice(0,12).map((k,i)=>`<button data-i="${i}" class="${i?'':'on'}" aria-label="صورة ${i+1}"><img src="${A}/img/${esc(k)}" alt="" loading="lazy"></button>`).join('')}</div>`:''}
     ${(p.videos||[]).slice(0,2).map(v=>`<a class="vid" href="https://t.me/${esc(S.tgChannel)}/${esc(v.slice(1))}" target="_blank" rel="noopener"><i><svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></i>شاهد فيديو المنتج على قناتنا</a>`).join('')}
    </div>
    <div>
@@ -442,9 +443,9 @@ function msgFor(p){
 }
 async function openOrder(id){
   let p=cache[id]||byId[id];if(!p)return;
-  if(!cache[id]){try{const r=await fetch('/api/p/'+encodeURIComponent(id));if(r.ok)p=cache[id]=await r.json()}catch(e){}}
+  if(!cache[id]){try{const r=await fetch(A+'/api/p/'+encodeURIComponent(id));if(r.ok)p=cache[id]=await r.json()}catch(e){}}
   cur=p;const img0=(p.imgs&&p.imgs[0])||p.img;
-  $('#oP').innerHTML=`${img0?`<img src="/img/${esc(img0)}" alt="">`:''}<div>${esc(p.name)}<b>${fmt(p.price)} د.ع</b></div>`;
+  $('#oP').innerHTML=`${img0?`<img src="${A}/img/${esc(img0)}" alt="">`:''}<div>${esc(p.name)}<b>${fmt(p.price)} د.ع</b></div>`;
   $('#oM').value=msgFor(p);
   $('#oC').innerHTML=chans().map((c,i)=>`<button class="ch" data-c="${i}">${bi(c.k)}<span>${c.t}<small>${esc(c.s)}</small></span></button>`).join('');
   $$('#oC .ch').forEach(b=>b.onclick=()=>{const c=chans()[+b.dataset.c];const m=$('#oM').value;copy(m);
@@ -466,7 +467,7 @@ $('#sOpen').onclick=openS;$('#sOpen2').onclick=openS;$('#sX').onclick=()=>hide($
 function doS(){const q=norm($('#sIn').value.trim());const box=$('#sRes');
   if(!q){box.innerHTML=`<div class="chips" style="margin:4px 0;flex-wrap:wrap">${CATS.slice(0,8).map(x=>`<a href="/c/${encodeURIComponent(x.n)}" data-l>${esc(x.n)}</a>`).join('')}</div>`;return}
   const ws=q.split(/\s+/);const r=P.map(p=>{const h=norm(p.name+' '+p.brand+' '+p.cat+' '+p.feats);let s=0;for(const w of ws){if(h.includes(w))s+=w.length;else return null}return [s,p]}).filter(Boolean).sort((a,b)=>b[0]-a[0]).slice(0,30).map(x=>x[1]);
-  box.innerHTML=r.length?r.map(p=>`<a href="/p/${esc(p.id)}" data-l>${p.img?`<img src="/img/${esc(p.img)}" alt="" loading="lazy">`:`<span class="ph">${ic(catIcon(p.cat),24)}</span>`}<span>${esc(p.name)}</span><b>${fmt(p.price)}</b></a>`).join(''):'<div class="empty">ما لگينا منتج بهذا الاسم. جرّب كلمة ثانية، أو راسلنا ونگلك إذا متوفر.</div>';}
+  box.innerHTML=r.length?r.map(p=>`<a href="/p/${esc(p.id)}" data-l>${p.img?`<img src="${A}/img/${esc(p.img)}" alt="" loading="lazy">`:`<span class="ph">${ic(catIcon(p.cat),24)}</span>`}<span>${esc(p.name)}</span><b>${fmt(p.price)}</b></a>`).join(''):'<div class="empty">ما لگينا منتج بهذا الاسم. جرّب كلمة ثانية، أو راسلنا ونگلك إذا متوفر.</div>';}
 $('#sIn').addEventListener('input',doS);
 
 /* التنقل */

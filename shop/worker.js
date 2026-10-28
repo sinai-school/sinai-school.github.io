@@ -116,7 +116,8 @@ export function parseChannel(html) {
 }
 
 // ---------- أدوات عامة ----------
-const J = (o, st = 200, h = {}) => new Response(JSON.stringify(o), { status: st, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...h } });
+const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-max-age': '86400' };
+const J = (o, st = 200, h = {}) => new Response(JSON.stringify(o), { status: st, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...CORS, ...h } });
 const now = () => Date.now();
 async function getSettings(env) {
   const r = await env.DB.prepare('select k,v from settings').all();
@@ -325,7 +326,8 @@ async function page(env, url, prod) {
     ld = `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: prod.name, image: prod.imgs.map(k => origin + '/img/' + k), description: prod.desc || prod.name, brand: prod.brand || 'H&H', offers: { '@type': 'Offer', priceCurrency: 'IQD', price: prod.price, availability: prod.avail ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', url: origin + '/p/' + prod.id } }).replace(/</g, '\\u003c')}</script>`;
   }
   const head = `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(img)}"><meta property="og:type" content="${prod ? 'product' : 'website'}"><meta property="og:url" content="${esc(url.href)}"><link rel="canonical" href="${esc(origin + url.pathname)}"><meta name="twitter:card" content="summary_large_image">${ld}`;
-  return new Response(APP.replace('<!--HEAD-->', () => head), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
+  const inj = ORIGIN ? `<script>window.HHAPI=${JSON.stringify(url.origin)}</script>` : '';
+  return new Response(APP.replace('<!--HEAD-->', () => head + inj), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
 }
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#161A20"/><rect x="40" y="40" width="432" height="432" rx="84" fill="none" stroke="#C9A57C" stroke-opacity=".35" stroke-width="4"/><text x="256" y="318" font-family="Georgia,serif" font-size="190" fill="#D9B98F" text-anchor="middle" font-weight="700">H&amp;H</text></svg>`;
@@ -339,6 +341,7 @@ export default {
     const xh = req.headers.get('x-hh-host');
     ORIGIN = xh && /^[a-z0-9.-]+$/i.test(xh) ? 'https://' + xh : '';
     try {
+      if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
       if (p === '/api/data') {
         const cache = caches.default, key = new Request(url.origin + '/api/data?v=' + Math.floor(now() / 60000));
         let r = await cache.match(key);
@@ -368,7 +371,7 @@ export default {
       if (p === '/manifest.webmanifest') return J({ name: 'مجمع H&H', short_name: 'H&H', start_url: '/', display: 'standalone', background_color: '#13161B', theme_color: '#13161B', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }] }, 200, { 'cache-control': 'public, max-age=86400' });
       if (p === '/robots.txt') return new Response(`User-agent: *\nDisallow: /admin\nSitemap: ${ORIGIN || url.origin}/sitemap.xml\n`);
       if (p === '/sitemap.xml') { const l = await allProducts(env, false); return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${ORIGIN || url.origin}/</loc></url>${l.map(x => `<url><loc>${ORIGIN || url.origin}/p/${x.id}</loc></url>`).join('')}</urlset>`, { headers: { 'content-type': 'application/xml' } }); }
-      if (p === '/admin' || p === '/admin/') return new Response(ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+      if (p === '/admin' || p === '/admin/') return new Response(ORIGIN ? ADMIN.replace('</head>', () => `<script>window.HHAPI=${JSON.stringify(url.origin)}</script></head>`) : ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
 
       if (p.startsWith('/api/admin/')) {
         const op = p.slice(11);

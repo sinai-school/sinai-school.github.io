@@ -86,6 +86,7 @@ label{display:block;font-size:13px;color:var(--mut);margin:0 0 5px}
 <div class="toast" id="toast"></div>
 <script>
 (()=>{
+const A=window.HHAPI||'';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>(+n||0).toLocaleString('en');
@@ -93,7 +94,7 @@ let TOK='';try{TOK=localStorage.getItem('hhadm')||''}catch(e){}
 let ST=null,tab='p',flt={q:'',f:'all',c:''};
 const toast=t=>{const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
 async function api(op,body,raw){
-  const r=await fetch('/api/admin/'+op,{method:'POST',headers:raw?{authorization:'Bearer '+TOK,'content-type':raw}:{authorization:'Bearer '+TOK,'content-type':'application/json'},body:raw?body:JSON.stringify(body||{})});
+  const r=await fetch(A+'/api/admin/'+op,{method:'POST',headers:raw?{authorization:'Bearer '+TOK,'content-type':raw}:{authorization:'Bearer '+TOK,'content-type':'application/json'},body:raw?body:JSON.stringify(body||{})});
   const j=await r.json().catch(()=>({err:'net'}));
   if(j.err==='auth'){TOK='';try{localStorage.removeItem('hhadm')}catch(e){}login();throw new Error('auth')}
   return j;
@@ -101,7 +102,7 @@ async function api(op,body,raw){
 function login(){
   $('#app').innerHTML=`<div class="login"><form id="lf"><h1>H&amp;H</h1><p>لوحة التحكم بالمتجر</p><div class="f"><label for="pw">كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" required></div><button class="btn gold" style="width:100%">دخول</button><div class="err" id="le"></div></form></div>`;
   $('#lf').onsubmit=async e=>{e.preventDefault();$('#le').textContent='';
-    const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pw:$('#pw').value})}).then(r=>r.json()).catch(()=>({err:'net'}));
+    const r=await fetch(A+'/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pw:$('#pw').value})}).then(r=>r.json()).catch(()=>({err:'net'}));
     if(r.ok){TOK=r.tok;try{localStorage.setItem('hhadm',TOK)}catch(e){}boot()}else $('#le').textContent=r.err==='wait'?'محاولات كثيرة. انتظر ربع ساعة وحاول مرة ثانية.':r.err==='net'?'تعذّر الاتصال. تأكد من الإنترنت.':'كلمة المرور غير صحيحة.';};
   $('#pw').focus();
 }
@@ -120,7 +121,7 @@ function prods(){
   const draw=()=>{const q=flt.q.trim().toLowerCase();let l=P.filter(p=>flt.f==='del'?p.del:!p.del);
     if(flt.f==='vis')l=l.filter(p=>!p.hidden);if(flt.f==='hid')l=l.filter(p=>p.hidden);if(flt.f==='off')l=l.filter(p=>p.offer);if(flt.f==='na')l=l.filter(p=>!p.avail);if(flt.f==='noimg')l=l.filter(p=>!p.imgs.length);if(flt.f==='tg')l=l.filter(p=>p.src==='tg');
     if(flt.c)l=l.filter(p=>p.cat===flt.c);if(q)l=l.filter(p=>(p.name+' '+p.brand+' '+p.desc).toLowerCase().includes(q));
-    $('#ls').innerHTML=l.slice(0,400).map(p=>`<button class="it" data-id="${esc(p.id)}">${p.imgs[0]?`<img src="/img/${esc(p.imgs[0])}" loading="lazy" alt="">`:'<span class="ph"></span>'}<span class="t"><b>${esc(p.name)}</b><small>${esc(p.cat)} · ${p.imgs.length} صورة${p.hidden?'<span class="pill h">مخفي</span>':''}${p.offer?'<span class="pill o">عرض</span>':''}${!p.avail?'<span class="pill h">غير متوفر</span>':''}${p.src==='tg'?'<span class="pill">القناة</span>':''}</small></span><span class="p">${fmt(p.price)}</span></button>`).join('')||'<p style="color:var(--mut);text-align:center;padding:30px">ما كو نتائج.</p>';
+    $('#ls').innerHTML=l.slice(0,400).map(p=>`<button class="it" data-id="${esc(p.id)}">${p.imgs[0]?`<img src="${A}/img/${esc(p.imgs[0])}" loading="lazy" alt="">`:'<span class="ph"></span>'}<span class="t"><b>${esc(p.name)}</b><small>${esc(p.cat)} · ${p.imgs.length} صورة${p.hidden?'<span class="pill h">مخفي</span>':''}${p.offer?'<span class="pill o">عرض</span>':''}${!p.avail?'<span class="pill h">غير متوفر</span>':''}${p.src==='tg'?'<span class="pill">القناة</span>':''}</small></span><span class="p">${fmt(p.price)}</span></button>`).join('')||'<p style="color:var(--mut);text-align:center;padding:30px">ما كو نتائج.</p>';
     $$('.it').forEach(b=>b.onclick=()=>edit(P.find(p=>p.id===b.dataset.id)));};
   $('#q').oninput=e=>{flt.q=e.target.value;draw()};$('#ff').onchange=e=>{flt.f=e.target.value;draw()};$('#fc').onchange=e=>{flt.c=e.target.value;draw()};
   $('#add').onclick=()=>edit(null);draw();
@@ -143,7 +144,7 @@ function edit(p){
   <div class="foot"><button class="btn gold" id="sv" style="flex:1">حفظ</button>${!n?`<a class="btn" href="/p/${esc(p.id)}" target="_blank">عرض</a><button class="btn red" id="dl">${p.del?'استرجاع':'حذف'}</button>`:''}</div></div>`;
   document.body.append(dr);
   dr.querySelector('#e_war').value=p.warranty||'';
-  const drawIm=()=>{dr.querySelector('#im').innerHTML=imgs.map((k,i)=>`<div><img src="/img/${esc(k)}">${i?'':'<span class="first">الرئيسية</span>'}<span class="ct"><button data-a="r" data-i="${i}" title="قدّم">→</button><button data-a="d" data-i="${i}" title="احذف">✕</button><button data-a="l" data-i="${i}" title="أخّر">←</button></span></div>`).join('');
+  const drawIm=()=>{dr.querySelector('#im').innerHTML=imgs.map((k,i)=>`<div><img src="${A}/img/${esc(k)}">${i?'':'<span class="first">الرئيسية</span>'}<span class="ct"><button data-a="r" data-i="${i}" title="قدّم">→</button><button data-a="d" data-i="${i}" title="احذف">✕</button><button data-a="l" data-i="${i}" title="أخّر">←</button></span></div>`).join('');
     dr.querySelectorAll('.ct button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(b.dataset.a==='d')imgs.splice(i,1);else{const j=b.dataset.a==='r'?i-1:i+1;if(j<0||j>=imgs.length)return;[imgs[i],imgs[j]]=[imgs[j],imgs[i]]}drawIm()})};drawIm();
   const close=()=>dr.remove();dr.querySelector('#x').onclick=close;dr.onclick=e=>{if(e.target===dr)close()};
   dr.querySelector('#up').onchange=async e=>{for(const f of e.target.files){toast('جارٍ رفع الصورة…');const b=await shrink(f);const r=await api('upload',b,'image/jpeg');if(r.k){imgs.push(r.k);drawIm()}else toast('الصورة كبيرة جداً')}toast('انرفعت الصور')};
