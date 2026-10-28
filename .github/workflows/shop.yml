@@ -1,0 +1,42 @@
+name: متجر H&H
+on:
+  push:
+    branches: [main]
+    paths: ['shop/**', '.github/workflows/shop.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: shop
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Run
+        run: |
+          export CLOUDFLARE_API_TOKEN=$(printf %s "$RAW_TOK" | python3 cf/tok.py)
+          export CLOUDFLARE_ACCOUNT_ID=$(printf %s "$RAW_ACC" | tr -d '[:space:]"')
+          sudo apt-get install -y -qq whois dnsutils >/dev/null 2>&1 || true
+          mkdir -p out
+          [ -f shop/probe.sh ] && bash shop/probe.sh || true
+          [ -f shop/deploy.sh ] && bash shop/deploy.sh >> out/deploy.txt 2>&1 || true
+          sed -i "s/$CLOUDFLARE_ACCOUNT_ID/ACC/g" out/*.txt || true
+      - name: Report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan st
+          git rm -rfq --cached . >/dev/null
+          git add -f out
+          git commit -qm "حالة المتجر"
+          git push -qf origin HEAD:shop-status
