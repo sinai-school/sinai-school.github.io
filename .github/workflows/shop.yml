@@ -29,6 +29,7 @@ jobs:
           mkdir -p out
           true
           [ -f shop/deploy.sh ] && bash shop/deploy.sh >> out/deploy.txt 2>&1 || true
+          bash shop/check.sh >> out/deploy.txt 2>&1 || true
           sed -i "s/$CLOUDFLARE_ACCOUNT_ID/ACC/g" out/*.txt || true
       - name: Report
         if: always()
