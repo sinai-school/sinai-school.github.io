@@ -27,7 +27,7 @@ jobs:
           export CLOUDFLARE_ACCOUNT_ID=$(printf %s "$RAW_ACC" | tr -d '[:space:]"')
           sudo apt-get install -y -qq whois dnsutils >/dev/null 2>&1 || true
           mkdir -p out
-          [ -f shop/probe.sh ] && bash shop/probe.sh || true
+          true
           [ -f shop/deploy.sh ] && bash shop/deploy.sh >> out/deploy.txt 2>&1 || true
           sed -i "s/$CLOUDFLARE_ACCOUNT_ID/ACC/g" out/*.txt || true
       - name: Report
