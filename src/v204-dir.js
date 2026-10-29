@@ -30,11 +30,13 @@
        الباقون (الموظفون، الخدمة، المنسبون، المجازون…) كلٌّ بمكانه بالقالب (جرد الملاك، المنسبين، الإجازات، الإداريين) */
     const away = f => /مجاز|منسب|منقول|متقاعد|مستقيل|متوفى/.test(f.status || "");
     const subjOf = f => { const ti = FSD.tIdx(f); return ti < 0 ? [] : [...new Set(U.filter(u => u.t == ti).map(u => u.sj))].sort((a, b) => DIRORD.indexOf(a) - DIRORD.indexOf(b)); };
-    const isPeople = f => !away(f) && (subjOf(f).length > 0 || /EMIS|مرشد/i.test((f.job || "") + " " + (f.jtitle || "")));
+    const IHAB = f => /^(إيهاب|ايهاب) محمد مهدي/.test(String(f.name || "").trim());
+    const isPeople = f => !away(f) && (subjOf(f).length > 0 || IHAB(f) || /EMIS|مرشد/i.test((f.job || "") + " " + (f.jtitle || "")));
     /* الترتيب: المدير ← المعاونون ← المرشد التربوي ← (موظف EMIS) ← المدرسون حسب اختصاص المادة اللي يدرّسونها */
     const jb = f => (f.job || "") + " " + (f.jtitle || "");
     const rank = f => FSD.isPrin(f) ? 0 : (FSD.isAsst(f) || /معاون/.test(jb(f))) ? 1 : /مرشد/.test(jb(f)) ? 2 : (/EMIS/i.test(jb(f)) && !subjOf(f).length) ? 3 : 4;
-    const sjRank = f => { const J = subjOf(f); const i = J.length ? DIRORD.indexOf(J[0]) : 99; return i < 0 ? 98 : i; };
+    const spec2 = f => /اسلام|إسلام/.test(f.spec || "") ? "إسلامية" : (f.spec || "");
+    const sjRank = f => { const J = subjOf(f); const i = J.length ? DIRORD.indexOf(J[0]) : DIRORD.indexOf(spec2(f)); return i < 0 ? 98 : i + (J.length ? 0 : 0.5); };
     const L0 = FSD.staff().filter(isPeople);
     const L = L0.map((f, i) => [f, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || (rank(a[0]) == 4 ? sjRank(a[0]) - sjRank(b[0]) : 0) || a[1] - b[1]).map(x => x[0]), R = [];
     L.forEach((f, k) => {
@@ -125,7 +127,7 @@
     const mkRow = r => {
       const tr = proto.cloneNode(true), c = [...tr.cells], f = r.f;
       if (r.i == 0) { DXF.put(c[0], r.k + 1); DXF.put(c[1], FSD.n4(f.name)); }
-      DXF.put(c[2], r.sj || (/مرشد/.test(f.job || "") ? "مرشد تربوي" : /EMIS/i.test(f.job || "") && !/منسق|معاون/.test(f.job || "") ? "EMIS" : f.spec || ""));
+      DXF.put(c[2], r.sj || (/مرشد/.test(f.job || "") ? "مرشد تربوي" : /EMIS/i.test(f.job || "") && !/منسق|معاون/.test(f.job || "") ? "EMIS" : spec2(f)));
       if (r.sj) {
         let tot = 0;
         for (let j = 0; j < nSec; j++) { const sec = secCol[j]; if (sec < 0) continue; const h = U.filter(u => FSD.staffOfT(u.t) === f && u.sj == r.sj && u.secs.includes(sec)).reduce((a, u) => a + u.h, 0); if (h) { DXF.put(c[3 + j], h); tot += h; } }
@@ -281,4 +283,21 @@
   const _dl = dxLayout;
   dxLayout = function (host, opt) { const r = _dl.apply(this, arguments); try { secHeads(host); normInfo(host); fitBoxes(host); unOverlap(host); } catch (e) { console.warn("v204 fit", e); } return r; };
   window.v204Fit = fitBoxes;
+})();
+
+/* v204e: التعديلات اليدوية القديمة على جدول المديرية كانت مربوطة بمكان الخانة (رقم الصف) — بعد إعادة الترتيب صارت تنزل على مدرس ثاني (مثل «EMIS» على ماهر).
+   التعديلات المحفوظة قبل الترتيب الجديد ما تنطبق بعد؛ اللي تنحفظ هسه تنطبق عادي. */
+(function () {
+  if (typeof fxBuild1 != "function") return;
+  const CUT = "2026-10-29T03:00:00Z", _b1 = fxBuild1;
+  fxBuild1 = async function (id) {
+    try {
+      if (id == "o_dir") {
+        const d = (typeof FXD != "undefined" && FXD[id]) || null;
+        if (d && d.ov && !(String(d.at || "") > CUT)) { const o = Object.assign({}, d); delete o.ov; FXD[id] = o; }
+        try { const l = JSON.parse(localStorage.getItem("fx:" + id) || "null"); if (l && l.ov && !(String(l.at || "") > CUT)) { delete l.ov; localStorage.setItem("fx:" + id, JSON.stringify(l)); } } catch (e) { }
+      }
+    } catch (e) { }
+    return _b1.apply(this, arguments);
+  };
 })();
