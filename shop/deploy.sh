@@ -79,6 +79,7 @@ except Exception: print("save",sys.argv[1],"not json")' "$F"
     fi
   done
   CP=""
+  $W d1 execute hhshop --remote --command "delete from vault where k='cp'" -y >/dev/null 2>&1 && echo "key deleted"
   sleep 3
   curl -s -D - -o /dev/null https://handhst.com/ | grep -i 'etag\|x-hh' | tr -d '\r'
   curl -s -D - -o /dev/null https://handhst.com/ | grep -i 'etag\|x-hh' | tr -d '\r'

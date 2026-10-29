@@ -533,7 +533,8 @@ function card(p,eager){
 }
 const counts=()=>{const c={};P.forEach(p=>c[p.cat]=(c[p.cat]||0)+1);return c};
 const catIcon=n=>(CATS.find(c=>c.n===n)||{}).i||'spark';
-const rd=p=>p.back&&p.back>String(p.dt)?p.back:String(p.dt||'');
+const rd=p=>[String(p.dt||''),p.back||'',p.oat||''].sort().pop();
+const fresh3=p=>Date.now()-Date.parse(rd(p))<3*864e5;
 const isBack=p=>p.avail&&p.back&&Date.now()-Date.parse(p.back)<3*864e5;
 function sortL(l,s){l=[...l];if(s==='lo')l.sort((a,b)=>a.price-b.price);else if(s==='hi')l.sort((a,b)=>b.price-a.price);else if(s==='top'){const r=Object.fromEntries(TOP.map((id,i)=>[id,i]));l.sort((a,b)=>(r[a.id]??999)-(r[b.id]??999)||rd(b).localeCompare(rd(a)))}else l.sort((a,b)=>(b.pin-a.pin)||(b.avail-a.avail)||rd(b).localeCompare(rd(a)));return l}
 function sec(title,href,body,ico){return `<section class="sec"><div class="sh"><h2>${ico?`<span style="color:var(--acc);display:inline-flex">${ic(ico,22,2)}</span>`:'<span class="dot"></span>'}${title}</h2>${href?`<a href="${href}">عرض الكل ${ic('arr',16,2.2)}</a>`:''}</div>${body}</section>`}
@@ -541,10 +542,13 @@ function catsRow(c){return `<div class="cats">${CATS.filter(x=>c[x.n]).map(x=>`<
 function joinsH(){return `<div class="joins">${follows().map(f=>`<a class="join" href="${esc(f.u)}" target="_blank" rel="noopener" data-s="${f.c}">${bi(f.k,26)}<span><b>${f.t}</b><small>${esc(f.d)}</small></span><span class="go">${f.c==='wag'?'انضم':'تابع'}</span></a>`).join('')}</div>`}
 function locH(){
   return `<div class="loc"><div class="li"><h3>تعال زورنا بالمحل</h3>
-   <p>${ic('pin',18,2)}<span>${esc(S.address||'')}</span></p>${S.hours?`<p>${ic('clock',18,2)}<span>${esc(S.hours)}</span></p>`:''}<p>${ic('truck',18,2)}<span>${esc(S.delivery||'')}</span></p>
+   <p>${ic('pin',18,2)}<span>${esc(S.address||'')}</span></p>${S.hours?`<p>${ic('clock',18,2)}<span>${esc(S.hours)}${openH()}</span></p>`:''}<p>${ic('truck',18,2)}<span>${esc(S.delivery||'')}</span></p>
    <div class="bt"><a class="btn pri sm" href="${esc(mapDir())}" target="_blank" rel="noopener" data-s="dir">${ic('nav',18,2)}الاتجاهات لمحلنا</a><a class="btn sm" href="${esc(mapOpen())}" target="_blank" rel="noopener" data-s="map">افتح بالخريطة</a></div></div>
    <div class="map" id="mapBox"><span class="mph">${ic('pin',22,2)}&nbsp;الخريطة تتحمّل…</span></div></div>`;
 }
+function openH(){const sc=S.sched;if(!Array.isArray(sc)||sc.length!==7)return '';const t=new Date(Date.now()+3*3600e3),d=t.getUTCDay(),h=t.getUTCHours()+t.getUTCMinutes()/60;const [a,b]=sc[d]||[0,0];
+  if(h>=a&&h<b)return ' <b style="color:var(--ok);white-space:nowrap">● مفتوح الآن</b>';
+  const nx=h<a?a:(sc[(d+1)%7]||[10])[0];return ` <b style="color:var(--no);white-space:nowrap">● مغلق الآن — نفتح ${h<a?'اليوم':'باچر'} الساعة ${nx===10?'١٠ الصبح':nx===13?'١ الظهر':nx}</b>`;}
 function lazyMap(){const b=$('#mapBox');if(!b)return;const put=()=>{if(b.dataset.on)return;b.dataset.on=1;b.insertAdjacentHTML('beforeend',`<iframe title="موقع مجمع H&H على الخريطة" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=${encodeURIComponent(mapQ())}&hl=ar&z=16&output=embed"></iframe>`)};
   if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){put();io.disconnect()}},{rootMargin:'300px'});io.observe(b)}else put();}
 function trustH(){return `<div class="trust"><div>${ic('shield',24)}<b>ضمان حقيقي</b>سنة على منتجات الوكالة</div><div>${ic('truck',24)}<b>توصيل سريع</b>لكل محافظات العراق</div><a href="/contact">${ic('pin',24)}<b>موقعنا</b>شارع فلسطين، بغداد</a></div>`}
@@ -555,8 +559,11 @@ function home(){
   const offers=sortL(P.filter(p=>p.offer&&p.avail&&p.img),'new');
   const fresh=sortL(P.filter(p=>p.img),'new');
   const backs=P.filter(p=>isBack(p)&&!p.offer&&p.img);
-  const featAll=offers.concat(backs).sort((a,b)=>rd(b).localeCompare(rd(a)));
-  const feat=(featAll.length?featAll:fresh).slice(0,10);
+  // عروض اليوم: أحدث العروض حسب تاريخ نشرها بالقناة (آخر ٣ أيام)، وإذا ما كو نكمّل بأحدث العروض
+  const byDate=offers.concat(backs).sort((a,b)=>rd(b).localeCompare(rd(a)));
+  const recent=byDate.filter(fresh3);
+  const feat=(recent.length>=3?recent:byDate.slice(0,Math.max(6,recent.length))).slice(0,10);
+  if(!feat.length)feat.push(...fresh.slice(0,6));
   const tops=TOP.map(id=>byId[id]).filter(Boolean);
   const c=counts();
   let h=`<section class="hero fadein"><div class="hin">
@@ -567,7 +574,8 @@ function home(){
      <div class="soc">${follows().map(f=>`<a href="${esc(f.u)}" target="_blank" rel="noopener" data-s="${f.c}">${bi(f.k,18)}${f.t}</a>`).join('')}</div></div>
   </div></section>`;
   h+=sec('تسوّق حسب القسم','/c',catsRow(c),'grid');
-  if(offers.length>feat.length)h+=sec('عروض أكثر','/c/offers',`<div class="row">${offers.slice(feat.length,feat.length+10).map(p=>card(p)).join('')}</div>`,'tag');
+  const more=sortL(offers.filter(p=>!feat.includes(p)),'new');
+  if(more.length)h+=sec('عروض أكثر','/c/offers',`<div class="row">${more.slice(0,10).map(p=>card(p)).join('')}</div>`,'tag');
   if(tops.length>=4)h+=sec('الأكثر طلباً','/c/top',`<div class="row">${tops.slice(0,10).map(p=>card(p)).join('')}</div>`,'fire');
   h+=`<section class="sec" id="all"><div class="sh"><h2><span class="dot"></span>كل المنتجات <small>${P.length} منتج</small></h2></div>${gridTools(c)}<div class="grid" id="cg"></div><div class="more" id="mr"></div></section>`;
   h+=`<section class="sec">${trustH()}</section>`;

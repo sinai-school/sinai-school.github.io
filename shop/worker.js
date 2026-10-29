@@ -18,7 +18,8 @@ export const DEF = {
   notice: '',
   waGroup: 'https://chat.whatsapp.com/FvFJNN4B3DU3r8Zw96uhig',
   waChannel: 'https://whatsapp.com/channel/0029VbCZofYISTkPK9NW1729',
-  hours: 'يومياً من ١٠ الصبح لحد ١١ بالليل',
+  hours: 'يومياً من ١٠ الصبح لحد ١٢ بالليل — الجمعة من ١ الظهر لحد ١٢ بالليل',
+  sched: [[10, 24], [10, 24], [10, 24], [10, 24], [10, 24], [13, 24], [10, 24]],
   mapQ: 'مطعم الكوخ شارع فلسطين بغداد',
 };
 
@@ -153,7 +154,7 @@ export function eff(p) {
   if (!imgs.length && !o.imgs) imgs = media.map(x => x.k);
   r.imgs = imgs;
   r.videos = media.filter(x => x.v).map(x => x.k);
-  if (r.offer && (r.until || p.src === 'tg') && p.dt && now() - Date.parse(p.dt) > 3 * 864e5 && !('offer' in o)) r.offer = 0;
+  if (r.offer && p.dt && now() - Date.parse(p.dt) > 3 * 864e5 && !('offer' in o)) r.offer = 0;
   if (r.avail === undefined) r.avail = 1;
   return r;
 }
@@ -441,7 +442,7 @@ async function authed(req, env) {
   return r && r.exp > now();
 }
 
-function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', back: p.back || '', pin: p.pin ? 1 : 0 }; }
+function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', back: p.back || '', oat: p.offerAt || '', pin: p.pin ? 1 : 0 }; }
 
 async function allProducts(env, admin) {
   const rows = (await env.DB.prepare('select * from products').all()).results || [];
@@ -505,7 +506,7 @@ async function page(env, url, O, prod) {
     ns = `<h1>مجمع H&H — اكسسوارات الهواتف في بغداد</h1><ul>${D.p.slice(0, 30).map(x => `<li><a href="${esc(encodeURI(prodPath(x)))}">${esc(x.name)}</a> — ${fmt(x.price)} دينار</li>`).join('')}</ul>`;
   }
   const geo = st.mapLat && st.mapLng ? { geo: { '@type': 'GeoCoordinates', latitude: +st.mapLat, longitude: +st.mapLng } } : {};
-  ld.push({ '@context': 'https://schema.org', '@type': 'ElectronicsStore', '@id': origin + '/#store', name: 'مجمع H&H', alternateName: 'H&H Mobile', url: origin + '/', logo: img, image: img, telephone: '+' + (st.wa1 || DEF.wa1), priceRange: 'IQD', currenciesAccepted: 'IQD', address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, ...geo, sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`, `https://www.facebook.com/${st.fb || DEF.fb}`] });
+  ld.push({ '@context': 'https://schema.org', '@type': 'ElectronicsStore', '@id': origin + '/#store', name: 'مجمع H&H', alternateName: 'H&H Mobile', url: origin + '/', logo: img, image: img, telephone: '+' + (st.wa1 || DEF.wa1), priceRange: 'IQD', currenciesAccepted: 'IQD', address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, ...geo, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '23:59' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Friday', opens: '13:00', closes: '23:59' }], sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`, `https://www.facebook.com/${st.fb || DEF.fb}`] });
   if (crumbs.length > 1) ld.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) });
   if (!prod && path === '/') ld.push({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'مجمع H&H', url: origin + '/', inLanguage: 'ar', potentialAction: { '@type': 'SearchAction', target: origin + '/?q={q}', 'query-input': 'required name=q' } });
   const s0 = await getSettings(env);
@@ -566,6 +567,7 @@ async function admin(req, env, op, O) {
     const old = row ? JSON.parse(row.ov || '{}') : {};
     const ov = { ...old, ...b.ov };
     if (row && b.ov && b.ov.avail === 1 && !eff(row).avail) ov.back = new Date().toISOString();
+    if (b.ov && b.ov.offer === 1 && !(row && eff(row).offer)) ov.offerAt = new Date().toISOString();
     for (const k in ov) if (ov[k] === null) delete ov[k];
     if (row) await env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(ov), id).run();
     else await env.DB.prepare('insert into products(id,src,auto,ov,media,dt,at) values(?,?,?,?,?,?,?)').bind(id, 'admin', '{}', JSON.stringify(ov), '[]', new Date().toISOString(), now()).run();
@@ -576,7 +578,7 @@ async function admin(req, env, op, O) {
   if (op === 'bulk') {
     const { ids, ov } = await req.json();
     const rows = (await env.DB.prepare(`select * from products where id in (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results || [];
-    const ops = rows.map(r => { const o = { ...JSON.parse(r.ov || '{}'), ...ov }; if (ov.avail === 1 && !eff(r).avail) o.back = new Date().toISOString(); for (const k in o) if (o[k] === null) delete o[k]; return env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(o), r.id); });
+    const ops = rows.map(r => { const o = { ...JSON.parse(r.ov || '{}'), ...ov }; if (ov.avail === 1 && !eff(r).avail) o.back = new Date().toISOString(); if (ov.offer === 1 && !eff(r).offer) o.offerAt = new Date().toISOString(); for (const k in o) if (o[k] === null) delete o[k]; return env.DB.prepare('update products set ov=? where id=?').bind(JSON.stringify(o), r.id); });
     for (let i = 0; i < ops.length; i += 50) await env.DB.batch(ops.slice(i, i + 50));
     await changed();
     return J({ ok: 1, n: rows.length });
