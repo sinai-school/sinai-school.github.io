@@ -1,4 +1,4 @@
-/* إعدادية سيناء للبنين — v204: يفتح فوراً من الجهاز (حتى بدون إنترنت أو إنترنت ضعيف جداً)، والنسخة الجديدة تنزل بالخلفية وتتطبق وحدها.
+/* إعدادية سيناء للبنين — v205: يفتح فوراً من الجهاز (حتى بدون إنترنت أو إنترنت ضعيف جداً)، والنسخة الجديدة تنزل بالخلفية وتتطبق وحدها.
    الملفات والصور المرفقة والخطوط والمكتبات تنحفظ بذاكرة دائمية ما تنمسح مع التحديثات، فتنفتح فوراً بعد أول مرة. */
 const V='sinai-app-v8',EXT='sinai-ext',CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png','img/logo_s.png','img/logo_ui.png','img/logo_m.png','img/logo_cal.png','img/img_cal2.png','img/j2eagle.png','img/j2seal.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(async c=>{
@@ -12,15 +12,22 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.a
 const put=(cn,key,res)=>{if(res&&(res.ok||res.type=='opaque')){const cp=res.clone();caches.open(cn).then(c=>c.put(key,cp)).catch(()=>{})}return res};
 const page=()=>caches.open(V).then(c=>c.match('index.html').then(m=>m||c.match('./')));
 let LASTV='';
+const same=(a,b)=>!!a&&!!b&&(a==b||a.indexOf(b+'-')==0||b.indexOf(a+'-')==0);
+let FB=0;
 async function fresh(){
- try{const r=await fetch('index.html',{cache:'no-cache'});if(!r||!r.ok)return;
+ if(FB)return;FB=1;
+ try{
+  /* v205: نفحص رقم النسخة أولاً (ملف صغير)، والصفحة الكاملة تنزل بس إذا أكو نسخة جديدة — أسرع وأخف على الإنترنت الضعيف */
+  const c0=await caches.open(V),mv=await c0.match('__ver'),cv=mv?await mv.text():'';
+  try{const vr=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(vr&&vr.ok){const vj=await vr.json();if(vj&&vj.v&&cv&&same(vj.v,cv))return}}catch(x){}
+  const r=await fetch('index.html',{cache:'no-cache'});if(!r||!r.ok)return;
   const t=await r.clone().text(),m=t.match(/window\.APP_VER="([^"]*)"/),v=m?m[1]:'';
   if(t.length<2e5||!v)return;
   const c=await caches.open(V),old=await c.match('index.html');let ov='';
   if(old){const ot=await old.text(),om=ot.match(/window\.APP_VER="([^"]*)"/);ov=om?om[1]:''}
-  await c.put('index.html',new Response(t,{headers:{'Content-Type':'text/html; charset=utf-8'}}));
+  await c.put('index.html',new Response(t,{headers:{'Content-Type':'text/html; charset=utf-8'}}));await c.put('__ver',new Response(v));
   if(ov&&v!=ov&&v!=LASTV){LASTV=v;(await self.clients.matchAll({type:'window'})).forEach(cl=>{try{cl.postMessage({t:'upd204',v})}catch(x){}})}
- }catch(x){}
+ }catch(x){}finally{FB=0}
 }
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!='GET')return;const u=new URL(r.url),same=u.origin==location.origin;
  if(!same&&/(^|\.)script\.google(usercontent)?\.com$|(^|\.)api\.github\.com$/.test(u.hostname))return;

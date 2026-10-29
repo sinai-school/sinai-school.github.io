@@ -53,6 +53,7 @@ async function private_() {
 async function private0_() {
   const P = await kvJ('priv', null) || { s: {}, t: {} }, X = await kvJ('privx', {});
   for (const k of ['s', 't']) { P[k] = P[k] || {}; for (const id in (X[k] || {})) if (!P[k][id]) P[k][id] = X[k][id]; }
+  P.s[TST_S] = TST_PS; P.t[TST_T] = TST_PT;
   return MEMO.priv = P;
 }
 const privBump_ = () => kvPut('PRIVV', uid().slice(0, 10)).then(() => { G_PRIV = null; MEMO.priv = null; });
@@ -170,7 +171,7 @@ async function notesFor_(kind, key, secs, pub) {
   for (const n of o.reverse()) { const k = [n.from, n.title, n.body, (n.files || []).length].join('|'); if (sn.has(k)) continue; sn.add(k); r.push(n); }
   return r.slice(0, 150);
 }
-const noteAdd_ = o => run('insert into notes(id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?)', o.id, o.scope, o.target, o.from, o.title, o.body, o.date, o.cat, o.files);
+const noteAdd_ = async o => { const r = await run('insert into notes(id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?)', o.id, o.scope, o.target, o.from, o.title, o.body, o.date, o.cat, o.files); MEMO.notes = null; try { await pushNote205_(o); } catch (e) { } return r; };
 const noteHas_ = async id => !!id && !!(await one('select id from notes where id=?', id));
 async function sentFor_(name) {
   name = String(name || '').replace(/\s+/g, ' ').trim(); if (!name) return [];
@@ -245,6 +246,7 @@ async function report202_(y, b) {
   if (await one('select id from reports where kind=? and key=? and text=? and date>? limit 1', y.kind, y.key, text, since)) return { ok: 1, dup: 1 };
   const F = await allFiles_(b);
   await run('insert into reports(id,kind,key,name,text,date,status,tgt,files,cid) values(?,?,?,?,?,?,?,?,?,?)', uid().slice(0, 10), y.kind, y.key, y.a.name, text, now(), 'new', tgt, F.out.length ? JSON.stringify(F.out) : '', ci || null);
+  try { await pushTo205_(tgt === 'adm' ? (x => x.kind === 'o') : (x => x.kind === 't' && 't:' + x.key === tgt)); } catch (e) { }
   return { ok: 1, nf: F.n, ferr: F.err };
 }
 /* الرد على البلاغ بخطوة وحدة: يوصل للطالب كتبليغ + يبين تحت بلاغه + يتعلّم «تم» */
@@ -347,7 +349,7 @@ async function extra204_(o, x) {
 /* ---------- الأوامر ---------- */
 async function handle(b) {
   const a = String(b.a || '');
-  await ens202_();
+  await ens202_(); await ens205_();
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -372,6 +374,8 @@ async function handle(b) {
   }
   if (a === 'boot') return boot_(b);
   if (a === 'migrate') return migrate_(b);
+  if (a === 'vapid') return { ok: 1, k: (await vapid205_()).pub };
+  if (a === 'psub') { await ens205_(); const y = await auth_(b); if (y.err) return y; return psubPut205_(y.kind, y.key, b.sub); }
   if (a === 'reg') {
     const kind = String(b.kind), key = String(b.key), ph = phone_(b.phone);
     if (!ph) return { err: 'phone' };
@@ -418,7 +422,7 @@ async function handle(b) {
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
-    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
@@ -443,11 +447,11 @@ async function admin_(b) {
   if (b.op === 'pull') {
     const seen = {}; for (const r of await all('select id,kind,key from seen')) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
     return { ok: 1, sheet: '',
-      acc: (await all('select * from acc')).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
-      prof: (await all('select kind,key,name,json,photo,updated,status from prof')).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
+      acc: (await all("select * from acc where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
+      prof: (await all("select kind,key,name,json,photo,updated,status from prof where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
       notes: (await notesAll_()).map(n => ({ id: n.id, scope: n.scope, target: n.target, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files })),
       seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
-      unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
+      unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s' and key not like 'tst-%'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
       nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
       rel: await kvJ('REL', { c: [] }), tgc: (await all('select label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
   }
@@ -477,6 +481,8 @@ async function admin_(b) {
     await noteAdd_({ id: ci || uid().slice(0, 8), scope: String(b.scope), target: String(b.target || ''), from: String(b.from || 'إدارة المدرسة'), title: String(b.title || ''), body: String(b.body || ''), date: now(), cat: String(b.cat || 'adm'), files: F.out.length ? JSON.stringify(F.out) : '' });
     return { ok: 1, nf: F.n, ferr: F.err };
   }
+  if (b.op === 'psub') { await ens205_(); return psubPut205_('o', String(b.key || 'own'), b.sub); }
+  if (b.op === 'pushTest') { await ens205_(); return pushTo205_(x => x.kind === String(b.kind || 'o')); }
   if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); return { ok: 1 }; }
   if (b.op === 'osync') return osync_(b);
   if (b.op === 'snapPut') return snapPut_(b);
@@ -623,7 +629,7 @@ async function stf_(b) {
     return { ok: 1, rev: rv, docs: o, acc: spub_(a) };
   }
   if (op === 'rev') return { ok: 1, rev: rv };
-  if (op === 'snap') { if (!a.own) return { err: 'role' }; return snapPut_(b); }
+  if (op === 'snap') { if (!a.own && !(await snapOk205_(b, a))) return { err: 'role' }; return snapPut_(b); }
   if (op === 'one') {
     if (!reOf(a).test(String(b.p || ''))) return { err: 'path' };
     const e = await dmeta_(String(b.p || ''));
@@ -849,6 +855,7 @@ async function migrate_(b) {
       if (e && e.h !== 'DEL') { const old = await dget_(e); await dput_('_bk205/' + p + '/' + Date.now(), old, e.h, 'imp', e.h); }
       await dput_(p, t, h, 'o', h); L.put++;
     }
+    if (m.snap && m.snap.z && m.snap.at) { await snapPut_(m.snap); L.snap = m.snap.at; }
     return { ok: 1, step, log: L, next: '' };
   }
   if (step === 'roles') {
@@ -908,6 +915,7 @@ async function applyAll_() {
     let applied = 0; const invalid = [];
     for (const p of R) {
       let o; try { o = JSON.parse(p.json || '{}'); } catch (x) { continue; }
+      if (/^tst-/.test(p.key)) { await run("update prof set status='ok' where kind=? and key=?", p.kind, p.key); continue; }
       if (o.v3 !== '1') { invalid.push([p.kind, p.key]); continue; }
       const E = fcheck_(p.kind, o); if (E.length) { invalid.push([p.kind, p.key]); continue; }
       const key = p.key;
@@ -952,9 +960,115 @@ async function applyAll_() {
   } finally { await run("update kv set v='0' where k='APLOCK'"); }
 }
 
+
+
+/* v205: موظف عنده صلاحية الجدول ينشر البوابة فوراً — بس إذا نسخته كاملة (نفس الشعب وعدد الطلاب) حتى ما تنقص بيانات */
+async function snapOk205_(b, a) {
+  try {
+    if (a.ro || !(a.secs || []).some(x => x === 't' || x === 'p')) return false;
+    const n = JSON.parse(dec.decode(await gunz(unb64(String(b.z || '')))));
+    const o0 = JSON.parse(await blobGet('snap') || '{}'); if (!o0.z) return false;
+    const o = JSON.parse(dec.decode(await gunz(unb64(o0.z))));
+    if (JSON.stringify(n.sn) !== JSON.stringify(o.sn) || !Array.isArray(n.cells) || n.cells.length !== o.cells.length) return false;
+    const cnt = x => (x.stu || []).reduce((t, l) => t + (l || []).length, 0);
+    if (cnt(n) < cnt(o) * 0.97 || (n.tch || []).length < (o.tch || []).length * 0.9) return false;
+    return true;
+  } catch (e) { return false; }
+}
+/* ---------- v205: إشعارات حقيقية (Web Push) توصل حتى لو التطبيق مسدود ---------- */
+const TST_S = 'tst-s', TST_T = 'tst-t', TST_SEC = 'شعبة تجريبية';
+const TST_PS = { n: 'طالب تجريبي', s: 'الرابع العلمي أ', secs: [TST_SEC], st: 'جديد', test: 1, pre: { nid: '200900000001' }, days: [], g: [], res: 'حساب تجريبي' };
+const TST_PT = { n: 'مدرس تجريبي', job: 'مدرس', test: 1, secs: [TST_SEC], studs: [TST_S], pre: { nid: '199000000002' } };
+const TST_PH = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFoAAABwCAIAAAAR/fAFAAABtElEQVR42u3bwVXDMBCEYWde+qAOWqAJLjSRCmiCfmiLE0d4sbQ78uj9vubFWn8ZW7K9ub28vx1sv5sggAMOOOCAAw444IADDjjgSNnuC8f+/vz666PXx8eSkm7+G/x/FJa7WDlOQSxB0fUtJr97RY754/GIKMLCJqIUC4+IgiwMIsqy6N6z4ipu3T+L9H4Oz6TYMQrpgMPJYVtQd4xFOuCAAw444IADjlwO57Pv8rFIBxxmDs/50jEK6bBwdAekaf+Kq7h1z4r7DVtzp6wLXvc5qKApwDBhKWX56Jm8FbGgti386f5ZzUFvGLdwcMABx0HX8Yrpdsnk4p5ZBl4yO11MHCWv2g0u7RzlPQfBN/hxjZRd6TA0vcQ8OqZVjmao1RYdIyraonxcpVvUjq4NLApr0B4WVZVoG4uSerSTxXxVPO8o4rhmNCZr034WMxVyskxzXD8aw3WSjjmOlGiMVUs64KjiyDpTBmomHaMcidE4WznpgAOOYo7cC8ep+kkHHHDA0caRfh19/ihIBxxwwAEHHHDAAQcccMABBxwbc6z6V+thb+knHXDAAUcnR/rV9Mn6fwDRvqXrlakP2gAAAABJRU5ErkJggg==';
+const TST_PJS = {"n1": "طالب", "n2": "تجريبي", "n3": "للتجربة", "n4": "فقط", "laqab": "", "m1": "امنة", "m2": "علي", "m3": "حسن", "dob": "2009-01-01", "nid": "200900000001", "gphone": "07000000003", "gr": "لا", "city": "بغداد", "hay": "النهضة", "mahalla": "101", "zuqaq": "1", "dar": "1", "near": "قرب المدرسة", "email": "", "mother": "امنة علي حسن", "area": "بغداد — النهضة", "v3": "1", "at": "2026-10-29T00:00:00.000Z"};
+const TST_PJT = {"n1": "مدرس", "n2": "تجريبي", "n3": "للتجربة", "n4": "فقط", "laqab": "", "m1": "امنة", "m2": "علي", "m3": "حسن", "gender": "ذكر", "birth": "1990-01-01", "birthPlace": "بغداد", "blood": "O+", "marital": "أعزب", "spouse": "", "marriageDate": "", "spouseBirth": "", "spouseJob": "", "spouseWork": "", "children": "0", "nid": "199000000002", "nidDate": "2020-01-01", "resCard": "", "resOffice": "", "passport": "", "card": "", "edu": "بكالوريوس", "spec": "تجريبي", "specFull": "", "college": "التربية", "dept": "تجريبي", "univ": "بغداد", "gradYear": "2012", "studyCountry": "العراق", "empNo": "", "type": "دائمي", "grade": "", "appoint": "2015-01-01", "start": "2020-01-01", "subjects": "", "prevSchool": "", "thanks": "0", "martyr": "لا", "polDism": "لا", "city": "بغداد", "hay": "النهضة", "mahalla": "101", "zuqaq": "1", "dar": "1", "near": "قرب المدرسة", "phone": "07000000002", "phone2": "", "email": "", "mother": "امنة علي حسن", "area": "بغداد — النهضة", "v3": "1", "at": "2026-10-29T00:00:00.000Z"};
+let E205 = 0;
+async function ens205_() {
+  if (E205) return; E205 = 1;
+  if ((await kvGet('E205')) === '3') return;
+  for (const q of ['create table if not exists psub(id text primary key, kind text, key text, sub text, at text)',
+    'create index if not exists psub_k on psub(kind,key)',
+    'create table if not exists pushq(id integer primary key autoincrement, sid text, at text)']) { try { await run(q); } catch (e) { } }
+  const t = now();
+  for (const [k, key, n, ph, nid] of [['s', TST_S, 'طالب تجريبي', '07000000001', '200900000001'], ['t', TST_T, 'مدرس تجريبي', '07000000002', '199000000002']])
+    try { await run('insert or ignore into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', k, key, n, ph, t, t, nid); } catch (e) { }
+  try {
+    await blobPut('ph_tstph', TST_PH);
+    for (const [k, key, n, j] of [['s', TST_S, 'طالب تجريبي', TST_PJS], ['t', TST_T, 'مدرس تجريبي', TST_PJT]])
+      await run("insert or ignore into prof(kind,key,name,json,photo,updated,status) values(?,?,?,?,?,?,?)", k, key, n, JSON.stringify(j), 'tstph', t, 'ok');
+  } catch (e) { }
+  await kvPut('E205', '3');
+}
+const b64u = u8 => b64(u8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function vapid205_() {
+  if (MEMO.vapid) return MEMO.vapid;
+  let v = await kvJ('VAPID', null);
+  if (!v || !v.prv || !v.pub) {
+    const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const prv = await crypto.subtle.exportKey('jwk', kp.privateKey), raw = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey));
+    v = { prv, pub: b64u(raw) }; await kvPut('VAPID', v);
+  }
+  return MEMO.vapid = v;
+}
+async function vapidAuth205_(ep) {
+  const v = await vapid205_(), u = new URL(ep), aud = u.protocol + '//' + u.host;
+  MEMO.vj = MEMO.vj || {}; if (MEMO.vj[aud]) return MEMO.vj[aud];
+  const h = b64u(enc.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' }))), c = b64u(enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: 'https://sinai-school.github.io' })));
+  const key = await crypto.subtle.importKey('jwk', v.prv, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, enc.encode(h + '.' + c)));
+  return MEMO.vj[aud] = 'vapid t=' + h + '.' + c + '.' + b64u(sig) + ', k=' + v.pub;
+}
+async function psubPut205_(kind, key, sub) {
+  let o = sub; try { if (typeof o === 'string') o = JSON.parse(o); } catch (e) { return { err: 'sub' }; }
+  const ep = o && String(o.endpoint || ''); if (!/^https:\/\//.test(ep) || ep.length > 900) return { err: 'sub' };
+  const id = [...new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(ep)))].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+  await run('insert into psub(id,kind,key,sub,at) values(?,?,?,?,?) on conflict(id) do update set kind=excluded.kind,key=excluded.key,sub=excluded.sub,at=excluded.at', id, kind, key, JSON.stringify({ endpoint: ep }), now());
+  return { ok: 1, id, k: (await vapid205_()).pub };
+}
+/* إرسال تنبيه فارغ (بدون محتوى): التطبيق يجيب آخر تبليغ بنفسه ويعرضه بصوت */
+async function pushOne205_(sid, ep) {
+  try {
+    const r = await fetch(ep, { method: 'POST', headers: { TTL: '172800', Urgency: 'high', Authorization: await vapidAuth205_(ep), 'Content-Length': '0' } });
+    if (r.status === 404 || r.status === 410) await run('delete from psub where id=?', sid);
+    return r.status;
+  } catch (e) { return 0; }
+}
+async function pushSend205_(lim) {
+  await ens205_();
+  const L = await all('select q.id qid, q.sid, p.sub from pushq q left join psub p on p.id=q.sid order by q.id limit ?', lim || 40);
+  if (!L.length) return 0;
+  await run('delete from pushq where id<=?', L[L.length - 1].qid);
+  let n = 0; const seen = new Set;
+  for (const x of L) { if (!x.sub || seen.has(x.sid)) continue; seen.add(x.sid); let ep = ''; try { ep = JSON.parse(x.sub).endpoint; } catch (e) { } if (ep) { await pushOne205_(x.sid, ep); n++; } }
+  return n;
+}
+async function pushTo205_(pred) {
+  await ens205_();
+  const S = (await all('select id,kind,key from psub')).filter(pred); if (!S.length) return { ok: 1, n: 0 };
+  const st = S.map(x => DB.prepare('insert into pushq(sid,at) values(?,?)').bind(x.id, now()));
+  for (let i = 0; i < st.length; i += 40) await DB.batch(st.slice(i, i + 40));
+  const n = await pushSend205_(35);
+  return { ok: 1, n: S.length, sent: n };
+}
+async function pushNote205_(o) {
+  const P = await private_(), sc = String(o.scope || ''), t = String(o.target || '');
+  const secsOf = (kind, key) => { const v = (P[kind] || {})[key] || {}; return v.secs || (v.s ? [v.s] : []); };
+  return pushTo205_(x => {
+    if (x.kind === 'o') return false;
+    if (sc === 'all') return true;
+    if (sc === 'allS') return x.kind === 's';
+    if (sc === 'allT') return x.kind === 't';
+    if (sc === 'one') return t === x.kind + ':' + x.key;
+    if (sc === 'sec') return x.kind === 's' && secsOf('s', x.key).includes(t);
+    if (sc === 'exg') return x.kind === 's' && t.split('|').some(g => g && secsOf('s', x.key).some(s => s === g || String(s).startsWith(g + ' ')));
+    if (sc === 'exs') return x.kind === 's' && t.split('|').includes(x.key);
+    return false;
+  });
+}
+
 /* ---------- الدخول ---------- */
 export default {
-  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await applyAll_(); } catch (e) { } },
+  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
     DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin;
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
