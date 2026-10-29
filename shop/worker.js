@@ -815,7 +815,9 @@ export default {
         const e = row ? eff(row) : null;
         return page(env, url, O, e && !e.del && !e.purge && !e.hidden ? e : null);
       }
-      return page(env, url, O, undefined);
+      // أي رابط غير معروف = 404 حقيقي (مهم لـ Google)
+      const known = p === '/' || p === '/c' || p === '/c/' || p.startsWith('/c/') || p === '/contact' || p === '/index.php';
+      return page(env, url, O, known ? undefined : null);
     } catch (e) {
       return J({ err: 'server', m: String(e && e.message || e) }, 500);
     }
