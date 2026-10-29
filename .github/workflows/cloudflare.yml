@@ -59,8 +59,8 @@ jobs:
           echo "url=$URL" >> $L
           echo "test: $(curl -s $URL | head -c 400)" >> $L
           echo "pk: $(curl -s $URL/pk)" >> $L
-          echo "tst-s: $(curl -s -X POST -H 'Content-Type: text/plain' -d '{"a":"login","kind":"s","key":"tst-s","phone":"07000000001","nid":"200900000001"}' $URL | head -c 160)" >> $L
-          echo "tst-t: $(curl -s -X POST -H 'Content-Type: text/plain' -d '{"a":"login","kind":"t","key":"tst-t","phone":"07000000002","nid":"199000000002"}' $URL | head -c 160)" >> $L
+          echo "tst-s: $(curl -s -X POST -H 'Content-Type: text/plain' -d '{"a":"login","kind":"s","key":"tst-s","phone":"07000000001","nid":"200900000001"}' $URL | python3 -c 'import sys,json;d=json.loads(sys.stdin.read() or "{}");p=d.get("private") or {};print(d.get("ok"),d.get("err"),d.get("msg","")[:200],p.get("s"),len(p.get("g") or []))')" >> $L
+          echo "tst-t: $(curl -s -X POST -H 'Content-Type: text/plain' -d '{"a":"login","kind":"t","key":"tst-t","phone":"07000000002","nid":"199000000002"}' $URL | python3 -c 'import sys,json;d=json.loads(sys.stdin.read() or "{}");print(d.get("ok"),d.get("err"),(d.get("private") or {}).get("n"))')" >> $L
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.t, count(distinct d.p) n, sum(length(c.d)) bytes from docs d join chunks c on c.id='d_'||d.p group by d.t" 2>/dev/null | python3 -c "import sys,json;print('sizes',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select d.p, sum(length(c.d)) b from docs d join chunks c on c.id='d_'||d.p where d.t='docs' group by d.p order by b desc limit 8" 2>/dev/null | python3 -c "import sys,json;print('biggest',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           if [ -f cf/boot.json ]; then python3 -u cf/boot.py $URL roles >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
