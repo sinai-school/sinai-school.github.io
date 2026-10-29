@@ -63,12 +63,12 @@ async function gas_(body) {
 
 /* ---------- الحسابات والملفات الشخصية ---------- */
 const accGet_ = (kind, key) => one('select * from acc where kind=? and key=?', String(kind), String(key));
-/* v204i: حساب انحذف (أو انسجل عليه غير صاحبه): صورته ومعلوماته القديمة تنمسح حتى ما تطلع لصاحب الحساب الحقيقي — يبقى بس رقم البطاقة المعتمد */
+/* v204i: حساب انحذف (أو انسجل عليه غير صاحبه): صورته ومعلوماته ورقم بطاقته القديمة تنمسح حتى ما تطلع لصاحب الحساب الحقيقي */
 async function wipeProf_(kind, key) {
   const q = await one('select json,photo from prof where kind=? and key=?', kind, key); if (!q) return;
   if (q.photo && q.photo !== 'gas') await blobDel('ph_' + q.photo);
-  let nid = ''; try { nid = (JSON.parse(q.json || '{}') || {}).nid || ''; } catch (e) { }
-  await run("update prof set json=?,photo='',status='',updated=? where kind=? and key=?", JSON.stringify(nid ? { nid } : {}), now(), kind, key);
+  /* رقم البطاقة اللي كتبه المسجّل القديم ما ينحسب «الصحيح» — المعتمد بس من سجلات المدرسة أو تصحيح الإدارة (NIDFIX) */
+  await run("update prof set json='{}',photo='',status='',updated=? where kind=? and key=?", now(), kind, key);
 }
 async function profGet_(kind, key) { return one('select json,photo,status,updated,name from prof where kind=? and key=?', kind, key); }
 async function profPut_(p) {
