@@ -46,6 +46,38 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     navigator.serviceWorker.addEventListener("message", e => { const d = e.data || {}; if (d.t == "upd204") { try { localStorage.removeItem("rl86v"); } catch (x) { } try { W.__chkUpd && W.__chkUpd(); } catch (x) { } } });
   });
   setTimeout(() => { try { W.__chkUpd && W.__chkUpd(); } catch (e) { } }, 1500);
+  /* v204h: نسخة الجهاز تنحفظ من أول فتحة (حتى إذا تحميل Service Worker انقطع على إنترنت ضعيف) — المرة الجاية تنفتح بدون إنترنت */
+  const seed204 = async () => {
+    try {
+      if (!W.caches || !/^https:/.test(location.protocol)) return;
+      const c = await caches.open("sinai-app-v8");
+      const F = ["index.html", "manifest.webmanifest", "icon-192.png", "img/logo_s.png", "img/logo_ui.png", "img/logo_m.png", "img/logo_cal.png", "img/img_cal2.png", "img/j2eagle.png", "img/j2seal.png"];
+      for (const u of F) {
+        try {
+          if (await c.match(u)) continue;
+          const r = await fetch(u, { cache: "force-cache" });
+          if (!r || !r.ok) continue;
+          if (u == "index.html") { const t = await r.clone().text(); if (t.length < 2e5 || t.indexOf("window.APP_VER=") < 0) continue; await c.put("index.html", new Response(t, { headers: { "Content-Type": "text/html; charset=utf-8" } })); }
+          else await c.put(u, r);
+        } catch (e) { }
+      }
+    } catch (e) { }
+  };
+  setTimeout(seed204, 2500); W.addEventListener("online", () => setTimeout(seed204, 1500));
+  /* التطبيق القديم (أندرويد) ما ينفتح بدون إنترنت إذا ما انحفظت نسخة — نطلب منه يحدّث مرة وحدة */
+  setTimeout(() => {
+    try {
+      if (!W.SinaiApp || !/SinaiSchoolApp\/1\b/.test(navigator.userAgent)) return;
+      let k = 0; try { k = +localStorage.getItem("app204h") || 0; } catch (e) { }
+      if (Date.now() - k < 3 * 864e5) return;
+      try { localStorage.setItem("app204h", Date.now()); } catch (e) { }
+      const b = D.createElement("div");
+      b.style.cssText = "position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#0c362f;color:#f6edd2;border:1px solid #e0c47c;border-radius:14px;padding:12px 14px;font:600 15px/1.7 inherit;box-shadow:0 8px 24px #0006;display:flex;gap:10px;align-items:center;direction:rtl";
+      b.innerHTML = '<div style="flex:1">نسخة جديدة من التطبيق: تنفتح بدون إنترنت وتتحدث وحدها. اضغط «تحديث» وثبّتها فوق القديمة — بياناتك ودخولك يبقون.</div><a href="https://github.com/sinai-school/sinai-school.github.io/releases/latest/download/sinai-school.apk" style="background:#e0c47c;color:#1b1406;border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:800">تحديث</a><button style="background:none;border:0;color:#f6edd2;font-size:20px">×</button>';
+      b.querySelector("button").onclick = () => b.remove();
+      D.body.appendChild(b);
+    } catch (e) { }
+  }, 6000);
   D.addEventListener("visibilitychange", () => { if (!D.hidden) { try { navigator.serviceWorker && navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage({ t: "fresh204" }); } catch (e) { } } });
   /* الشعارات صارت ملفات (أخف وأسرع): ملفات Word تنتظرها لحظة حتى تنحط بيها */
   on(() => { if (has("buildLetterDocx")) { const _b = buildLetterDocx; buildLetterDocx = async function (...a) { try { await W.IMG201_READY; } catch (e) { } return _b.apply(this, a); }; } });

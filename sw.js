@@ -5,7 +5,7 @@ self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V
  /* ننقل النسخ المحفوظة من الذاكرة القديمة (حتى ما ينتظر تحميل جديد)، وبعدين نجيب الأحدث */
  const ks=(await caches.keys()).filter(k=>/^sinai-app/.test(k)&&k!=V);
  for(const u of CORE){let m=null;for(const k of ks){m=await (await caches.open(k)).match(u);if(m)break}
-  try{const r=await fetch(u,{cache:'no-cache'});if(r&&r.ok){await c.put(u,r);continue}}catch(x){}
+  try{const r=await fetch(u);if(r&&r.ok){await c.put(u,r);continue}}catch(x){}
   if(m)await c.put(u,m)}
 }).catch(()=>{}))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=V&&/^sinai-app/.test(x)).map(x=>caches.open(V).then(c=>c.match('index.html')).then(m=>m?caches.delete(x):0)))).then(()=>self.clients.claim()))});
@@ -29,7 +29,7 @@ self.addEventListener('fetch',e=>{const r=e.request;if(r.method!='GET')return;co
  if(root){
   if(r.headers.get('x-fresh')){e.respondWith(fetch('index.html',{cache:'no-cache'}).then(res=>res&&res.ok?put(V,'index.html',res):res).catch(()=>page().then(m=>m||Response.error())));return}
   /* يفتح فوراً من الجهاز، والأحدث ينزل بالخلفية */
-  e.respondWith(page().then(m=>{if(m){e.waitUntil(fresh());return m}return fetch('index.html',{cache:'no-cache'}).then(res=>res&&res.ok?put(V,'index.html',res):res)}).catch(()=>page().then(m=>m||Response.error())));return}
+  e.respondWith(page().then(m=>{if(m){e.waitUntil(fresh());return m}return fetch('index.html',{cache:'no-cache'}).then(res=>res&&res.ok?put(V,'index.html',res):res).catch(()=>fetch('index.html',{cache:'force-cache'}))}).catch(()=>page().then(m=>m||caches.match(r,{ignoreSearch:true})).then(m=>m||Response.error())));return}
  if(same){e.respondWith(caches.match(r).then(m=>{const n=fetch(r).then(res=>put(V,r,res)).catch(()=>m);if(m){e.waitUntil(n.catch(()=>{}));return m}return n}));return}
  /* ملفات المرفقات (/f/…) والخطوط والمكتبات: من الذاكرة الدائمية أولاً */
  e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>put(EXT,r,res)).catch(()=>caches.match(r,{ignoreSearch:true}).then(x=>x||Response.error()))))});
