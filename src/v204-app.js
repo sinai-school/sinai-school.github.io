@@ -450,3 +450,18 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     } catch (x) { try { e.source.postMessage({ t: "emis204res", err: String(x) }, e.origin); } catch (y) { } }
   });
 })();
+
+/* ===== v204f: دخول الإدارة ما يفشل على الإنترنت الضعيف — إذا تعذّر الاتصال يعيد المحاولة وحده (٣ مرات) قبل ما يطلع الخطأ ===== */
+(function () {
+  if (typeof stfLogin != "function") return;
+  const _sl = stfLogin;
+  stfLogin = async function (silent) {
+    const er = document.getElementById("lgerr"), bad = () => er && /تعذّر الاتصال بخادم المدرسة/.test(er.textContent || "");
+    for (let i = 0; i < 4; i++) {
+      try { await _sl.apply(this, arguments); } catch (e) { console.warn("v204f login", e); }
+      if (!bad() || i == 3) return;
+      if (navigator.onLine === false) { er.textContent = "ماكو إنترنت بالجهاز هسه — شغّل الإنترنت وراح يدخل وحده."; await new Promise(ok => { const f = () => { removeEventListener("online", f); ok(); }; addEventListener("online", f); setTimeout(f, 60e3); }); }
+      else { er.textContent = "الإنترنت ضعيف — جارٍ إعادة المحاولة (" + (i + 2) + " من ٤)…"; await new Promise(ok => setTimeout(ok, 1500 * (i + 1))); }
+    }
+  };
+})();

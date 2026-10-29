@@ -301,3 +301,34 @@
     return _b1.apply(this, arguments);
   };
 })();
+
+/* v204f: التعديل اليدوي بجدول المديرية ينربط باسم المدرس ومادته (مو برقم الصف) —
+   فلو تغيّر الترتيب أو انضاف/انشال مدرس، التعديل يبقى على نفس الشخص وما ينزل على غيره أبداً. */
+(function () {
+  if (typeof fxKeys != "function" || typeof fxBuild1 != "function") return;
+  let CUR = "";
+  const _b1 = fxBuild1;
+  fxBuild1 = async function (id) { CUR = id; try { return await _b1.apply(this, arguments); } finally { CUR = ""; } };
+  const _k = fxKeys;
+  fxKeys = function (host) {
+    _k.apply(this, arguments);
+    if (CUR != "o_dir") return;
+    try {
+      const tx = td => td ? DXF.text(td).replace(/[\s​]+/g, " ").trim() : "";
+      const hs = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
+      DXF.tables(host).forEach((t, ti) => {
+        const G = DXF.grid(t), first = DXF.text(t.rows[0]);
+        const main = /الصفوف والشعب/.test(first);
+        if (!main && !/^(جرد الملاك|المنسبين|الا?إ?جازات|الفائضون|معلومات الا?إ?داريين)/.test(first.replace(/[\s\u200b]+/g, " ").trim())) return;
+        [...t.rows].forEach((tr, r) => {
+          if (r < 2) return;
+          const g = G[r] || [];
+          /* صف المدرس: (الاسم + المادة) — صف فارغ: رقمه */
+          const sig = tx(g[1]) + "|" + tx(g[2]) + (main ? "" : "|" + tx(g[0]));
+          const key = sig.replace(/\|/g, "") ? "s" + hs(first.slice(0, 20) + "|" + sig) : "r" + r;
+          [...tr.cells].forEach((td, c) => { td.dataset.k = "t" + ti + "." + key + "." + c; });
+        });
+      });
+    } catch (e) { console.warn("v204f keys", e); }
+  };
+})();
