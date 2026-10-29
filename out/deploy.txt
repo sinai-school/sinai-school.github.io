@@ -1,0 +1,107 @@
+subdomain=7svyn82yzr
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-29_01-16-20_876.log"
+db=655a4928-e2dd-4868-9ba2-d1636e248f45
+    }
+  }
+]
+products before seed: 384
+built=1
+  - DB: hhshop (655a4928-e2dd-4868-9ba2-d1636e248f45)
+- AI:
+  - Name: AI
+Uploaded hh-shop (1.73 sec)
+Deployed hh-shop triggers (0.49 sec)
+  https://hh-shop.7svyn82yzr.workers.dev
+  schedule: */3 * * * *
+Current Version ID: e711996e-e8ed-470a-8d3a-19e709d01310
+AI=on
+url=https://hh-shop.7svyn82yzr.workers.dev
+home: 200
+data: {"s":{"name":"مجمع H&H","tagline":"إكسسوارات الهواتف والتقنية — أصلية وبضمان","wa1":"9647730001588","wa2":"9647732222773","tgUser":"h_h_mobail","tgChannel":"husseinhandh","ig":"h.and.h_mobile","tt":"hussein_handh","fb":"HandHMobile","yt":"husseinhandh","addre
+db [{'p': 384, 'm': 3909, 'i': 984, 'q': 1766, 'ai': 202}]
+log [{'at': 1793236579476, 'msg': 'مزامنة: {"pages":1,"msgs":25,"made":0,"imgs":16,"ai":2}'}, {'at': 1793236386293, 'msg': 'مزامنة: {"pages":1,"msgs":25,"made":0,"imgs":16,"ai":2}'}, {'at': 1793236207892, 'msg': 'مزامنة: {"pages":2,"msgs":45,"made":3,"imgs":16,"ai":1}'}, {'at': 1793236027782, 'msg': 'مزامنة: {"pages":2,"msgs":45,"made":2,"imgs":16,"ai":2}'}, {'at': 1793235856147, 'msg': 'مزامنة: {"pages":2,"msgs":45,"made":3,"imgs":16,"ai":2}'}, {'at': 1793235675779, 'msg': 'مزامنة: {"pages":2,"msgs":46,"made":1,"imgs":16,"ai":2}'}, {'at': 1793235488785, 'msg': 'مزامنة: {"pages":2,"msgs":45,"made":3,"imgs":16,"ai":2}'}, {'at': 1793235308333, 'msg': 'مزامنة: {"pages":2,"msgs":45,"made":1,"imgs":16,"ai":2}'}]
+--- admin password
+--- map link
+--- dump
+dump 384
+--- host upload
+reach handhst.com:2083: 200
+reach 142.132.255.23:2083: 200
+box: decrypt failed
+login handhst.com:2083: fail no_username
+login 142.132.255.23:2083: fail no_username
+x-hh: hit
+etag: "436e38b237c383c0"
+x-hh: hit
+etag: "436e38b237c383c0"
+home 1.030105s
+home 0.975070s
+home 0.979818s
+--- handhst.com check
+/ -> 200 0.776341s 42366B
+x-hh: hit content-encoding: gzip content-type: text/html; charset=utf-8 
+/p/s001 -> 200 1.833920s 42035B
+x-hh: miss content-encoding: gzip content-type: text/html; charset=utf-8 
+/c/%D8%B3%D9%85%D8%A7%D8%B9%D8%A7%D8%AA -> 200 1.825329s 42715B
+x-hh: miss content-encoding: gzip content-type: text/html; charset=utf-8 
+/contact -> 200 1.880144s 40855B
+x-hh: miss content-encoding: gzip content-type: text/html; charset=utf-8 
+/admin -> 200 0.567927s 20796B
+x-hh: pass content-encoding: gzip content-type: text/html; charset=utf-8 
+/robots.txt -> 200 0.421158s 96B
+x-hh: hit content-encoding: gzip content-type: text/plain; charset=utf-8 
+/sitemap.xml -> 200 0.708187s 10560B
+x-hh: hit content-encoding: gzip content-type: application/xml; charset=utf-8 
+canonical" href="https://handhst.com/
+HHAPI="https://hh-shop.7svyn82yzr.workers.dev"
+<title>بكج شاحن 67 واط + باوربانك 20,000 + كيبل هدية بسعر 30,000 دينار — مجمع H&amp;H
+http->https: 301 https://handhst.com/
+www: 301 https://handhst.com/x
+repeat home 0.804492s
+repeat home 1.087999s
+repeat home 0.907101s
+worker data 0.443614s
+options 204
+cache dir 403
+--- check
+products 375 noimg 0 from 8
+cheap [('حماية شاشة شفافه للسامسونك و للايفون', 1000), ('حماية كاميرا', 1000), ('منتج محدود الكمية', 1000), ('حماية كاميرا هواتف', 1000), ('حماية كاميرا مضلعة سداسية', 1000), ('العرض مستمر ليوم السبت', 1000), ('عرض خاص على إكسسوارات هواتف', 1000), ('اصابع العاب', 1000)]
+dji [('مانع اهتزاز DJI Osmo', 125000)]
+handhst/ -> 200 0.812605s 42366B x-hh: hit
+
+handhst/p/tg28979 -> 200 0.865523s 41292B x-hh: hit
+
+handhst/contact -> 200 0.828663s 40855B x-hh: hit
+
+handhst/admin -> 200 0.796582s 20796B x-hh: pass
+
+handhst/robots.txt -> 200 0.549453s 96B x-hh: hit
+
+handhst/sitemap.xml -> 200 0.725236s 10558B x-hh: hit
+
+handhst/hh7c1f0e5a9b2d4c3e8f6a1b0d9c2e7f4.txt -> 200 0.687015s 53B x-hh: miss
+
+HHAPI="https://hh-shop.7svyn82yzr.workers.dev"
+<title>مانع اهتزاز DJI Osmo بسعر 125,000 دينار — مجمع H&amp;H
+http: 301 https://handhst.com/
+home 0.955120s
+home 0.762674s
+home 0.938370s
+img: 200 0.159517s image/jpeg
+--- new checks
+ev 204
+v: {"v":"42"}
+hostv: 06132d240aa40ee2
+x-hh: hit
+etag: "c65c50556a0695c5"
+logo: 200 image/jpeg 15556
+logo size (320, 320)
+<title>مجمع H&amp;H | اكسسوارات موبايل في بغداد — شواحن، سماعات، باوربانك، كفرات
+hhd
+hhd
+394
+--- live pages
+20
+google-site-verification: google8b588e8ae88d89ff.html
+fake google file 404
