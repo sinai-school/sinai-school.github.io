@@ -39,3 +39,4 @@ for id in $P; do curl -s "$D/p/$id" -o out/live/p_$id.html; done
 for k in $(curl -s $D/api/data | python3 -c "import sys,json;d=json.load(sys.stdin);print(' '.join([p['img'] for p in d['p'][:14] if p['img']]+['logo']))"); do curl -s -o out/live/$k.jpg $D/img/$k; done
 ls out/live | wc -l
 curl -s https://handhst.com/google8b588e8ae88d89ff.html; echo
+curl -s -o /dev/null -w "fake google file %{http_code}\n" https://handhst.com/google0000000000000000.html
