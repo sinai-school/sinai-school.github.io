@@ -158,12 +158,12 @@ async function notesAll_() {
   const R = await all('select * from notes order by seq');
   return MEMO.notes = R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fu_(fl_(n.files)) }));
 }
-async function notesFor_(kind, key, secs) {
+async function notesFor_(kind, key, secs, pub) {
   const o = [];
   for (const n of await notesAll_()) {
     const t = n.target, sc = n.scope;
-    const ok = sc === 'all' || (sc === 'allS' && kind === 's') || (sc === 'allT' && kind === 't') || (sc === 'sec' && kind === 's' && secs.includes(t)) || (sc === 'one' && t === kind + ':' + key)
-      || (sc === 'exg' && kind === 's' && String(t || '').split('|').some(g => g && secs.some(x => x === g || String(x).startsWith(g + ' ')))) || (sc === 'exs' && kind === 's' && String(t || '').split('|').includes(key));
+    const ok = sc === 'all' || (sc === 'allS' && kind === 's') || (sc === 'allT' && kind === 't') || (sc === 'sec' && kind === 's' && secs.includes(t)) || (!pub && sc === 'one' && t === kind + ':' + key)
+      || (sc === 'exg' && kind === 's' && String(t || '').split('|').some(g => g && secs.some(x => x === g || String(x).startsWith(g + ' ')))) || (!pub && sc === 'exs' && kind === 's' && String(t || '').split('|').includes(key));
     if (ok) o.push({ id: n.id, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files || [] });
   }
   const sn = new Set, r = [];
@@ -185,6 +185,18 @@ async function sentFor_(name) {
   }
   return o.reverse().slice(0, 40);
 }
+/* v204j: طالب ما عنده رقم بطاقة بسجلات المدرسة — حسابه «بانتظار تأكيد الإدارة»: يسجّل ويكمّل معلوماته،
+   بس درجاته ونتائجه وتبليغاته الخاصة ما توصله لحد ما الإدارة تأكد رقم بطاقته (NIDFIX) */
+const schoolNid_ = (F, P, kind, key) => { const fx = nid_(F[kind + ':' + key]); if (fx) return fx; const pv = (P[kind] || {})[key] || {}; return nid_(pv.pre && pv.pre.nid) || nid_(pv.nid2) || ''; };
+async function unv_(kind, key) { if (kind !== 's') return false; return !schoolNid_(await kvJ('NIDFIX', {}), await private_(), kind, key); }
+async function gate_(o, x) {
+  if (!(await unv_(x.kind, x.key))) return o;
+  const pv = o.private || {};
+  o.unv = 1; o.private = { n: pv.n, s: pv.s, secs: pv.secs };
+  o.notes = await notesFor_(x.kind, x.key, pv.secs || (pv.s ? [pv.s] : []), 1);
+  o.tg = []; if (Array.isArray(o.ex)) o.ex = o.ex.filter(t => !t.mine);
+  return o;
+}
 async function bundle_(x, b) {
   const P = await private_(), pv = (P[x.kind] || {})[x.key] || {}, pr = await profGet_(x.kind, x.key);
   const secs = pv.secs || (pv.s ? [pv.s] : []), pid = pr ? pr.photo : '', same = !!(pid && b && b.pid && String(b.pid) === pid);
@@ -193,13 +205,13 @@ async function bundle_(x, b) {
   if (x.kind === 't') { try { o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { o.sent = []; } }
   try { await extra202_(o, x); } catch (e) { }
   try { await extra204_(o, x); } catch (e) { }
-  return o;
+  return gate_(o, x);
 }
 async function fget_(b) {
   if (b.rid) { const x0 = await auth_(b); if (x0.err) return x0; const r = await one('select * from reports where id=?', String(b.rid)); if (!r || !((r.kind === x0.kind && r.key === x0.key) || r.tgt === 't:' + x0.key)) return { err: 'nofile' }; const f = fl_(r.files).find(z => String(z.id) === String(b.id)); if (!f) return { err: 'nofile' }; const d = await blobGet('f_' + f.id); return d ? { ok: 1, n: f.n, m: f.m, d } : { err: 'nofile' }; }
   const x = await auth_(b); if (x.err) return x;
   const P = await private_(), pv = (P[x.kind] || {})[x.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []), id = String(b.id || '');
-  let f = null; for (const n of await notesFor_(x.kind, x.key, secs)) for (const z of (n.files || [])) if (String(z.id) === id) f = z;
+  let f = null; for (const n of await notesFor_(x.kind, x.key, secs, await unv_(x.kind, x.key))) for (const z of (n.files || [])) if (String(z.id) === id) f = z;
   if (!f) return { err: 'nofile' };
   const d = await blobGet('f_' + id); if (d) return { ok: 1, n: f.n, m: f.m, d };
   try { const r = await fetch('https://drive.google.com/uc?export=download&id=' + encodeURIComponent(id)); if (r.ok) return { ok: 1, n: f.n, m: f.m || r.headers.get('content-type'), d: b64(new Uint8Array(await r.arrayBuffer())) }; } catch (e) {}
@@ -406,7 +418,7 @@ async function handle(b) {
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
-    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return o; }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
@@ -432,6 +444,7 @@ async function admin_(b) {
       prof: (await all('select kind,key,name,json,photo,updated,status from prof')).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
       notes: (await notesAll_()).map(n => ({ id: n.id, scope: n.scope, target: n.target, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files })),
       seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
+      unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
       nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
       rel: await kvJ('REL', { c: [] }), tgc: (await all('select label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
   }
@@ -444,6 +457,13 @@ async function admin_(b) {
     if (ex) await run("update acc set phone=?,nid='',updated=? where kind=? and key=?", ph, t, kind, key);
     else await run("insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,'')", kind, key, String(b.name || ''), ph, t, t);
     await run('delete from fails where k=?', 'f_' + kind + '_' + key); return { ok: 1 };
+  }
+  if (b.op === 'nidOk') {
+    const kind = String(b.kind || 's'), key = String(b.key), a0 = await accGet_(kind, key); if (!a0) return { err: 'notreg' };
+    const nd = nid_(b.nid || a0.nid); if (!nd) return { err: 'nid' };
+    const F = await kvJ('NIDFIX', {}); F[kind + ':' + key] = nd; await kvPut('NIDFIX', F);
+    if (nd !== a0.nid) await run('update acc set nid=?,updated=? where kind=? and key=?', nd, now(), kind, key);
+    return { ok: 1, nid: nd };
   }
   if (b.op === 'wipeProf') { await wipeProf_(String(b.kind), String(b.key)); return { ok: 1 }; }
   if (b.op === 'profStatus') { await run('update prof set status=? where kind=? and key=?', String(b.status), String(b.kind), String(b.key)); return { ok: 1 }; }
