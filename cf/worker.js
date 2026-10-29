@@ -436,7 +436,10 @@ async function admin_(b) {
   const sec = await secret_();
   if (b.op === 'init') { if (sec && sec !== b.secret) return { err: 'claimed' }; if (!sec) { await kvPut('SECRET', String(b.secret)); MEMO.sec = String(b.secret); } return { ok: 1, sheet: '' }; }
   if (!sec || b.secret !== sec) return { err: 'auth' };
-  if (b.op === 'push') { await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
+  if (b.op === 'push') {
+    /* v204j: جهاز بيانات قديمة ما يمسح أرقام البطاقات المعتمدة اللي وصلت من قبل */
+    try { const old = await kvJ('priv', null), nw = b.data || {}; if (old && old.s && nw.s) for (const k in nw.s) { const o = old.s[k], n = nw.s[k]; if (!o || !n) continue; if (!nid_(n.nid2) && !nid_(n.pre && n.pre.nid)) { const keep = nid_(o.nid2) || nid_(o.pre && o.pre.nid); if (keep) n.nid2 = keep; } } } catch (e) { }
+    await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
   if (b.op === 'pull') {
     const seen = {}; for (const r of await all('select id,kind,key from seen')) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
     return { ok: 1, sheet: '',
