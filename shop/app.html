@@ -147,6 +147,11 @@ h1,h2,h3{letter-spacing:0}
 .chips button,.chips a{flex:none;height:38px;padding:0 15px;border-radius:999px;border:1px solid var(--line2);background:var(--sf);display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink2);transition:background .2s,color .2s}
 .chips .on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .chips small{font-size:11.5px;opacity:.65}
+.subs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-2px -16px 14px;padding:2px 16px}
+.subs::-webkit-scrollbar{display:none}
+.subs button{flex:none;height:34px;padding:0 13px;border-radius:10px;background:var(--sf2);font-size:13px;font-weight:500;color:var(--ink2);display:inline-flex;align-items:center;gap:5px;border:1px solid transparent}
+.subs button.on{background:var(--accb);color:var(--acc);border-color:color-mix(in srgb,var(--acc) 35%,transparent)}
+.subs small{font-size:11px;opacity:.7}
 .sel{height:40px;padding:0 34px 0 14px;border-radius:999px;border:1px solid var(--line2);background:var(--sf) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A808A' stroke-width='2.4'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 13px center;appearance:none;font-size:13.5px;color:var(--ink2)}
 .tg{height:40px;padding:0 14px;border-radius:999px;background:var(--sf);border:1px solid var(--line2);font-size:13.5px;color:var(--ink2);display:inline-flex;align-items:center;gap:7px}
 .tg.on{border-color:var(--ok);color:var(--ok);background:var(--okb)}
@@ -354,6 +359,7 @@ body.pp .bnav{display:none}
   .row>*:nth-child(n+9){display:none}
   .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
   .chips{margin:0 0 12px;padding:2px 0;flex-wrap:wrap}
+  .subs{margin:-2px 0 14px;padding:2px 0;flex-wrap:wrap}
   .pv .lay{grid-template-columns:1.05fr 1fr;gap:40px;align-items:start}
   .pv .gcol{position:sticky;top:90px}
   .gar{display:grid}
@@ -590,6 +596,8 @@ function home(){
 }
 function gridTools(c,noCat){return `${noCat?'':`<div class="chips" id="gc"><button data-c="" class="${gst.c?'':'on'}">الكل <small>${P.length}</small></button>${CATS.filter(x=>c[x.n]).map(x=>`<button data-c="${esc(x.n)}" class="${gst.c===x.n?'on':''}">${esc(x.n)} <small>${c[x.n]}</small></button>`).join('')}</div>`}
   <div class="tools"><select class="sel" id="gs" aria-label="الترتيب"><option value="new">الأحدث</option><option value="top">الأكثر طلباً</option><option value="lo">الأرخص</option><option value="hi">الأغلى</option></select><button class="tg" id="gav">${ic('shield',16,2)}المتوفر فقط</button><span class="count" id="gn"></span></div>`}
+function subsH(l){const c={};l.forEach(p=>{if(p.sub)c[p.sub]=(c[p.sub]||0)+1});const ks=Object.keys(c).sort((a,b)=>(a==='أخرى')-(b==='أخرى')||c[b]-c[a]);
+  if(ks.length<2)return '';return `<div class="subs" id="subs"><button data-u="" class="on">الكل <small>${l.length}</small></button>${ks.map(k=>`<button data-u="${esc(k)}">${esc(k)} <small>${c[k]}</small></button>`).join('')}</div>`}
 function bindGrid(src,st,withCats){
   const draw=(keep)=>{let l=src();if(st.av)l=l.filter(p=>p.avail);l=sortL(l,st.s);
     $('#gn').textContent=l.length+' منتج';
@@ -625,8 +633,10 @@ function catPage(name){
   cst={s:isTop?'top':'new',av:0,n:24};
   view(`<div class="phead fadein"><div class="crumb"><a href="/">الرئيسية</a>‹<a href="/c">الأقسام</a>‹<span>${esc(title)}</span></div><h1>${esc(title)}</h1><p>${src().length} منتج</p></div>
   <div class="chips">${['offers'].concat(CATS.filter(x=>c[x.n]).map(x=>x.n)).map(n=>`<a href="/c/${encodeURIComponent(n)}" class="${n===name?'on':''}">${n==='offers'?ic('tag',15,2)+'العروض':esc(n)}</a>`).join('')}</div>
-  ${gridTools(c,1)}<div class="grid" id="cg"></div><div class="more" id="mr"></div>`,isOff?'offers':'cats');
-  bindGrid(src,cst,false);
+  ${subsH(src())}${gridTools(c,1)}<div class="grid" id="cg"></div><div class="more" id="mr"></div>`,isOff?'offers':'cats');
+  cst.sub='';const src2=()=>cst.sub?src().filter(p=>p.sub===cst.sub):src();
+  bindGrid(src2,cst,false);
+  $$('#subs button').forEach(b=>b.onclick=()=>{cst.sub=b.dataset.u;cst.n=24;$$('#subs button').forEach(x=>x.classList.toggle('on',x===b));bindGrid(src2,cst,false)});
   const on=$('.chips .on');if(on)on.scrollIntoView({inline:'center',block:'nearest'});
 }
 

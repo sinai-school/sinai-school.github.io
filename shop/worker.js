@@ -54,6 +54,8 @@ function catByText(t) {
   if (!t.trim()) return '';
   if (CRX.car.test(t)) return CNAME.car;
   if (/^\s*(كفر|كڤر|حافظ[ةه]|غلاف|جراب|كيس هاتف)/.test(t)) return CNAME.case;
+  if (/مبخر|بخور/.test(t)) return CNAME.home;
+  if (/اسنان|أسنان/.test(t)) return CNAME.care;
   if (/^\s*(حماي[ةه] (شاش|كامير)|زجاج)/.test(t)) return CNAME.glass;
   if (/سماع[ةه]|ايربود|إيربود|earbuds|airpods/i.test(t) && !/^\s*(ستاند|ترا?يبود)/.test(t)) return CNAME.buds;
   if (/فلاش ميموري|ميموري|مودم|كيبورد|keyboard|ماوس|دنكل|درون|قلم (اي|آي|ا)?باد/i.test(t)) return CNAME.tech;
@@ -61,6 +63,27 @@ function catByText(t) {
   if (CRX.power.test(t)) return CNAME.power;
   for (const k of CORDER) if (CRX[k].test(t)) return CNAME[k];
   return '';
+}
+// ---------- الأقسام الفرعية داخل كل قسم ----------
+const SUBS = {
+  'اكسسوارات سيارة': [['ستاندات السيارة', /ستاند|حامل|مسك[ةه]|هولدر/], ['مباخر ومعطرات', /مبخر|معطر|عطر|بخور/], ['جمبر ومنفاخ', /جمبر|جامبر|منفاخ|طوار/], ['كاربلي وكاميرات', /كار ?بلي|carplay|اندرويد اوتو|أندرويد أوتو|داش|كام/], ['شواحن ومنافذ السيارة', /شاحن|منفذ|منافذ|جداح|سيار كهرباء|تحويل|كيبل/], ['إنارة وديكور', /انار|إنار|اضاء|إضاء|ديكور|لوح|مرآ[ةه]|مراي[ةه]|جيب/]],
+  'شواحن': [['شواحن لاسلكية وماكسيف', /لاسلكي|ماكسيف|magsafe|wireless/i], ['شاحن مع كيبل', /كيبل|\+/], ['رؤوس شحن', /./]],
+  'باوربانك': [['باوربانك ماكسيف', /ماكسيف|magsafe/i], ['للراوتر والنانو', /راوتر|نانو|router/i], ['سعات كبيرة', /([2-9]\d|1\d\d),?\d{3} ?mah|[2-9]\d,?000|100,?000|80,?000|50,?000|30,?000|25,?000|27,?000/i], ['سعات عادية', /./]],
+  'كيبلات': [['متعدد ومسلح', /4 في 1|٤ في ١|متعدد|مسلح/], ['شاشة و HDMI', /hd|شاش/i], ['تايب سي وايفون', /./]],
+  'سماعات': [['أذن مفتوحة وكليب', /open ear|كليب|clip|مفتوح|خارجي/i], ['سماعات رأس', /راس|رأس|هيدفون|headphone|باند|خوذ/i], ['سلكية', /(^|[^ا])سلكي/], ['ايربودز ولاسلكية', /./]],
+  'ستاندات وتصوير': [['مايكات', /مايك|mic/i], ['ترايبود وسيلفي', /ترا?يبود|سيلفي|مانع اهتزاز|متتبع|gimbal/i], ['إنارة تصوير', /انار|إنار|رنك|ring|لايت|light/i], ['ستاندات موبايل وآيباد', /./]],
+  'عناية شخصية': [['حلاقة', /حلاق|كيمي|ترمر|تصفير|شعر الانف|شعر الأنف|موس/], ['تصفيف الشعر', /مشط|سشوار|شسوار|شعر|مجفف/], ['أسنان', /اسنان|أسنان/], ['أظافر وبشرة', /اضافر|أظافر|اظافر|بشر|مكراض|وجه/], ['تدليك وصحة', /تدليك|مساج|ضغط|نوم|ميزان/], ['نظارات وحماية العين', /نظار|عين/], ['عطور', /عطر|معطر/]],
+  'منزل وأدوات': [['المطبخ', /بلور|خلاط|قهو|مطار|سلاش|ايس|قلا|ترمس|مك |مك$|كوب/], ['تنظيف', /مكنس|تنظيف|منظف|وبر|ليف|غسيل|منقي/], ['مراوح وإنارة', /مروح|انار|إنار|لايت|لامب|مصباح|اضاء|إضاء/], ['مباخر', /مبخر|بخور|معطر/], ['عدد وأدوات', /مفك|درنفيس|مقص|كابس|مضخ|قانص|براغي/], ['سفر وتخييم', /كرسي|سرير|سفر|نفخ|سفاري/], ['كهرباء ومنافذ', /سيار كهرباء|منافذ|نقاط كهرباء/]],
+  'أجهزة وإلكترونيات': [['آيباد وأقلام', /قلم|ايباد|آيباد|تابلت|tablet|pad/i], ['كيبورد وماوس', /كيبورد|ماوس|keyboard|mouse/i], ['مبردات الهاتف', /مبرد|cooler/i], ['كاميرات وكواشف', /كامير|كاشف|انذار/], ['ألعاب', /العاب|ألعاب|لعب/], ['إنترنت وشاشات', /مودم|راوتر|دنكل|تلفزيون/], ['سبورات وليزر', /سبور|ليزر|مؤشر/]],
+  'ساعات ذكية': [['سيور الساعات', /سير|سيور/], ['أساور ذكية', /سوار|باند/], ['ساعات ذكية', /./]],
+  'كفرات': [['حلقات وملحقات', /حلق|مسك|اكسسوار/], ['آيباد', /ايباد|آيباد|تاب/], ['سامسونك', /سامسونك|سامسونج|samsung|galaxy/i], ['آيفون', /./]],
+  'زجاج حماية': [['حماية كاميرا', /كامير/], ['حماية شاشة', /./]],
+  'حقائب': [['محافظ', /محفظ|محافظ|باج/], ['حقائب ظهر', /ظهر/], ['حقائب جانبية', /جانبي/], ['حقائب يد', /./]],
+};
+export function smartSub(cat, text) {
+  const l = SUBS[cat]; if (!l) return '';
+  for (const [n, re] of l) if (re.test(String(text || ''))) return n;
+  return 'أخرى';
 }
 export function smartCat(name, ai, desc) {
   const names = [name, ai && ai.title].filter(Boolean).join(' — ');
@@ -191,6 +214,7 @@ export function eff(p) {
   const r = { ...a, ...o, id: p.id, post: p.post, src: p.src, dt: p.dt };
   if (ai && ai.title && !o.name && p.src === 'tg') r.name = ai.title;
   if (!o.cat) r.cat = smartCat(o.name || a.name, ai, a.desc);
+  if (!o.sub) r.sub = smartSub(r.cat, [r.name, a.name, ai && ai.title].filter(Boolean).join(' '));
   r.ai = ai ? { specs: ai.specs || [], desc: ai.desc || '', uses: ai.uses || [] } : null;
   let imgs = o.imgs || media.filter(x => !x.v).map(x => x.k);
   // أول صورة بالألبوم غالباً بوستر «عرض يوم…» فنخلي صورة المنتج نفسه هي الغلاف
@@ -492,7 +516,7 @@ async function authed(req, env) {
   return r && r.exp > now();
 }
 
-function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', back: p.back || '', oat: p.offerAt || '', pin: p.pin ? 1 : 0 }; }
+function pub(p) { return { id: p.id, from: p.from ? 1 : 0, name: p.name, brand: p.brand || '', cat: p.cat, price: p.price || 0, old: p.old || 0, avail: p.avail ? 1 : 0, offer: p.offer ? 1 : 0, warranty: p.warranty || '', img: p.imgs[0] || '', n: p.imgs.length, feats: p.feats || '', dt: p.dt || '', back: p.back || '', sub: p.sub || '', oat: p.offerAt || '', pin: p.pin ? 1 : 0 }; }
 
 async function allProducts(env, admin) {
   const rows = (await env.DB.prepare('select * from products').all()).results || [];
