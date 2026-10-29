@@ -52,6 +52,24 @@ if m:
   Q=$(F="$F" python3 -c 'import os,urllib.parse;print(urllib.parse.parse_qs(urllib.parse.urlparse(os.environ["F"]).query).get("q",[""])[0].replace("\"",""))')
   echo "map q: $Q"
   [ -n "$Q" ] && $W d1 execute hhshop --remote --command "insert into settings(k,v) values('mapQ','\"$Q\"'),('mapUrl','\"$(cat maplink.txt)\"') on conflict(k) do update set v=excluded.v" -y >/dev/null 2>&1 && echo "mapQ saved"
+  if [ -z "$LL" ]; then
+    FT=$(echo "$F" | grep -o 'ftid=0x[0-9a-f]*:0x[0-9a-f]*' | cut -d: -f2)
+    if [ -n "$FT" ]; then CID=$(python3 -c "print(int('$FT',16))"); echo "cid: $CID"
+      for U in "https://maps.google.com/?cid=$CID" "https://www.google.com/maps?cid=$CID&hl=ar" "https://maps.google.com/maps?cid=$CID&output=embed"; do
+        F2=$(curl -sL -o /tmp/m2.html -m 25 -w '%{url_effective}' -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' "$U")
+        LL=$(F2="$F2" python3 -c '
+import os,re,urllib.parse
+f=urllib.parse.unquote(os.environ["F2"]);h=open("/tmp/m2.html",errors="ignore").read()
+pats=[r"!3d(3\d\.\d{4,})!4d(4\d\.\d{4,})",r"@(3\d\.\d{4,}),(4\d\.\d{4,})",r"\[null,null,(3\d\.\d{4,}),(4\d\.\d{4,})\]",r"ll=(3\d\.\d{4,}),(4\d\.\d{4,})",r"center=(3\d\.\d{4,})(?:%2C|,)(4\d\.\d{4,})",r"\[(3\d\.\d{4,}),(4\d\.\d{4,})\]"]
+for t in (f,h):
+  for pt in pats:
+    m=re.search(pt,t)
+    if m: print(m.group(1),m.group(2)); raise SystemExit')
+        echo "try $U -> ${LL:-none}"
+        [ -n "$LL" ] && break
+      done
+    fi
+  fi
   echo "map coords: $LL"
   if [ -n "$LL" ]; then
     LA=${LL% *}; LO=${LL#* }; MU=$(cat maplink.txt)
