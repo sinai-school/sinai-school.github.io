@@ -32,5 +32,6 @@ jobs:
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk sinai-school.apk
           cp android/app/build/outputs/bundle/release/app-release.aab sinai-school.aab
+          echo "${{ github.run_number }}" > app-version.txt
           gh release delete app -y --cleanup-tag || true
-          gh release create app sinai-school.apk sinai-school.aab --title "تطبيق إعدادية سيناء للأندرويد والهواوي" --notes "النسخة ${{ github.run_number }}" --latest
+          gh release create app sinai-school.apk sinai-school.aab app-version.txt --title "تطبيق إعدادية سيناء للأندرويد والهواوي" --notes "النسخة ${{ github.run_number }}" --latest

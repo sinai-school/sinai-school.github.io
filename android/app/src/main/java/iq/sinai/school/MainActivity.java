@@ -30,6 +30,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.webkit.WebResourceError;
+import android.webkit.WebResourceResponse;
+import android.webkit.ServiceWorkerClient;
+import android.webkit.ServiceWorkerController;
 import android.widget.FrameLayout;
 
 import java.io.File;
@@ -41,7 +44,7 @@ public class MainActivity extends Activity {
     private static final int FILE_REQ = 7;
     private WebView web;
     private ValueCallback<Uri[]> fileCb;
-    private boolean triedCache = false;
+    private boolean mainErr = false;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -72,13 +75,30 @@ public class MainActivity extends Activity {
         s.setSupportZoom(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
-        s.setUserAgentString(s.getUserAgentString() + " SinaiSchoolApp/1");
+        s.setUserAgentString(s.getUserAgentString() + " SinaiSchoolApp/2");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
 
         web.addJavascriptInterface(new Bridge(), "SinaiApp");
 
+        /* طلبات Service Worker: بدون إنترنت تنخدم من النسخة المحفوظة داخل التطبيق */
+        if (Build.VERSION.SDK_INT >= 24) {
+            try {
+                ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
+                    @Override
+                    public WebResourceResponse shouldInterceptRequest(WebResourceRequest req) {
+                        return local(req, false);
+                    }
+                });
+            } catch (Exception e) { }
+        }
+
         web.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest req) {
+                return local(req, req.isForMainFrame());
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
                 Uri u = req.getUrl();
@@ -92,19 +112,17 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
                 if (!req.isForMainFrame()) return;
-                // بدون إنترنت: افتح آخر نسخة محفوظة بالجهاز، وإذا ما موجودة اعرض رسالة
-                if (!triedCache) {
-                    triedCache = true;
-                    v.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-                    v.loadUrl(HOME);
-                    return;
-                }
-                v.loadDataWithBaseURL(HOME, OFFLINE_HTML, "text/html", "utf-8", null);
+                mainErr = true;
+                // بدون إنترنت: افتح النسخة الكاملة المحفوظة داخل التطبيق، وإذا ما موجودة (أول مرة) اعرض رسالة
+                String page = Offline.has(MainActivity.this) ? Offline.readText(MainActivity.this, "index.html") : null;
+                if (page != null) v.loadDataWithBaseURL(HOME, page, "text/html", "utf-8", HOME);
+                else v.loadDataWithBaseURL(HOME, OFFLINE_HTML, "text/html", "utf-8", null);
             }
 
             @Override
             public void onPageFinished(WebView v, String url) {
-                if (url != null && url.startsWith(HOME)) { triedCache = false; v.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT); }
+                if (mainErr) mainErr = false;
+                else refreshSite(false);
                 v.evaluateJavascript(PATCH_JS, null);
                 Intent it = getIntent();
                 if (it != null && "notes".equals(it.getStringExtra("open"))) {
@@ -140,6 +158,7 @@ public class MainActivity extends Activity {
         });
 
         Notifier.channel(this);
+        Updater.check(this);
         if (state != null) web.restoreState(state);
         else web.loadUrl(HOME);
         if (PollWorker.prefs(this).getString("url", null) != null) PollWorker.schedule(this);
@@ -315,6 +334,27 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (web != null) web.evaluateJavascript("window.__chkUpd&&window.__chkUpd()", null);
+        refreshSite(false);
+        Updater.check(this);
+    }
+
+    /* الصفحة الرئيسية تنفتح فوراً من النسخة المحفوظة بالتطبيق (حتى بدون إنترنت)، والملفات الثانية بس لما ماكو إنترنت */
+    private WebResourceResponse local(WebResourceRequest req, boolean main) {
+        try {
+            if (!"GET".equalsIgnoreCase(req.getMethod())) return null;
+            String k = Offline.key(req.getUrl());
+            if (k == null) return null;
+            if (main && !"index.html".equals(k)) return null;
+            if (!Offline.has(this)) return null;
+            if (main || !Offline.online(this)) return Offline.serve(this, k);
+        } catch (Exception e) { }
+        return null;
+    }
+
+    private void refreshSite(boolean force) {
+        Offline.refresh(this, force, nv -> runOnUiThread(() -> {
+            if (web != null) web.evaluateJavascript("(function(){var v=" + q(nv) + ";if(window.APP_VER&&window.APP_VER!==v&&v.indexOf(window.APP_VER+'-')!==0){try{localStorage.removeItem('rl86v')}catch(e){}window.__chkUpd&&window.__chkUpd()}})()", null);
+        }));
     }
 
     @Override
