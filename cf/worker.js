@@ -837,6 +837,20 @@ async function migrate_(b) {
     }
     return { ok: 1, step, log: L, next: '' };
   }
+  if (step === 'put205') {
+    /* v205: تصحيح ملفات معيّنة (الجدول، الأسماء…): القديم ينحفظ نسخة، وإذا الملف تغيّر بعد ما انقرأ (h0) ما ينكتب فوقه */
+    const L = { put: 0, same: 0, conflict: [] };
+    for (const p in (m.docs || {})) {
+      if (!OWN_RE.test(p) || p === 'school/roles') continue;
+      const x = m.docs[p]; let o; try { o = JSON.parse(x.d); } catch (e) { continue; }
+      const t = canon_(o), h = syH_(t), e = await dmeta_(p);
+      if (e && e.h === h) { L.same++; continue; }
+      if (x.h0 !== undefined && (e && e.h !== 'DEL' ? e.h : null) !== x.h0) { L.conflict.push(p); continue; }
+      if (e && e.h !== 'DEL') { const old = await dget_(e); await dput_('_bk205/' + p + '/' + Date.now(), old, e.h, 'imp', e.h); }
+      await dput_(p, t, h, 'o', h); L.put++;
+    }
+    return { ok: 1, step, log: L, next: '' };
+  }
   if (step === 'roles') {
     if (m.roles) await dput_('__roles', JSON.stringify({ list: m.roles }), String(m.rh || ''), 'o', '');
     for (const p in (m.docs || {})) if (OWN_RE.test(p)) { const e = await dmeta_(p); if (!e || e.h !== m.docs[p].h) await dput_(p, m.docs[p].d, m.docs[p].h, 'o', m.docs[p].h); }
