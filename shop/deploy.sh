@@ -44,8 +44,14 @@ if [ -f maplink.txt ]; then
 import os,re,urllib.parse
 f=urllib.parse.unquote(urllib.parse.unquote(os.environ["F"]))
 h=open("/tmp/map.html",errors="ignore").read()
-m=re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",f) or re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"[?&](?:q|ll|query)=(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",h) or re.search(r"center=(-?\d+\.\d+)%2C(-?\d+\.\d+)",h)
-if m and 29<float(m.group(1))<38 and 38<float(m.group(2))<49: print(m.group(1),m.group(2))')
+m=re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",f) or re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"[?&](?:q|ll|query)=(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",h) or re.search(r"center=(-?\d+\.\d+)%2C(-?\d+\.\d+)",h) or re.search(r"APP_INITIALIZATION_STATE=\[\[\[[\d.]+,(-?[\d.]+),(-?[\d.]+)\]",h)
+if m:
+  a,b=float(m.group(1)),float(m.group(2))
+  if 38<a<49: a,b=b,a
+  if 29<a<38 and 38<b<49: print(a,b)')
+  Q=$(F="$F" python3 -c 'import os,urllib.parse;print(urllib.parse.parse_qs(urllib.parse.urlparse(os.environ["F"]).query).get("q",[""])[0].replace("\"",""))')
+  echo "map q: $Q"
+  [ -n "$Q" ] && $W d1 execute hhshop --remote --command "insert into settings(k,v) values('mapQ','\"$Q\"'),('mapUrl','\"$(cat maplink.txt)\"') on conflict(k) do update set v=excluded.v" -y >/dev/null 2>&1 && echo "mapQ saved"
   echo "map coords: $LL"
   if [ -n "$LL" ]; then
     LA=${LL% *}; LO=${LL#* }; MU=$(cat maplink.txt)

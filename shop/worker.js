@@ -27,8 +27,48 @@ export const CATS = [
   ['شواحن', 'charger'], ['باوربانك', 'battery'], ['كيبلات', 'cable'], ['سماعات', 'buds'],
   ['سبيكرات', 'speaker'], ['ساعات ذكية', 'watch'], ['كفرات', 'case'], ['زجاج حماية', 'glass'],
   ['اكسسوارات سيارة', 'car'], ['ستاندات وتصوير', 'tripod'], ['عناية شخصية', 'care'],
-  ['منزل وأدوات', 'home'], ['حقائب', 'bag'], ['منوعات', 'spark'],
+  ['منزل وأدوات', 'home'], ['حقائب', 'bag'], ['أجهزة وإلكترونيات', 'chip'], ['منوعات', 'spark'],
 ];
+
+// ---------- تصنيف الأقسام (دقيق): الاسم أولاً، وبعدين رأي الذكاء الاصطناعي، وبعدين الوصف ----------
+const CRX = {
+  car: /سيار[ةه]|للسيار|السياره|السائق|سائق|جداح[ةه]|كار ?بلي|carplay|اندرويد اوتو|أندرويد أوتو|داش ?كام|dash ?cam|جمبر|جامبر|منفاخ|معطرات|لوح[ةه] رقم/i,
+  stand: /ستاند|حامل|هولدر|holder|ترا?يبود|tripod|عص[اى] سيلفي|سيلفي|gimbal|جمبل|مانع اهتزاز|مايك|مايكروفون|رنك ?لايت|ring ?light|fill ?light|انار[ةه] ?(تصوير|احترافي|ماكسيف)|إنار[ةه] ?(تصوير|احترافي|ماكسيف)|اناره ماكسيف|مسك[ةه]|متتبع للوجه/i,
+  power: /باور ?بانك|باوربنك|power ?bank|شاحن طوار|طوارئ? ?\d|\d{4,6} ?mah|\d{1,2},?000 ?mah/i,
+  glass: /زجاج|لزك[ةه]|لاصق[ةه] شاش|حماي[ةه] شاش|حماي[ةه] (ال)?كامير|screen ?protector|lens ?protector/i,
+  case: /كفر|كڤر|جراب|غلاف|cover|\bcase\b|اكرلك|أكريلك|skinarma|كيس هاتف/i,
+  watch: /سوار ذكي|باند رياضي|smart ?band|سير ساع|^ساع[ةه]|ساع[ةه] (ذكي[ةه]|سمارت|يد)|سمارت ?واتش|smart ?watch|\bwatch|سيور[ةه]?\s*(ساع|ابل)/i,
+  speaker: /سبيكر|مكبر صوت|speaker|مسرح منزلي|السينما في المنزل|ساوند ?بار|soundbar/i,
+  buds: /سماع[ةه]|ايربود|إيربود|airpods?|هيدفون|هدفون|headphone|earbuds|\bbuds/i,
+  charger: /شاحن|charger|راس شحن|رأس شحن|\bgan\b/i,
+  cable: /كيبل|كابل|وصل[ةه]|cable/i,
+  tech: /قلم (اي|آي|ا)?باد|قلم ل?(لا|ال)?ايباد|pencil|كيبورد|keyboard|ماوس|mouse|مودم|راوتر|router|دنكل|dongle|فلاش ميموري|ميموري|هارد|درون|drone|كاميرا|camera|جهاز (أ|ا)لعاب|سبور[ةه]|ليزر|كاشف كاميرات|تابلت|tablet|\bpad ?\d|ايباد|آيباد|مبرد|cooler|ريموت|بطاريات/i,
+  care: /مشط|حلاق[ةه]|شعر|مكوا[ةه]|سشوار|شسوار|كيمي|ترمر|بشر[ةه]|مكياج|عطر|ميزان|فرش[اه]?[ةه]? ?اسنان|تدليك|مساج|اضافر|أظافر|مكراض|الضغط|وبر|نظار[ةه]/i,
+  bag: /حقيب[ةه]|شنط[ةه]|جنط[ةه]|\bbag\b|محفظ[ةه]|محافظ|مقلم[ةه]|باج/i,
+  home: /منقي[ةه]|نافور|كرسي|مسند|لايت مكتبي|انذار|بلور|خلاط|مكنس[ةه]|مبخر[ةه]|مطبخ|مصباح|اضاء[ةه]|إضاء[ةه]|انار[ةه] مكتبي|إنار[ةه] مكتبي|مروح[ةه]|منظف|تنظيف|مرطب|ترمس|قلا[يي][ةه]|سيار كهرباء|قهو[ةه]|سلاش|ايس ?كريم|مك عازل|مفك|درنفيس|قانص[ةه]|حشرات|سرير|مقص|مطار[ةه]|كابس[ةه]|ليف[ةه]/i,
+};
+const CNAME = { car: 'اكسسوارات سيارة', stand: 'ستاندات وتصوير', power: 'باوربانك', glass: 'زجاج حماية', case: 'كفرات', watch: 'ساعات ذكية', speaker: 'سبيكرات', buds: 'سماعات', charger: 'شواحن', cable: 'كيبلات', tech: 'أجهزة وإلكترونيات', care: 'عناية شخصية', bag: 'حقائب', home: 'منزل وأدوات' };
+const CORDER = ['glass', 'case', 'watch', 'speaker', 'buds', 'charger', 'cable', 'tech', 'care', 'bag', 'home'];
+function catByText(t) {
+  t = String(t || '');
+  if (!t.trim()) return '';
+  if (CRX.car.test(t)) return CNAME.car;
+  if (/^\s*(كفر|كڤر|حافظ[ةه]|غلاف|جراب|كيس هاتف)/.test(t)) return CNAME.case;
+  if (/^\s*(حماي[ةه] (شاش|كامير)|زجاج)/.test(t)) return CNAME.glass;
+  if (/سماع[ةه]|ايربود|إيربود|earbuds|airpods/i.test(t) && !/^\s*(ستاند|ترا?يبود)/.test(t)) return CNAME.buds;
+  if (/فلاش ميموري|ميموري|مودم|كيبورد|keyboard|ماوس|دنكل|درون|قلم (اي|آي|ا)?باد/i.test(t)) return CNAME.tech;
+  if (CRX.stand.test(t)) return CNAME.stand;
+  if (CRX.power.test(t)) return CNAME.power;
+  for (const k of CORDER) if (CRX[k].test(t)) return CNAME[k];
+  return '';
+}
+export function smartCat(name, ai, desc) {
+  const names = [name, ai && ai.title].filter(Boolean).join(' — ');
+  const byName = catByText(names);
+  if (byName) return byName;
+  if (ai && ai.cat && Object.values(CNAME).includes(ai.cat)) return ai.cat;
+  return catByText(String(desc || '').slice(0, 300)) || 'منوعات';
+}
 
 const KW = [
   ['باوربانك', /باور ?بانك|باوربنك|شاحن طوار|power ?bank|mah/i],
@@ -90,9 +130,12 @@ export function parseText(raw) {
   const isOffer = /عرض يوم|عرض اليوم|عروض/.test(txt);
   const clean = body.map(l => l.replace(/[🔥😳😍❤️✅👌🤩💥⭐️✨👈👇]+/gu, '').replace(/\s+/g, ' ').trim()).filter(Boolean);
   const parts = clean.map(l => l.replace(/\*+/g, '').trim()).filter(l => l && l !== '+' && !/^(للطاكين|دلع|هذا العرض|اقوى عرض|أقوى عرض|عرض |تشكيل|موديل روع|جماعة|الجمال|روعه|روعة|توفر|وصل|جديد|و|التفاصيل|تفاصيل|للحجز|العرض)/.test(l));
-  const noun = l => KW.some(([, re]) => re.test(l)) || /\b[A-Za-z]{3,}\b/.test(l);
-  let ni = parts.findIndex(noun); if (ni > 0 && /^من /.test(parts[ni])) ni--;
-  let name = (ni >= 0 ? (ni + 1 < parts.length && /^من /.test(parts[ni + 1]) && parts[ni].length < 40 ? parts[ni] + ' ' + parts[ni + 1] : parts[ni]) : parts[0]) || clean.map(l => l.replace(/\*+/g, '')).find(Boolean) || 'منتج';
+  const noun = l => KW.some(([, re]) => re.test(l)) || !!catByText(l) || /\b[A-Za-z]{3,}\b/.test(l);
+  const BADL = /^(بعده|بعد |الاجهز|الأجهز|ال?اصلي|ال?أصلي|ال?غني[ةه]|اقوى|أقوى|اعلى|أعلى|هذا العرض|فدشي|خفيف|لاصحاب|مع ال?حافظ|حلو|منتج$|ال?كمي[ةه]|والكمي[ةه]|ارخص|أرخص|ال?فخام|ال?جمال|نعم|موديل|خليك|التفاصيل|تفاصيل|ب ?\d*\s*(الف|ألف)|بس |ضمن يوم|السعر|ترقبوا|متوفر|اصدار|إصدار|ميزات|مميزات|تطبيق خاص|مريح|وقت تشغيل|\d+ ?ساع)/;
+  const score = (l, i) => (BADL.test(l) ? -10 : 0) + (noun(l) ? 4 : 0) + (catByText(l) ? 2 : 0) + (l.length >= 8 && l.length <= 70 ? 1 : -1) + (/^من /.test(l) ? -3 : 0) - i * 0.3;
+  let ni = -1, bs = -1e9; parts.forEach((l, i) => { const v = score(l, i); if (v > bs) { bs = v; ni = i; } });
+  if (bs < 0) ni = parts.findIndex(l => !BADL.test(l));
+  let name = (ni >= 0 ? (ni + 1 < parts.length && /^من /.test(parts[ni + 1]) && parts[ni].length < 40 ? parts[ni] + ' ' + parts[ni + 1] : parts[ni]) : '') || clean.map(l => l.replace(/\*+/g, '')).find(l => l && !BADL.test(l)) || 'منتج';
   name = name.replace(/^(للطاكين|جماعة)[^ ]* ?(فقط)? ?/, '').replace(/\s*و?بضمان.*$/, '').replace(/\s*(فقط|روعه|روعة)\s*$/, '');
   name = name.replace(/فقط$/, '').trim().slice(0, 90);
   const until = /فقط يوم|ضمن يوم|لحين نفاد/.test(txt);
@@ -147,6 +190,7 @@ export function eff(p) {
   const media = JSON.parse(p.media || '[]');
   const r = { ...a, ...o, id: p.id, post: p.post, src: p.src, dt: p.dt };
   if (ai && ai.title && !o.name && p.src === 'tg') r.name = ai.title;
+  if (!o.cat) r.cat = smartCat(o.name || a.name, ai, a.desc);
   r.ai = ai ? { specs: ai.specs || [], desc: ai.desc || '', uses: ai.uses || [] } : null;
   let imgs = o.imgs || media.filter(x => !x.v).map(x => x.k);
   // أول صورة بالألبوم غالباً بوستر «عرض يوم…» فنخلي صورة المنتج نفسه هي الغلاف
@@ -248,11 +292,11 @@ async function drainImgs(env, n) {
 
 async function aiEnrich(env, n, only) {
   if (!env.AI) return 0;
-  const rows = only ? ((await env.DB.prepare('select id,auto,ov from products where id=?').bind(only).all()).results || []) : ((await env.DB.prepare("select id,auto,ov from products where ai is null and json_extract(ov,'$.del') is null order by dt desc limit ?").bind(n).all()).results || []);
+  const rows = only ? ((await env.DB.prepare('select id,auto,ov from products where id=?').bind(only).all()).results || []) : ((await env.DB.prepare("select id,auto,ov from products where ai is null and json_extract(ov,'$.del') is null order by (json_extract(auto,'$.name')='منتج') desc, dt desc limit ?").bind(n).all()).results || []);
   let ok = 0;
   for (const p of rows) {
     const a = { ...JSON.parse(p.auto), ...JSON.parse(p.ov || '{}') };
-    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\nالماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
+    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\nالماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)","cat":"قسم واحد بالضبط من هذه القائمة: ${Object.values(CNAME).join('، ')}، منوعات","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
     try {
       const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: prompt }], max_tokens: 700, temperature: 0.3 });
       const t = (res && (res.response || res.result?.response)) || '';
@@ -261,14 +305,19 @@ async function aiEnrich(env, n, only) {
       if (!Array.isArray(j.specs)) throw 0;
       j.specs = j.specs.filter(x => Array.isArray(x) && x.length === 2).slice(0, 8).map(x => [String(x[0]).slice(0, 40), String(x[1]).slice(0, 80)]);
       j.title = String(j.title || '').slice(0, 70); j.desc = String(j.desc || '').slice(0, 400);
+      j.cat = String(j.cat || '').trim(); if (!Object.values(CNAME).includes(j.cat) && j.cat !== 'منوعات') j.cat = 'منوعات';
       j.uses = (j.uses || []).slice(0, 4).map(x => String(x).slice(0, 60));
       await env.DB.prepare('update products set ai=? where id=?').bind(JSON.stringify(j), p.id).run(); ok++;
-    } catch (e) { await env.DB.prepare('update products set ai=? where id=?').bind('{"specs":[],"err":1}', p.id).run(); }
+    } catch (e) {
+      // حد الاستخدام اليومي: نوقف ونرجع نكمّل بعدين بدون ما نعلّم المنتج كخطأ
+      if (/limit|quota|neuron|429|capacity|exceeded|rate/i.test(String(e && e.message || e))) break;
+      await env.DB.prepare('update products set ai=? where id=?').bind('{"specs":[],"err":1}', p.id).run();
+    }
   }
   return ok;
 }
 
-const PARSE_V = 4;
+const PARSE_V = 5;
 export async function migrate(env) {
   // يعيد قراءة أسعار وأوصاف منشورات القناة بالقواعد المحسّنة، ويدمج المكرر مع منتجات الجدول
   const tg = (await env.DB.prepare("select p.id,p.post,p.auto,p.media,m.txt from products p join msgs m on m.id=p.post where p.src='tg'").all()).results || [];
@@ -327,6 +376,7 @@ export async function sync(env, opt = {}) {
   await syncLogo(env, html, st);
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
+  if (ai) await bump(env);
   await setSetting(env, '_lastSync', now());
   if (made) { await bump(env); await purgeHost(env); }
   if (!st._prunedD || st._prunedD !== bgDay()) await pruneStats(env);
@@ -448,11 +498,19 @@ async function allProducts(env, admin) {
   const rows = (await env.DB.prepare('select * from products').all()).results || [];
   let list = rows.map(eff).filter(p => !p.purge && (admin || (!p.del && !p.hidden && !p.dup)));
   if (admin) { const have = new Set(((await env.DB.prepare('select k from imgs').all()).results || []).map(x => x.k)); for (const p of list) p.ready = p.imgs.filter(k => have.has(k)).length; }
-  if (!admin) list = list.filter(p => p.price > 0 && p.imgs.length);
+  if (!admin) list = list.filter(p => p.price > 0 && p.imgs.length && p.name && p.name !== 'منتج');
   list.sort((a, b) => (b.pin || 0) - (a.pin || 0) || String(b.dt || '').localeCompare(String(a.dt || '')));
   return list;
 }
 
+function catsOf(s, list) {
+  const base = (s.cats || CATS.map(c => ({ n: c[0], i: c[1] }))).map(c => ({ ...c }));
+  const icon = Object.fromEntries(CATS);
+  for (const c of base) if (!c.i || c.i === 'spark') c.i = icon[c.n] || 'spark';
+  const have = new Set(base.map(c => c.n));
+  for (const p of list) if (p.cat && !have.has(p.cat)) { have.add(p.cat); const m = base.findIndex(c => c.n === 'منوعات'); const c = { n: p.cat, i: icon[p.cat] || 'spark' }; if (m >= 0) base.splice(m, 0, c); else base.push(c); }
+  return base;
+}
 function pubSettings(s) {
   const o = {}; for (const k in s) if (!k.startsWith('_') && k !== 'pw' && k !== 'salt' && k !== 'gsv' && k !== 'goat') o[k] = s[k];
   o.logo = s.logoU || (s._logoAt ? 'logo' : '');
@@ -465,7 +523,7 @@ async function publicData(env) {
   const list = await allProducts(env, false);
   const ids = new Set(list.map(p => p.id));
   const top = (await topIds(env)).filter(id => ids.has(id)).slice(0, 12);
-  const cats = (s.cats || CATS.map(c => ({ n: c[0], i: c[1] })));
+  const cats = catsOf(s, list);
   const d = { s: pubSettings(s), cats, p: list.map(pub), top, t: now(), ver };
   MEMO = { ver, b, d };
   return d;
@@ -573,7 +631,7 @@ async function admin(req, env, op, O) {
     const st = {}; for (const r of ((await env.DB.prepare('select p, sum(v) v, sum(o) o from st_prod where d>=? group by p').bind(bgDay(now() - 29 * 864e5)).all().catch(() => ({}))).results || [])) st[r.p] = [r.v, r.o];
     const ps = pubSettings(s); for (const k of ['gsv', 'bsv']) ps[k] = s[k] || '';
     ps._lastSync = s._lastSync;
-    return J({ s: ps, cats: s.cats || CATS.map(c => ({ n: c[0], i: c[1] })), p: list, st, queue: q.n, log: lg, ai: !!env.AI, today: bgDay() });
+    return J({ s: ps, cats: catsOf(s, list), p: list, st, queue: q.n, log: lg, ai: !!env.AI, today: bgDay() });
   }
   if (op === 'save') {
     const b = await req.json();
