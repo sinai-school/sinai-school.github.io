@@ -70,7 +70,8 @@
     /* الإجازات: كل صفحة تكمل من اللي قبلها (ما يتكرر نفس الاسم بكل صفحة) */
     try {
       const lv = FSD.staff().concat((typeof STF != "undefined" ? STF : []).filter(f => f && !FSD.staff().includes(f))).filter(f => f && /مجاز/.test(f.status || ""));
-      const seenL = new Set, LV = lv.filter(f => { if (seenL.has(f.id)) return false; seenL.add(f.id); return true; });
+      const seenL = new Set, nmK = f => String(f.name || '').replace(/[أإآ]/g, 'ا').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
+      const LV = lv.slice().sort((a, b) => ((b.lvOrder || b.lvFrom || b.lvType) ? 1 : 0) - ((a.lvOrder || a.lvFrom || a.lvType) ? 1 : 0)).filter(f => { const k = nmK(f); if (seenL.has(f.id) || seenL.has(k)) return false; seenL.add(f.id); seenL.add(k); return true; });
       let lo = 0;
       DXF.tables(host).filter(t => /^الا?إ?جازات/.test(DXF.text(t.rows[0]))).forEach(t => {
         const per = t.rows.length - 2, part = LV.slice(lo, lo + per);
@@ -240,6 +241,30 @@
       }
     });
   }
+  /* جداول الصفحات الجانبية: كل خانات البيانات بنفس الخط (حجم عناوين الجدول) وبالوسط — بدون أرقام صغيرة أو مزاحة */
+  const INFO = /^(معلومات|اعداد الطلاب|ملاك المدرسة|المنسبين|الا?إ?جازات|الفائضون|جرد الملاك)/;
+  function normInfo(root) {
+    root.querySelectorAll(".dxpg .da table").forEach(t => {
+      if (t.parentElement.closest("table")) return;
+      const ttl = (t.rows[0] && t.rows[0].textContent || "").replace(/[\s​]+/g, " ").trim();
+      if (!INFO.test(ttl)) return;
+      const big = /^جرد الملاك/.test(ttl);
+      /* حجم الخط المرجعي: عناوين الأعمدة (الصف الثاني) */
+      const hs = [...(t.rows[1] ? t.rows[1].querySelectorAll("span") : [])].map(x => parseFloat(getComputedStyle(x).fontSize)).filter(Boolean).sort((a, b) => a - b);
+      if (!hs.length) return;
+      const ref = hs[Math.floor(hs.length / 2)] * (big ? 0.78 : 0.95);
+      for (let r = 1; r < t.rows.length; r++) [...t.rows[r].cells].forEach(td => {
+        const tx = td.textContent.replace(/[\s​]+/g, "");
+        if (!tx || td.querySelector("table")) return;
+        td.querySelectorAll("span").forEach(x => { if (!x.closest(".da") || x.closest(".da") === t.closest(".da")) x.style.fontSize = ref + "px"; });
+        td.querySelectorAll(".p").forEach(p => { p.style.textAlign = "center"; p.style.lineHeight = "1.15"; });
+        td.style.verticalAlign = "middle"; td.style.textAlign = "center"; td.style.fontSize = ref + "px"; td.style.lineHeight = "1.15";
+        /* الكلمة ما تنقص: إذا الخانة ضيقة يصغر خطها هي بس */
+        const fitW = () => { const a = [td, ...td.querySelectorAll("span,.p")]; return a.some(e => e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0); };
+        for (let k = 0.93; k >= 0.6 && fitW(); k -= 0.07) { const f = ref * k; td.style.fontSize = f + "px"; td.querySelectorAll("span").forEach(x => x.style.fontSize = f + "px"); }
+      });
+    });
+  }
   /* عناوين الشعب بجدول المديرية: كلها بنفس حجم الخط (ما يصغر بعضها على بعض الأجهزة) */
   function secHeads(root) {
     root.querySelectorAll(".dxpg table").forEach(t => {
@@ -254,6 +279,6 @@
     });
   }
   const _dl = dxLayout;
-  dxLayout = function (host, opt) { const r = _dl.apply(this, arguments); try { secHeads(host); fitBoxes(host); unOverlap(host); } catch (e) { console.warn("v204 fit", e); } return r; };
+  dxLayout = function (host, opt) { const r = _dl.apply(this, arguments); try { secHeads(host); normInfo(host); fitBoxes(host); unOverlap(host); } catch (e) { console.warn("v204 fit", e); } return r; };
   window.v204Fit = fitBoxes;
 })();
