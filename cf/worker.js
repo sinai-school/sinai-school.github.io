@@ -63,6 +63,13 @@ async function gas_(body) {
 
 /* ---------- الحسابات والملفات الشخصية ---------- */
 const accGet_ = (kind, key) => one('select * from acc where kind=? and key=?', String(kind), String(key));
+/* v204i: حساب انحذف (أو انسجل عليه غير صاحبه): صورته ومعلوماته القديمة تنمسح حتى ما تطلع لصاحب الحساب الحقيقي — يبقى بس رقم البطاقة المعتمد */
+async function wipeProf_(kind, key) {
+  const q = await one('select json,photo from prof where kind=? and key=?', kind, key); if (!q) return;
+  if (q.photo && q.photo !== 'gas') await blobDel('ph_' + q.photo);
+  let nid = ''; try { nid = (JSON.parse(q.json || '{}') || {}).nid || ''; } catch (e) { }
+  await run("update prof set json=?,photo='',status='',updated=? where kind=? and key=?", JSON.stringify(nid ? { nid } : {}), now(), kind, key);
+}
 async function profGet_(kind, key) { return one('select json,photo,status,updated,name from prof where kind=? and key=?', kind, key); }
 async function profPut_(p) {
   await run('insert into prof(kind,key,name,json,photo,updated,status) values(?,?,?,?,?,?,?) on conflict(kind,key) do update set name=excluded.name,json=excluded.json,photo=excluded.photo,updated=excluded.updated,status=excluded.status',
@@ -362,6 +369,7 @@ async function handle(b) {
     const tn = await nidOf_(kind, key, null);
     if (tn && tn !== gn) { await fail_('f_' + kind + '_' + key, 900); return { err: 'wrongnid' }; }
     const t = now(), acc = { kind, key, name: String(b.name || ''), phone: ph, created: t, updated: t, nid: gn };
+    await wipeProf_(kind, key);
     await run('insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', kind, key, acc.name, ph, t, t, gn);
     return bundle_({ a: acc, kind, key }, b);
   }
@@ -430,13 +438,14 @@ async function admin_(b) {
   if (b.op === 'photo') { const q = await profGet_(String(b.kind), String(b.key)); return { ok: 1, photo: q ? await photo_(q.photo) : '' }; }
   if (b.op === 'setPhone') {
     const kind = String(b.kind), key = String(b.key), ph = phone_(b.phone);
-    if (!b.phone) { await run('delete from acc where kind=? and key=?', kind, key); return { ok: 1 }; }
+    if (!b.phone) { await run('delete from acc where kind=? and key=?', kind, key); await wipeProf_(kind, key); return { ok: 1 }; }
     if (!ph) return { err: 'phone' };
     const ex = await accGet_(kind, key), t = now();
     if (ex) await run("update acc set phone=?,nid='',updated=? where kind=? and key=?", ph, t, kind, key);
     else await run("insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,'')", kind, key, String(b.name || ''), ph, t, t);
     await run('delete from fails where k=?', 'f_' + kind + '_' + key); return { ok: 1 };
   }
+  if (b.op === 'wipeProf') { await wipeProf_(String(b.kind), String(b.key)); return { ok: 1 }; }
   if (b.op === 'profStatus') { await run('update prof set status=? where kind=? and key=?', String(b.status), String(b.kind), String(b.key)); return { ok: 1 }; }
   if (b.op === 'note') {
     const ci = cid_(b); if (await noteHas_(ci)) return { ok: 1, dup: 1, nf: -1 };
