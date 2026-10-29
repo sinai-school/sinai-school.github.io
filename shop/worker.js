@@ -16,6 +16,7 @@ export const DEF = {
   address: 'بغداد — شارع فلسطين، مجاور الكوخ، مكتب H&H',
   delivery: 'توصيل لكل العراق بـ ٥ آلاف دينار',
   notice: '',
+  ticker: 'الحمد لله والشكر لله ربّ العالمين دائماً وأبداً',
   waGroup: 'https://chat.whatsapp.com/FvFJNN4B3DU3r8Zw96uhig',
   waChannel: 'https://whatsapp.com/channel/0029VbCZofYISTkPK9NW1729',
   hours: 'يومياً من ١٠ الصبح لحد ١٢ بالليل — الجمعة من ١ الظهر لحد ١٢ بالليل',

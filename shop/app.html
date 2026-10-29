@@ -53,6 +53,15 @@ h1,h2,h3{letter-spacing:0}
 .nav a.on{color:var(--ink);background:var(--sf2)}
 .ibtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--sf);border:1px solid var(--line);margin-inline-start:auto;color:var(--ink2)}
 .cta{display:none;align-items:center;gap:7px;height:44px;padding:0 18px;border-radius:999px;background:var(--wa);color:#fff;font-weight:600;font-size:14px;flex:none}
+.tick{direction:ltr;background:var(--navy);color:#F4C77A;height:34px;overflow:hidden;position:relative;border-bottom:1px solid rgba(244,199,122,.18)}
+.tick:before,.tick:after{content:"";position:absolute;top:0;bottom:0;width:36px;z-index:1;pointer-events:none}
+.tick:before{right:0;background:linear-gradient(to left,var(--navy),transparent)}
+.tick:after{left:0;background:linear-gradient(to right,var(--navy),transparent)}
+.tt{display:flex;width:max-content;height:34px;align-items:center;direction:ltr;animation:tk var(--tkd,60s) linear infinite;will-change:transform}
+.tt span{direction:rtl;white-space:nowrap;font-size:13.5px;font-weight:600;letter-spacing:0;padding:0 22px;display:inline-flex;align-items:center;gap:22px}
+.tt span:after{content:"✦";font-size:10px;opacity:.7}
+@keyframes tk{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@media (prefers-reduced-motion:reduce){.tt{animation:none!important;width:100%;justify-content:center}.tt span:nth-child(n+2){display:none}.tt span:after{display:none}}
 .notice{background:var(--grad);color:#fff;text-align:center;font-size:13.5px;font-weight:500;padding:8px 16px}
 
 /* الواجهة */
@@ -394,7 +403,7 @@ body.pp .bnav{display:none}
     <a class="cta" id="hWa" href="#" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.4 8.4 0 0 0-7.2 12.8L3.7 20.5l4.3-1.1A8.4 8.4 0 1 0 12 3.5zm4.6 11.8c-.2.6-1.1 1.1-1.6 1.2-.4.1-1 .1-1.6-.1a13 13 0 0 1-5.8-5c-.4-.7-.7-1.5-.7-2.2 0-.8.4-1.4.8-1.8.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.6 1 1.4 1.8 2.4 2.4l.6.3c.2.1.4.1.5-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.2z"/></svg>راسلنا واتساب</a>
   </div>
 </header>
-<div id="notice"></div>
+<div id="tick"></div><div id="notice"></div>
 <main id="view" class="wrap" tabindex="-1"></main>
 <footer class="foot"><div class="wrap" id="foot"></div></footer>
 <nav class="bnav" aria-label="التنقل السفلي">
@@ -530,6 +539,8 @@ function chrome(){
   $('#hBrand').innerHTML=`${logoEl()}<span><b>${esc(S.name||'مجمع H&H')}</b><small>اكسسوارات الموبايل — بغداد</small></span>`;
   if(S.wa1)$('#hWa').href=`https://wa.me/${S.wa1}`;
   $('#hWa').dataset.s='wa1';
+  const tk=String(S.ticker||'').trim();
+  $('#tick').innerHTML=tk?`<div class="tick" role="note" aria-label="${esc(tk)}"><div class="tt" style="--tkd:${Math.max(40,Math.round(tk.length*2.6))}s" aria-hidden="true">${Array(16).fill(`<span>${esc(tk)}</span>`).join('')}</div></div>`:'';
   $('#notice').innerHTML=S.notice?`<div class="notice">${esc(S.notice)}</div>`:'';
   foot();
 }
