@@ -465,3 +465,82 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     }
   };
 })();
+
+/* ===== v204g: المرفقات تنفتح داخل التطبيق نفسه (صورة كاملة / PDF / ملف) — للطلاب والمدرسين والإدارة.
+   والإدارة: «N مرفق» بجدول التبليغات صار زر يفتح المرفقات. ===== */
+(function () {
+  const W = window, D = document;
+  const BASE = () => { try { return String((typeof SNAP != "undefined" && SNAP && SNAP.pc && SNAP.pc.api) || (typeof GX != "undefined" && GX.url) || "https://sinai.7svyn82yzr.workers.dev").replace(/\/$/, ""); } catch (e) { return "https://sinai.7svyn82yzr.workers.dev"; } };
+  const urlOf = f => f.u || (/^cf/.test(f.id || "") ? BASE() + "/f/" + f.id : "https://drive.google.com/file/d/" + encodeURIComponent(f.id) + "/view");
+  const isImg = f => /^image\//.test(f.m || "") || /\.(jpe?g|png|gif|webp|heic)$/i.test(f.n || "");
+  const isPdf = f => /pdf/.test(f.m || "") || /\.pdf$/i.test(f.n || "");
+  const E = s => (typeof esc == "function" ? esc(s) : String(s || ""));
+  const st = D.createElement("style");
+  st.textContent = `.av204{position:fixed;inset:0;z-index:300;background:rgba(10,20,18,.92);display:flex;flex-direction:column}
+.av204 .hd{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;color:#fff}
+.av204 .hd b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.av204 .hd button,.av204 .hd a{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:600 14px inherit;text-decoration:none;cursor:pointer}
+.av204 .bd{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:8px}
+.av204 .bd img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
+.av204 .bd iframe{width:100%;height:100%;border:0;background:#fff;border-radius:8px}
+.av204 .nv{display:flex;gap:6px;justify-content:center;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px));flex-wrap:wrap}
+.av204 .nv img{width:54px;height:54px;object-fit:cover;border-radius:8px;opacity:.55;cursor:pointer;border:2px solid transparent}.av204 .nv img.on{opacity:1;border-color:#e9c46a}
+.av204 .ld{color:#fff;font-weight:700}
+.att204{cursor:pointer;text-decoration:underline}`;
+  D.head.appendChild(st);
+  W.v204View = function (files, i) {
+    files = (files || []).filter(Boolean); if (!files.length) return;
+    i = Math.max(0, Math.min(files.length - 1, i || 0));
+    D.querySelectorAll(".av204").forEach(x => x.remove());
+    const z = D.createElement("div"); z.className = "av204"; D.body.appendChild(z);
+    const show = k => {
+      i = k; const f = files[i], u = urlOf(f);
+      let body;
+      if (isImg(f)) body = `<img src="${E(u)}" alt="${E(f.n || "")}">`;
+      else if (isPdf(f) && /^https:\/\/sinai\./.test(u)) body = `<iframe src="${E(u)}" title="${E(f.n || "")}"></iframe>`;
+      else body = `<div class="ld">${E(f.n || "ملف")}<br><br><a style="color:#e9c46a" href="${E(u)}" target="_blank" rel="noopener">فتح الملف</a></div>`;
+      z.innerHTML = `<div class="hd"><button data-x>✕ إغلاق</button><b>${E(f.n || "مرفق")}${files.length > 1 ? " (" + (i + 1) + " / " + files.length + ")" : ""}</b><button data-s>مشاركة / حفظ</button><a href="${E(u)}" target="_blank" rel="noopener">فتح</a></div><div class="bd">${body}</div>${files.length > 1 ? `<div class="nv">${files.map((g, j) => isImg(g) ? `<img data-j="${j}" class="${j == i ? "on" : ""}" src="${E(urlOf(g))}" alt="">` : `<button data-j="${j}" style="${j == i ? "outline:2px solid #e9c46a" : ""}">${E((g.n || "ملف").slice(0, 14))}</button>`).join("")}</div>` : ""}`;
+      z.querySelector("[data-x]").onclick = () => z.remove();
+      z.querySelectorAll("[data-j]").forEach(b => b.onclick = () => show(+b.dataset.j));
+      z.querySelector("[data-s]").onclick = async () => {
+        try {
+          const r = await fetch(u); const bl = await r.blob(); const fl = new File([bl], f.n || "ملف", { type: bl.type || f.m || "application/octet-stream" });
+          if (navigator.canShare && navigator.canShare({ files: [fl] })) return navigator.share({ files: [fl], title: f.n || "" });
+          if (typeof saveFile == "function") return saveFile(f.n || "ملف", bl);
+          const a = D.createElement("a"); a.href = URL.createObjectURL(bl); a.download = f.n || "ملف"; a.click();
+        } catch (e) { W.open(u, "_blank"); }
+      };
+    };
+    show(i);
+    const k = e => { if (!D.body.contains(z)) return removeEventListener("keydown", k); if (e.key == "Escape") z.remove(); if (e.key == "ArrowLeft" && i < files.length - 1) show(i + 1); if (e.key == "ArrowRight" && i > 0) show(i - 1); };
+    addEventListener("keydown", k);
+    try { W.v204Keep && W.v204Keep(files.map(urlOf)); } catch (e) { }
+  };
+  /* أي ضغطة على مرفق (صورة أو ملف) بالتبليغات/البلاغات: تنفتح بالعارض مع باقي مرفقات نفس التبليغ */
+  const fileOfEl = a => {
+    const h = a.getAttribute("href") || (a.querySelector("img") && a.querySelector("img").getAttribute("src")) || "";
+    let m = /\/f\/([A-Za-z0-9_-]+)/.exec(h) || /\/file\/d\/([^/?#]+)/.exec(h) || /[?&]id=([^&#]+)/.exec(h); if (!m) return null;
+    const img = a.querySelector("img"); const nm = (a.textContent || "").trim() || (img && img.alt) || "";
+    return { id: decodeURIComponent(m[1]), u: /\/f\//.test(h) ? h : "", n: nm, m: img || a.classList.contains("pf70i") ? "image/jpeg" : (/\.pdf$/i.test(nm) ? "application/pdf" : "") };
+  };
+  D.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest('a[href*="/f/cf"], a[href*="drive.google.com/file/d/"], a.pf70i, a.pf70f');
+    if (!a || a.closest(".av204")) return;
+    const box = a.closest(".pf70, .fls, .fl, .note1, .rc") || a.parentElement;
+    const L = [...box.querySelectorAll('a[href*="/f/"], a[href*="drive.google.com/file/d/"], a.pf70i, a.pf70f')].filter((x, j, arr) => arr.indexOf(x) == j);
+    const F = L.map(fileOfEl).filter(Boolean); if (!F.length) return;
+    e.preventDefault(); e.stopPropagation();
+    W.v204View(F, Math.max(0, L.indexOf(a)));
+  }, true);
+  /* الإدارة: «N مرفق» بجدول التبليغات يفتح المرفقات */
+  D.addEventListener("click", e => {
+    const c = e.target.closest && e.target.closest(".tw td.l .chip");
+    if (!c || !/مرفق/.test(c.textContent)) return;
+    try {
+      const tr = c.closest("tr"), m = tr && /delNote',id:'([^']+)'/.exec(tr.innerHTML); if (!m) return;
+      const n = ((typeof APID != "undefined" && APID && APID.notes) || []).find(x => String(x.id) == m[1]); if (!n || !(n.files || []).length) return;
+      e.preventDefault(); e.stopPropagation(); W.v204View(n.files, 0);
+    } catch (x) { }
+  }, true);
+  new MutationObserver(() => { D.querySelectorAll(".tw td.l .chip").forEach(c => { if (/مرفق/.test(c.textContent) && !c.classList.contains("att204")) { c.classList.add("att204"); c.title = "اضغط حتى تفتح المرفقات"; } }); }).observe(D.documentElement, { childList: true, subtree: true });
+})();
