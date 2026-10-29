@@ -36,6 +36,22 @@ echo "home: $(curl -s -o /dev/null -w '%{http_code}' $URL/)"
 echo "data: $(curl -s $URL/api/data | head -c 300)"
 $W d1 execute hhshop --remote --json --command "select (select count(*) from products) p,(select count(*) from msgs) m,(select count(*) from imgs) i,(select count(*) from imgq) q,(select count(*) from products where ai is not null and ai not like '%err%') ai" 2>/dev/null | python3 -c 'import sys,json;print("db",json.load(sys.stdin)[0]["results"])'
 $W d1 execute hhshop --remote --json --command "select at,msg from log order by at desc limit 8" 2>/dev/null | python3 -c 'import sys,json;print("log",json.load(sys.stdin)[0]["results"])'
+echo "--- admin password"
+if [ -f pwreset.pub ]; then
+  python3 - > /tmp/pwset.sql <<'P'
+import secrets,hashlib,json,subprocess,base64
+A='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+pw='HH-'+''.join(secrets.choice(A) for _ in range(4))+'-'+''.join(secrets.choice('23456789') for _ in range(4))
+salt=secrets.token_hex(16)
+h=salt+pw
+for _ in range(2000): h=hashlib.sha256((h+salt).encode()).hexdigest()
+enc=subprocess.run(['openssl','pkeyutl','-encrypt','-pubin','-inkey','pwreset.pub','-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'],input=pw.encode(),capture_output=True).stdout
+open('/tmp/pwenc.txt','w').write(base64.b64encode(enc).decode())
+print("insert into settings(k,v) values('salt','%s'),('pw','%s') on conflict(k) do update set v=excluded.v; delete from settings where k='_fails';"%(json.dumps(salt),json.dumps(h)))
+P
+  $W d1 execute hhshop --remote --file /tmp/pwset.sql -y >/dev/null 2>&1 && echo "PWENC:$(cat /tmp/pwenc.txt)"
+  rm -f /tmp/pwset.sql /tmp/pwenc.txt
+fi
 echo "--- map link"
 if [ -f maplink.txt ]; then
   F=$(curl -sL -o /tmp/map.html -m 25 -w '%{url_effective}' -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' "$(cat maplink.txt)")
