@@ -153,7 +153,8 @@ async function notesFor_(kind, key, secs) {
   const o = [];
   for (const n of await notesAll_()) {
     const t = n.target, sc = n.scope;
-    const ok = sc === 'all' || (sc === 'allS' && kind === 's') || (sc === 'allT' && kind === 't') || (sc === 'sec' && kind === 's' && secs.includes(t)) || (sc === 'one' && t === kind + ':' + key);
+    const ok = sc === 'all' || (sc === 'allS' && kind === 's') || (sc === 'allT' && kind === 't') || (sc === 'sec' && kind === 's' && secs.includes(t)) || (sc === 'one' && t === kind + ':' + key)
+      || (sc === 'exg' && kind === 's' && String(t || '').split('|').some(g => g && secs.some(x => x === g || String(x).startsWith(g + ' ')))) || (sc === 'exs' && kind === 's' && String(t || '').split('|').includes(key));
     if (ok) o.push({ id: n.id, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files || [] });
   }
   const sn = new Set, r = [];
@@ -182,6 +183,7 @@ async function bundle_(x, b) {
   if (same) o.ph1 = 1;
   if (x.kind === 't') { try { o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { o.sent = []; } }
   try { await extra202_(o, x); } catch (e) { }
+  try { await extra204_(o, x); } catch (e) { }
   return o;
 }
 async function fget_(b) {
@@ -283,6 +285,44 @@ async function editAcc202_(b) {
   return { ok: 1, phone: ph, nid: nd };
 }
 
+/* ---------- v204: جداول الامتحانات المنشورة للطلاب (تتحدّث وحدها مع كل تعديل بعد النشر) ---------- */
+const exHash_ = o => syH_(canon_(o || null));
+async function exPub204_(b) {
+  const k = String(b.k || '').replace(/[^\w]/g, '').slice(0, 20); if (!k) return { err: 'k' };
+  const P = await kvJ('EXPUB', {}), old = P[k] || null;
+  if (b.data == null) { delete P[k]; await kvPut('EXPUB', P); return { ok: 1, off: 1 }; }
+  const d = b.data || {};
+  const t = { k, t: String(d.t || '').slice(0, 200), g: (d.g || []).map(String).slice(0, 20), rows: (d.rows || []).slice(0, 60).map(r => ({ d: String(r.d || '').slice(0, 10), c: (r.c || []).map(x => String(x || '').slice(0, 80)) })), notes: String(d.notes || '').slice(0, 4000), f2: d.f2 && typeof d.f2 === 'object' ? d.f2 : null };
+  const h = exHash_([t.t, t.g, t.rows, t.notes, t.f2]);
+  if (old && old.h === h) return { ok: 1, same: 1, at: old.at };
+  t.h = h; t.at = now(); P[k] = t; await kvPut('EXPUB', P);
+  /* تبليغ للطلاب المعنيين (أول نشر، وبعدها كل تحديث — مرة كل ٣٠ دقيقة بالأكثر) */
+  const last = old && old.nt ? Date.parse(old.nt) : 0;
+  if (!old || Date.now() - last > 30 * 60e3) {
+    t.nt = now(); P[k] = t; await kvPut('EXPUB', P);
+    const title = (old ? 'تحدّث ' : 'انتشر ') + (t.t || 'جدول الامتحانات');
+    const body = (old ? 'صار تعديل على ' : '') + (t.t || 'جدول الامتحانات') + ' — افتح تبويب «الامتحانات» حتى تشوف الجدول.';
+    const sc = t.f2 ? 'exs' : 'exg', tg = t.f2 ? Object.keys(t.f2).join('|') : t.g.join('|');
+    if (tg) await noteAdd_({ id: 'ex' + uid().slice(0, 10), scope: sc, target: tg, from: 'إدارة المدرسة', title: title.slice(0, 120), body, date: now(), cat: 'adm', files: '' });
+  }
+  return { ok: 1, at: t.at, h };
+}
+async function extra204_(o, x) {
+  const P = await kvJ('EXPUB', {}), L = [];
+  for (const k in P) {
+    const t = P[k]; if (!t) continue;
+    if (x.kind === 's') {
+      const pv = o.private || {}, sec = String(pv.s || (pv.secs || [])[0] || ''), g = sec.split(' ').slice(0, -1).join(' ') || sec;
+      const gi = t.g.indexOf(g);
+      if (t.f2) { if (!t.f2[x.key]) continue; }
+      if (gi < 0) continue;
+      L.push({ k, t: t.t, at: t.at, g: [g], rows: t.rows.map(r => ({ d: r.d, c: [r.c[gi] || ''] })), notes: t.notes, mine: t.f2 ? t.f2[x.key] : null });
+    } else L.push({ k, t: t.t, at: t.at, g: t.g, rows: t.rows, notes: t.notes, n2: t.f2 ? Object.keys(t.f2).length : 0 });
+  }
+  o.ex = L; o.exh = exHash_(L.map(t => [t.k, t.at]));
+  if (x.kind === 't' && !o.sent) { try { const pv = ((await private_()).t || {})[x.key] || {}; o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { } }
+}
+
 /* ---------- الأوامر ---------- */
 async function handle(b) {
   const a = String(b.a || '');
@@ -356,7 +396,7 @@ async function handle(b) {
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
-    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); return o; }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now() }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return o; }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
@@ -415,6 +455,8 @@ async function admin_(b) {
   if (b.op === 'up') return upOne_(b);
   if (b.op === 'rel') { const c = (b.c || []).map(Number).filter(n => n >= 1 && n <= 6); await kvPut('REL', { c, at: now() }); return { ok: 1, c }; }
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
+  if (b.op === 'exPub') return exPub204_(b);
+  if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
   return { err: 'op' };
 }
 
@@ -875,7 +917,7 @@ export default {
         if (m) { const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); return new Response(unb64(d), { headers: { 'Content-Type': f.m || 'application/octet-stream', 'Content-Disposition': 'inline; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*' } }); }
         m = u.pathname.match(/^\/bk\/([A-Za-z0-9_-]+)$/);
         if (m) { const k = await exK_('mac'); if (!k || u.searchParams.get('k') !== (await hm_(k, 'bk|' + m[1])).slice(0, 22)) return new Response('no', { status: 403 }); const s = await blobGet('bk_' + m[1]); const f = await one('select name from bk where id=?', m[1]); return new Response(s || '', { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(f ? f.name : 'backup.json') } }); }
-        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, ready: (await secret_()) ? 1 : 0 });
+        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, v204: 1, ready: (await secret_()) ? 1 : 0 });
       }
       let b; try { b = JSON.parse(await req.text() || '{}'); } catch (x) { return out({ err: 'action' }); }
       return out(await handle(b));

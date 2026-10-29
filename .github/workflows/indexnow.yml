@@ -1,0 +1,15 @@
+name: إبلاغ محركات البحث
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'sitemap.xml']
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IndexNow (Bing و Yandex وغيرها) + خريطة الموقع
+        run: |
+          sleep 60
+          curl -s -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' -d '{"host":"sinai-school.github.io","key":"eab5d866ca0c4b44545dd7e060e7a72c","keyLocation":"https://sinai-school.github.io/eab5d866ca0c4b44545dd7e060e7a72c.txt","urlList":["https://sinai-school.github.io/","https://sinai-school.github.io/privacy.html"]}' -w '\nindexnow %{http_code}\n' || true
+          curl -s "https://www.bing.com/ping?sitemap=https%3A%2F%2Fsinai-school.github.io%2Fsitemap.xml" -o /dev/null -w 'bing %{http_code}\n' || true
