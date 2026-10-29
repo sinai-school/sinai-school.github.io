@@ -436,3 +436,17 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     };
   });
 })();
+
+/* ===== v204d: جسر EMIS — صفحة EMIS (emis.moedu.gov.iq) المفتوحة بنفس المتصفح تطلب قائمة طلاب النظام للمطابقة والإضافة.
+   يرد بس لموقع EMIS الرسمي، وبس إذا مدير النظام داخل بحسابه. ===== */
+(function () {
+  addEventListener("message", async e => {
+    try {
+      if (e.origin !== "https://emis.moedu.gov.iq" || !e.data || e.data.t !== "emis204req") return;
+      if (!window.GXOWN) { e.source.postMessage({ t: "emis204res", err: "login" }, e.origin); return; }
+      if (typeof infLoad == "function") await infLoad();
+      const L = STA().map(s => { const i = (INF && INF[s.id]) || {}, X = i.x || {}; return { id: s.id, n: s.n, s: s.s, p: s.p || "", nid: X.nid || i.nid || "", dob: X.dob || i.dob || "", m: i.m || "", x: X.n1 ? { n1: X.n1, n2: X.n2, n3: X.n3, n4: X.n4, laqab: X.laqab || "", m1: X.m1, m2: X.m2, m3: X.m3, gphone: X.gphone || "", city: X.city || "", hay: X.hay || "" } : null }; });
+      e.source.postMessage({ t: "emis204res", at: new Date().toISOString(), list: L }, e.origin);
+    } catch (x) { try { e.source.postMessage({ t: "emis204res", err: String(x) }, e.origin); } catch (y) { } }
+  });
+})();
