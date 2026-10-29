@@ -43,6 +43,6 @@ jobs:
           git checkout --orphan ops-out-tmp
           git rm -rfq --cached . >/dev/null
           cp /tmp/opsout/* . 2>/dev/null || true
-          git add dump.json log.json 2>/dev/null || true
+          for f in dump.json log.json; do [ -f "$f" ] && git add "$f"; done; true
           git commit -qm "نتيجة الصيانة (مشفّرة)" || true
           git push -qf origin HEAD:ops-out
