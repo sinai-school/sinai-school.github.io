@@ -790,6 +790,8 @@ export default {
       }
       if (p === '/sw.js') return new Response(SW, { headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache' } });
       if (p === '/admin.webmanifest') return J({ name: 'لوحة تحكم H&H', short_name: 'لوحة H&H', start_url: '/admin', scope: '/admin', display: 'standalone', background_color: '#141B33', theme_color: '#141B33', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: '/icon.png', sizes: '320x320', type: 'image/jpeg' }] }, 200, { 'cache-control': 'public, max-age=86400' });
+      // ملف توثيق Google Search Console
+      if (/^\/google[0-9a-f]{16}\.html$/.test(p)) return new Response('google-site-verification: ' + p.slice(1), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
       if (p === '/' + INDEXNOW_KEY + '.txt') return new Response(INDEXNOW_KEY, { headers: { 'content-type': 'text/plain' } });
       if (p === '/icon.svg' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
       if (p === '/icon.png') { const s = await getSettings(env); const k = s.logoU || (s._logoAt ? 'logo' : ''); if (k) return Response.redirect(url.origin + '/img/' + k, 302); return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } }); }
