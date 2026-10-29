@@ -12,7 +12,7 @@ export const DEF = {
   tagline: 'إكسسوارات الهواتف والتقنية — أصلية وبضمان',
   wa1: '9647730001588', wa2: '9647732222773',
   tgUser: 'h_h_mobail', tgChannel: CH,
-  ig: 'h.and.h_mobile', tt: 'hussein_handh', fb: 'HandHMobile',
+  ig: 'h.and.h_mobile', tt: 'hussein_handh', fb: 'HandHMobile', yt: 'husseinhandh',
   address: 'بغداد — شارع فلسطين، مجاور الكوخ، مكتب H&H',
   delivery: 'توصيل لكل العراق بـ ٥ آلاف دينار',
   notice: '',
@@ -451,7 +451,7 @@ async function syncLogo(env, html, st) {
 }
 
 // ---------- الإحصائيات (بدون كوكيز، بدون أي خدمة خارجية) ----------
-const CHN = ['waze', 'wa1', 'wa2', 'tg', 'ig', 'fb', 'tt', 'tgc', 'wac', 'wag', 'map', 'dir', 'call', 'share', 'vtg', 'vig', 'vtt', 'vfb'];
+const CHN = ['yt', 'vyt', 'waze', 'wa1', 'wa2', 'tg', 'ig', 'fb', 'tt', 'tgc', 'wac', 'wag', 'map', 'dir', 'call', 'share', 'vtg', 'vig', 'vtt', 'vfb'];
 const normQ = s => digits(s).toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ًٌٍَُِّْـ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
 function srcOf(r) {
   r = String(r || '').toLowerCase();
@@ -588,7 +588,7 @@ async function page(env, url, O, prod) {
     ns = `<h1>مجمع H&H — اكسسوارات الهواتف في بغداد</h1><ul>${D.p.slice(0, 30).map(x => `<li><a href="${esc(encodeURI(prodPath(x)))}">${esc(x.name)}</a> — ${fmt(x.price)} دينار</li>`).join('')}</ul>`;
   }
   const geo = st.mapLat && st.mapLng ? { geo: { '@type': 'GeoCoordinates', latitude: +st.mapLat, longitude: +st.mapLng } } : {};
-  ld.push({ '@context': 'https://schema.org', '@type': 'ElectronicsStore', '@id': origin + '/#store', name: 'مجمع H&H', alternateName: 'H&H Mobile', url: origin + '/', logo: img, image: img, telephone: '+' + (st.wa1 || DEF.wa1), priceRange: 'IQD', currenciesAccepted: 'IQD', address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, ...geo, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '23:59' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Friday', opens: '13:00', closes: '23:59' }], sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`, `https://www.facebook.com/${st.fb || DEF.fb}`] });
+  ld.push({ '@context': 'https://schema.org', '@type': 'ElectronicsStore', '@id': origin + '/#store', name: 'مجمع H&H', alternateName: 'H&H Mobile', url: origin + '/', logo: img, image: img, telephone: '+' + (st.wa1 || DEF.wa1), priceRange: 'IQD', currenciesAccepted: 'IQD', address: { '@type': 'PostalAddress', streetAddress: 'شارع فلسطين، مجاور الكوخ', addressLocality: 'بغداد', addressCountry: 'IQ' }, ...geo, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '23:59' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Friday', opens: '13:00', closes: '23:59' }], sameAs: [`https://t.me/${st.tgChannel || CH}`, `https://www.instagram.com/${st.ig || DEF.ig}`, `https://www.tiktok.com/@${st.tt || DEF.tt}`, `https://www.facebook.com/${st.fb || DEF.fb}`, `https://www.youtube.com/@${st.yt || DEF.yt}`] });
   if (crumbs.length > 1) ld.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) });
   if (!prod && path === '/') ld.push({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'مجمع H&H', url: origin + '/', inLanguage: 'ar', potentialAction: { '@type': 'SearchAction', target: origin + '/?q={q}', 'query-input': 'required name=q' } });
   const s0 = await getSettings(env);

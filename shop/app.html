@@ -469,6 +469,7 @@ const BI={
  ig:['linear-gradient(45deg,#F9CE34,#EE2A7B,#6228D7)','<rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.3" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.3" cy="7.7" r="1" fill="#fff"/>'],
  fb:['linear-gradient(135deg,#0099FF,#A033FF,#FF5280)','<path fill="#fff" d="M12 4C7.5 4 4 7.3 4 11.6c0 2.3 1 4.3 2.7 5.6V20l2.5-1.4c.9.3 1.8.4 2.8.4 4.5 0 8-3.3 8-7.6S16.5 4 12 4zm.8 10.2-2-2.2-4 2.2 4.4-4.7 2.1 2.2 3.9-2.2z"/>'],
  tt:['#111','<path fill="#25F4EE" d="M10.2 10.3v-.8a6 6 0 0 0-5.2 9.9 6 6 0 0 1 5.2-9.1z"/><path fill="#FE2C55" d="M15.4 4.7h-.9c.2 1.7 1.2 3.2 2.7 4v-.1c-1-.9-1.6-2.3-1.8-3.9z"/><path fill="#fff" d="M17.2 8.6a4.3 4.3 0 0 1-2.7-3.9h-2.2v9.6a2 2 0 1 1-1.4-1.9V10a4.2 4.2 0 1 0 3.6 4.2V9.5a6 6 0 0 0 3.4 1.1V8.4l-.7.2z"/>'],
+ yt:['#FF0000','<path fill="#fff" d="M10 8.6v6.8l5.8-3.4z"/>'],
  map:['#EA4335','<path fill="#fff" d="M12 3a6.5 6.5 0 0 0-6.5 6.5C5.5 14.4 12 21 12 21s6.5-6.6 6.5-11.5A6.5 6.5 0 0 0 12 3zm0 9a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>']
 };
 const bi=(k,s=22)=>`<i style="background:${BI[k][0]}"><svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">${BI[k][1]}</svg></i>`;
@@ -489,7 +490,8 @@ function follows(){return [
  {k:'wag',c:'wag',t:'كروب الواتساب',d:'انضم لكروبنا وكون أول من يعرف',u:S.waGroup,on:S.waGroup},
  {k:'ig',c:'ig',t:'انستغرام',d:'@'+S.ig,u:`https://www.instagram.com/${S.ig}`,on:S.ig},
  {k:'tt',c:'tt',t:'تيك توك',d:'@'+S.tt,u:`https://www.tiktok.com/@${S.tt}`,on:S.tt},
- {k:'fb',c:'fb',t:'فيسبوك',d:'H and H Mobile',u:`https://www.facebook.com/${S.fb}`,on:S.fb}
+ {k:'fb',c:'fb',t:'فيسبوك',d:'H and H Mobile',u:`https://www.facebook.com/${S.fb}`,on:S.fb},
+ {k:'yt',c:'yt',t:'يوتيوب',d:'فيديوهات ومراجعات المنتجات',u:`https://www.youtube.com/@${S.yt}`,on:S.yt}
 ].filter(c=>c.on)}
 const mapQ=()=>S.mapLat&&S.mapLng?`${S.mapLat},${S.mapLng}`:(S.mapQ||'شارع فلسطين بغداد');
 const mapOpen=()=>S.mapUrl||`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ())}`;
@@ -692,7 +694,7 @@ function renderProd(p,partial){
 }
 function vidsH(p){
   const tg=p.vTg||((p.videos||[])[0]?`https://t.me/${S.tgChannel}/${String(p.videos[0]).slice(1)}`:'');
-  const L=[['tg','تليجرام',tg],['ig','انستغرام',p.vIg],['tt','تيك توك',p.vTt],['fb','فيسبوك',p.vFb]].filter(x=>x[2]&&/^https?:\/\//.test(x[2]));
+  const L=[['tg','تليجرام',tg],['yt','يوتيوب',p.vYt],['ig','انستغرام',p.vIg],['tt','تيك توك',p.vTt],['fb','فيسبوك',p.vFb]].filter(x=>x[2]&&/^https?:\/\//.test(x[2]));
   if(!L.length)return '';
   return `<div class="vbox"><b><i><svg width="13" height="13" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></i>شاهد فيديو المنتج</b><div class="vbt">${L.map(x=>`<a href="${esc(x[2])}" target="_blank" rel="noopener" data-s="v${x[0]}">${bi(x[0],16)}${x[1]}</a>`).join('')}</div></div>`;
 }
