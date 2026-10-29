@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#141B33">
 <title>لوحة تحكم H&H</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/admin.webmanifest"><link rel="apple-touch-icon" href="/icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="لوحة H&H"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -223,6 +224,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>(+n||0).toLocaleString('en');
 const num=v=>+String(v||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d]/g,'')||0;
 const IM=k=>A+'/img/'+encodeURIComponent(k);
+const IMs=k=>IM(k)+'?w=s';
 const slug=s=>String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,70);
 let TOK='';try{TOK=localStorage.getItem('hhadm')||''}catch(e){}
 let ST=null,TAB='p',F='all',Q='',SORT='new',LIM=60,SEL=null;
@@ -315,7 +317,7 @@ function draw(){
 }
 function row(p){
   const [v,o]=stOf(p);const sel=SEL&&SEL.has(p.id);
-  const img=p.imgs[0]?`<img class="th" src="${IM(p.imgs[0])}" loading="lazy" alt="">`:'<span class="th">بدون صورة</span>';
+  const img=p.imgs[0]?`<img class="th" src="${IMs(p.imgs[0])}" loading="lazy" alt="">`:'<span class="th">بدون صورة</span>';
   return `<div class="it${p.hidden||p.del?' dim':''}${sel?' sel':''}" data-id="${esc(p.id)}"><span class="cb">${ic('check',14,3)}</span>${img}<div class="t"><div class="nm">${esc(p.name||'(بدون اسم)')}</div><div class="pr"><button class="qp" data-qp title="تعديل السعر">${fmt(p.price)} د.ع ${ic('pen',13,2)}</button>${p.old>p.price?`<s>${fmt(p.old)}</s>`:''}</div>
    <div class="bdg"><span>${esc(p.cat)}</span>${p.hidden?'<span class="no">مخفي</span>':''}${!p.imgs.length?'<span class="no">بدون صور</span>':''}${v?`<span class="bl">${ic('eye',12,2)}${fmt(v)}</span>`:''}${o?`<span class="ac">${ic('cart',12,2)}${fmt(o)} طلب</span>`:''}${p.src==='tg'?'<span>من القناة</span>':''}</div></div>
   ${p.del?`<div class="tgl" style="grid-template-columns:1fr 1fr"><button data-r>${ic('undo',15)}استرجاع</button><button data-pu class="no">${ic('trash',15)}حذف نهائي</button></div>`:`<div class="tgl"><button data-k="avail" class="${p.avail?'ok':'no'}">${p.avail?'✓ متوفر':'✕ غير متوفر'}</button><button data-k="offer" class="${p.offer?'gd':''}">${p.offer?'★ عرض':'☆ عرض'}</button><button data-k="pin" class="${p.pin?'gd':''}">${p.pin?'▲ بالأعلى':'△ للأعلى'}</button><button data-k="hidden" class="${p.hidden?'no':''}">${p.hidden?'مخفي':'إخفاء'}</button></div>`}</div>`;
@@ -461,10 +463,10 @@ async function stats(){
   if(RNG>1){const show=RNG>60?agg(days,by,RNG>180?30:7):days.map(d=>({l:d.slice(5).replace('-','/'),uv:by[d].uv||0,o:by[d].o||0}));
     const mx=Math.max(1,...show.map(x=>x.uv));const every=Math.ceil(show.length/10);
     h+=`<div class="card"><h3>الزوار والطلبات يومياً</h3><div class="chart" id="ch"><span class="tip" id="tip"></span>${show.map((x,i)=>`<div class="c" data-t="${esc(x.l)}: ${x.uv} زائر · ${x.o} طلب"><i style="height:${x.uv/mx*100}%"></i><i class="o" style="height:${x.o/mx*100}%"></i>${i%every===0?`<em>${esc(x.l)}</em>`:''}</div>`).join('')}</div><div class="lgd"><span><i style="background:linear-gradient(135deg,#FF8A3D,#FF4D6D)"></i>زوار</span><span><i style="background:var(--navy)"></i>ضغطات طلب</span></div></div>`;}
-  const tl=(l,key)=>l.length?`<div class="tops">${l.map((x,i)=>{const p=P[x.p]||{name:'منتج محذوف ('+x.p+')',imgs:[]};return `<div class="tp" data-id="${esc(x.p)}"><span class="r">${i+1}</span>${p.imgs&&p.imgs[0]?`<img src="${IM(p.imgs[0])}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span class="nm">${esc(p.name)}</span><span class="v"><b>${fmt(x[key])}</b>${key==='o'?`طلب · ${fmt(x.v)} مشاهدة`:`مشاهدة · ${fmt(x.o)} طلب`}</span></div>`}).join('')}</div>`:'<div class="empty" style="padding:20px">ما كو بيانات بعد بهالفترة.</div>';
+  const tl=(l,key)=>l.length?`<div class="tops">${l.map((x,i)=>{const p=P[x.p]||{name:'منتج محذوف ('+x.p+')',imgs:[]};return `<div class="tp" data-id="${esc(x.p)}"><span class="r">${i+1}</span>${p.imgs&&p.imgs[0]?`<img src="${IMs(p.imgs[0])}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span class="nm">${esc(p.name)}</span><span class="v"><b>${fmt(x[key])}</b>${key==='o'?`طلب · ${fmt(x.v)} مشاهدة`:`مشاهدة · ${fmt(x.o)} طلب`}</span></div>`}).join('')}</div>`:'<div class="empty" style="padding:20px">ما كو بيانات بعد بهالفترة.</div>';
   h+=`<div class="g2s"><div class="card" style="margin:0"><h3>🔥 الأكثر طلباً</h3>${tl(S.prod.filter(x=>x.o).slice(0,10),'o')}</div><div class="card" style="margin:0"><h3>👀 الأكثر مشاهدة</h3>${tl([...S.prod].sort((a,b)=>b.v-a.v).filter(x=>x.v).slice(0,10),'v')}</div></div><div style="height:12px"></div>`;
   const bars=(pre,names)=>{const l=Object.keys(tot).filter(k=>k.startsWith(pre)).map(k=>[names[k.slice(pre.length)]||k.slice(pre.length),tot[k]]).sort((a,b)=>b[1]-a[1]);const mx=Math.max(1,...l.map(x=>x[1]));return l.length?`<div class="hb">${l.map(x=>`<div><span>${esc(x[0])}</span><span class="tr"><i style="width:${x[1]/mx*100}%"></i></span><b>${fmt(x[1])}</b></div>`).join('')}</div>`:'<div class="empty" style="padding:16px">ما كو بيانات بعد.</div>'};
-  const CN={wa1:'واتساب ١',wa2:'واتساب ٢',tg:'تليجرام',ig:'انستغرام',fb:'ماسنجر',tt:'تيك توك',tgc:'قناة التليجرام',wac:'قناة الواتساب',wag:'كروب الواتساب',map:'فتح الخريطة',dir:'الاتجاهات',call:'اتصال',share:'مشاركة منتج',vtg:'فيديو تليجرام',vig:'فيديو انستغرام',vtt:'فيديو تيك توك',vfb:'فيديو فيسبوك'};
+  const CN={wa1:'واتساب ١',wa2:'واتساب ٢',tg:'تليجرام',ig:'انستغرام',fb:'ماسنجر',tt:'تيك توك',tgc:'قناة التليجرام',wac:'قناة الواتساب',wag:'كروب الواتساب',map:'فتح الخريطة',dir:'الاتجاهات',call:'اتصال',waze:'ويز',share:'مشاركة منتج',vtg:'فيديو تليجرام',vig:'فيديو انستغرام',vtt:'فيديو تيك توك',vfb:'فيديو فيسبوك'};
   h+=`<div class="g2s"><div class="card" style="margin:0"><h3>وين يطلبون الزبائن</h3>${bars('o:',CN)}</div><div class="card" style="margin:0"><h3>منين يجون الزوار</h3>${bars('src:',{google:'Google',bing:'Bing',instagram:'انستغرام',facebook:'فيسبوك',tiktok:'تيك توك',telegram:'تليجرام',whatsapp:'واتساب',youtube:'يوتيوب',direct:'مباشر / رابط محفوظ',self:'من داخل الموقع',other:'مواقع ثانية'})}</div>
    <div class="card" style="margin:0"><h3>الأجهزة</h3>${bars('dev:',{m:'موبايل',d:'كمبيوتر'})}</div><div class="card" style="margin:0"><h3>ضغطات القنوات والخريطة</h3>${bars('s:',CN)}</div></div><div style="height:12px"></div>`;
   h+=`<div class="card"><h3>شنو يدورون الزبائن <small>الأحمر = دوروا عليه وما لگوه بالموقع</small></h3>${S.srch.length?`<div class="qs">${S.srch.map(x=>`<span class="${x.z?'z':''}">${esc(x.q)}<b>${x.n}</b></span>`).join('')}</div>`:'<div class="empty" style="padding:16px">ما كو عمليات بحث بعد.</div>'}</div>

@@ -422,6 +422,7 @@ const norm=s=>String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦�
 const slug=s=>String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,70);
 const pth=p=>'/p/'+p.id+(slug(p.name)?'/'+slug(p.name):'');
 const IM=k=>A+'/img/'+encodeURIComponent(k);
+const IMs=k=>IM(k)+'?w=s';
 let D=null,S={},CATS=[],P=[],byId={},cache={},TOP=[];
 
 /* أيقونات */
@@ -485,6 +486,7 @@ function follows(){return [
 ].filter(c=>c.on)}
 const mapQ=()=>S.mapLat&&S.mapLng?`${S.mapLat},${S.mapLng}`:(S.mapQ||'شارع فلسطين بغداد');
 const mapOpen=()=>S.mapUrl||`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ())}`;
+const wazeU=()=>S.mapLat&&S.mapLng?`https://waze.com/ul?ll=${S.mapLat},${S.mapLng}&navigate=yes`:`https://waze.com/ul?q=${encodeURIComponent(mapQ())}&navigate=yes`;
 const mapDir=()=>`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ())}`;
 
 /* إحصائيات خفيفة */
@@ -501,7 +503,8 @@ async function load(){
   if(!D){try{const r=await fetch(A+'/api/data');setData(await r.json())}catch(e){}}
   if(!D){$('#view').innerHTML='<div class="empty" style="padding:80px 10px">ما گدرنا نحمّل المنتجات. تأكد من الإنترنت وحدّث الصفحة.</div>';return}
   chrome();route();
-  setInterval(()=>{if(!document.hidden)live()},30000);
+  setInterval(()=>{if(!document.hidden)live()},30000);setTimeout(live,1500);
+  if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)live()});
 }
 /* التحديث التلقائي: أي تعديل من لوحة التحكم يظهر وحده */
@@ -528,7 +531,7 @@ const priceH=p=>`<div class="pr">${p.from?'<em>يبدأ من</em>':''}<b>${fmt(p
 function card(p,eager){
   const d=disc(p);
   return `<a class="pc${p.avail?'':' out'}" href="${esc(pth(p))}" data-pid="${esc(p.id)}">
-   <div class="im">${p.img?`<img src="${IM(p.img)}" alt="${esc(p.name)}" width="400" height="400" ${eager?'fetchpriority="high"':'loading="lazy"'} decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">`:'<span class="ph"></span>'}${!p.avail?'<span class="tag no">غير متوفر</span>':d>=5?`<span class="tag">خصم ${d}%</span>`:p.offer?'<span class="tag">عرض</span>':isBack(p)?'<span class="tag ok">رجع متوفر</span>':''}</div>
+   <div class="im">${p.img?`<img src="${IMs(p.img)}" alt="${esc(p.name)}" width="400" height="400" ${eager?'fetchpriority="high"':'loading="lazy"'} decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">`:'<span class="ph"></span>'}${!p.avail?'<span class="tag no">غير متوفر</span>':d>=5?`<span class="tag">خصم ${d}%</span>`:p.offer?'<span class="tag">عرض</span>':isBack(p)?'<span class="tag ok">رجع متوفر</span>':''}</div>
    <div class="bd"><h3>${esc(p.name)}</h3>${priceH(p)}</div></a>`;
 }
 const counts=()=>{const c={};P.forEach(p=>c[p.cat]=(c[p.cat]||0)+1);return c};
@@ -543,7 +546,7 @@ function joinsH(){return `<div class="joins">${follows().map(f=>`<a class="join"
 function locH(){
   return `<div class="loc"><div class="li"><h3>تعال زورنا بالمحل</h3>
    <p>${ic('pin',18,2)}<span>${esc(S.address||'')}</span></p>${S.hours?`<p>${ic('clock',18,2)}<span>${esc(S.hours)}${openH()}</span></p>`:''}<p>${ic('truck',18,2)}<span>${esc(S.delivery||'')}</span></p>
-   <div class="bt"><a class="btn pri sm" href="${esc(mapDir())}" target="_blank" rel="noopener" data-s="dir">${ic('nav',18,2)}الاتجاهات لمحلنا</a><a class="btn sm" href="${esc(mapOpen())}" target="_blank" rel="noopener" data-s="map">افتح بالخريطة</a></div></div>
+   <div class="bt"><a class="btn pri sm" href="${esc(mapDir())}" target="_blank" rel="noopener" data-s="dir">${ic('nav',18,2)}الاتجاهات لمحلنا</a><a class="btn sm" href="${esc(wazeU())}" target="_blank" rel="noopener" data-s="waze"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#33CCFF" d="M12 3C7 3 3.5 6.3 3.5 10.6c0 1.6.5 3 1.4 4.1-.3 1-.9 1.7-1.8 2 .9.8 2.3 1 3.6.6.9.5 2 .8 3.1.9a2 2 0 0 0 3.9.1h1.5a2 2 0 0 0 3.9-.4c1.8-1.3 2.9-3.3 2.9-5.4C21.9 6.5 17.5 3 12 3z"/><circle cx="9.5" cy="10" r="1.1" fill="#16181D"/><circle cx="14.5" cy="10" r="1.1" fill="#16181D"/><path d="M9.5 13.2c1.4 1.2 3.6 1.2 5 0" stroke="#16181D" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>ويز</a><a class="btn sm" href="${esc(mapOpen())}" target="_blank" rel="noopener" data-s="map">Google Maps</a></div></div>
    <div class="map" id="mapBox"><span class="mph">${ic('pin',22,2)}&nbsp;الخريطة تتحمّل…</span></div></div>`;
 }
 function openH(){const sc=S.sched;if(!Array.isArray(sc)||sc.length!==7)return '';const t=new Date(Date.now()+3*3600e3),d=t.getUTCDay(),h=t.getUTCHours()+t.getUTCMinutes()/60;const [a,b]=sc[d]||[0,0];
@@ -567,7 +570,7 @@ function home(){
   const tops=TOP.map(id=>byId[id]).filter(Boolean);
   const c=counts();
   let h=`<section class="hero fadein"><div class="hin">
-    ${feat.length?`<div class="car"><div class="ch2"><h1>${ic(offers.length?'fire':'spark',24,2)}${offers.length?'عروض اليوم':'وصل حديثاً'}</h1><a href="${offers.length?'/c/offers':'/c/new'}">${offers.length?`كل العروض (${offers.length})`:'عرض الكل'} ${ic('arr',15,2.2)}</a></div><div class="ctr" id="ctr">${feat.map((p,i)=>`<a class="slide" href="${esc(pth(p))}" data-pid="${esc(p.id)}"><div class="im"><img src="${IM(p.img)}" alt="${esc(p.name)}" width="400" height="400" ${i?'loading="lazy"':'fetchpriority="high"'}>${disc(p)>=5?`<span class="tag">خصم ${disc(p)}%</span>`:''}</div><div class="tx">${isBack(p)&&!p.offer?'<span class="meta" style="margin:0"><span class="ok" style="height:26px">رجع متوفر</span></span>':''}<h2>${esc(p.name)}</h2>${priceH(p)}<span class="go">اطلب الآن</span></div></a>`).join('')}</div>
+    ${feat.length?`<div class="car"><div class="ch2"><h1>${ic(offers.length?'fire':'spark',24,2)}${offers.length?'عروض اليوم':'وصل حديثاً'}</h1><a href="${offers.length?'/c/offers':'/c/new'}">${offers.length?`كل العروض (${offers.length})`:'عرض الكل'} ${ic('arr',15,2.2)}</a></div><div class="ctr" id="ctr">${feat.map((p,i)=>`<a class="slide" href="${esc(pth(p))}" data-pid="${esc(p.id)}"><div class="im"><img src="${IMs(p.img)}" alt="${esc(p.name)}" width="400" height="400" ${i?'loading="lazy"':'fetchpriority="high"'}>${disc(p)>=5?`<span class="tag">خصم ${disc(p)}%</span>`:''}</div><div class="tx">${isBack(p)&&!p.offer?'<span class="meta" style="margin:0"><span class="ok" style="height:26px">رجع متوفر</span></span>':''}<h2>${esc(p.name)}</h2>${priceH(p)}<span class="go">اطلب الآن</span></div></a>`).join('')}</div>
      ${feat.length>1?`<button class="carr pv2" id="cPv" aria-label="السابق">${ic('arrR',20,2.2)}</button><button class="carr nx" id="cNx" aria-label="التالي">${ic('arr',20,2.2)}</button><div class="cdots">${feat.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}</div>`:''}
     <div class="hbr"><div class="hb">${logoEl()}<div><h2 class="hn">${esc(S.name||'مجمع H&H')}</h2><p>${esc(S.tagline||'')}</p></div></div>
      <div class="badges" style="margin:14px 0"><a href="/contact" style="display:contents"><span>${ic('pin',15,2)}بغداد — شارع فلسطين</span></a><span>${ic('shield',15,2)}ضمان حقيقي</span><span>${ic('truck',15,2)}توصيل لكل العراق</span></div>
@@ -646,7 +649,7 @@ function renderProd(p,partial){
   const waM=S.wa1?`https://wa.me/${S.wa1}?text=${encodeURIComponent(msgFor(p))}`:'';
   view(`<article class="pv${partial?'':' fadein'}"><div class="crumb"><a href="/">الرئيسية</a>‹<a href="/c/${encodeURIComponent(p.cat)}">${esc(p.cat)}</a></div><div class="lay">
    <div class="gcol"><div class="gal">${imgs.length?`<div class="tr" id="tr">${imgs.map((k,i)=>`<div class="sl" data-z="${i}"><img src="${IM(k)}" alt="${esc(p.name)} — صورة ${i+1}" width="800" height="800" ${i?'loading="lazy"':'fetchpriority="high"'} decoding="async"></div>`).join('')}</div>${imgs.length>1?`<span class="cnt" id="gc">1 / ${imgs.length}</span><button class="gar pv2" id="gP" aria-label="السابق">${ic('arrR',20,2.2)}</button><button class="gar nx" id="gN" aria-label="التالي">${ic('arr',20,2.2)}</button>`:''}`:`<div class="sl" style="aspect-ratio:1"><span class="ph" style="font-size:54px"></span></div>`}</div>
-    ${imgs.length>1?`<div class="thumbs">${imgs.slice(0,14).map((k,i)=>`<button data-i="${i}" class="${i?'':'on'}" aria-label="صورة ${i+1}"><img src="${IM(k)}" alt="" loading="lazy" width="62" height="62"></button>`).join('')}</div>`:''}
+    ${imgs.length>1?`<div class="thumbs">${imgs.slice(0,14).map((k,i)=>`<button data-i="${i}" class="${i?'':'on'}" aria-label="صورة ${i+1}"><img src="${IMs(k)}" alt="" loading="lazy" width="62" height="62"></button>`).join('')}</div>`:''}
     ${vidsH(p)}
    </div>
    <div>
@@ -723,7 +726,7 @@ async function openOrder(id){
   let p=cache[id]||byId[id];if(!p)return;
   if(!cache[id]){try{const r=await fetch(A+'/api/p/'+encodeURIComponent(id));if(r.ok)p=cache[id]=await r.json()}catch(e){}}
   const img0=(p.imgs&&p.imgs[0])||p.img;
-  $('#oP').innerHTML=`${img0?`<img src="${IM(img0)}" alt="">`:''}<div>${esc(p.name)}<b>${fmt(p.price)} د.ع</b></div>`;
+  $('#oP').innerHTML=`${img0?`<img src="${IMs(img0)}" alt="">`:''}<div>${esc(p.name)}<b>${fmt(p.price)} د.ع</b></div>`;
   $('#oM').value=msgFor(p);
   const cs=chans();
   $('#oC').innerHTML=cs.map((c,i)=>`<button class="ch" data-c="${i}">${bi(c.k)}<span>${c.t}<small>${esc(c.s)}</small></span></button>`).join('');
@@ -750,7 +753,7 @@ function doS(){const raw=$('#sIn').value.trim();const q=norm(raw);const box=$('#
   const ws=q.split(/\s+/);const r=P.map(p=>{const h=norm(p.name+' '+p.brand+' '+p.cat+' '+p.feats);let s=0;for(const w of ws){if(h.includes(w))s+=w.length+(norm(p.name).startsWith(w)?3:0);else return null}return [s+(p.avail?1:0),p]}).filter(Boolean).sort((a,b)=>b[0]-a[0]).slice(0,40).map(x=>x[1]);
   box.innerHTML=r.length?r.map(rowS(ws)).join(''):`<div class="empty">ما لگينا «${esc(raw)}». جرّب كلمة ثانية، أو <a href="${esc(S.wa1?'https://wa.me/'+S.wa1+'?text='+encodeURIComponent('السلام عليكم، عندكم '+raw+'؟'):'/contact')}" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">اسألنا على واتساب</a> ونگلك إذا متوفر.</div>`;
   clearTimeout(sqT);sqT=setTimeout(()=>ev({e:'q',q:raw,n:r.length}),1500);}
-const rowS=ws=>p=>`<a href="${esc(pth(p))}" data-pid="${esc(p.id)}">${p.img?`<img src="${IM(p.img)}" alt="" loading="lazy">`:`<span class="ph"></span>`}<span>${hl(p.name,ws)}</span><b>${fmt(p.price)}</b></a>`;
+const rowS=ws=>p=>`<a href="${esc(pth(p))}" data-pid="${esc(p.id)}">${p.img?`<img src="${IMs(p.img)}" alt="" loading="lazy">`:`<span class="ph"></span>`}<span>${hl(p.name,ws)}</span><b>${fmt(p.price)}</b></a>`;
 $('#sIn').addEventListener('input',doS);
 
 /* التنقل */

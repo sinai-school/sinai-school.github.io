@@ -1,0 +1,29 @@
+name: متجر H&H — صور مصغّرة
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['shop/thumbs.mjs', '.github/workflows/shop-thumbs.yml']
+concurrency:
+  group: shop-thumbs
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Thumbs
+        run: |
+          export CLOUDFLARE_API_TOKEN=$(printf %s "$RAW_TOK" | python3 cf/tok.py)
+          export CLOUDFLARE_ACCOUNT_ID=$(printf %s "$RAW_ACC" | tr -d '[:space:]"')
+          mkdir -p /tmp/th && cp shop/thumbs.mjs /tmp/th/ && cd /tmp/th && npm init -y >/dev/null && npm i sharp@0.33 >/dev/null 2>&1
+          node thumbs.mjs

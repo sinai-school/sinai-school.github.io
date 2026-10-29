@@ -36,6 +36,25 @@ echo "home: $(curl -s -o /dev/null -w '%{http_code}' $URL/)"
 echo "data: $(curl -s $URL/api/data | head -c 300)"
 $W d1 execute hhshop --remote --json --command "select (select count(*) from products) p,(select count(*) from msgs) m,(select count(*) from imgs) i,(select count(*) from imgq) q,(select count(*) from products where ai is not null and ai not like '%err%') ai" 2>/dev/null | python3 -c 'import sys,json;print("db",json.load(sys.stdin)[0]["results"])'
 $W d1 execute hhshop --remote --json --command "select at,msg from log order by at desc limit 8" 2>/dev/null | python3 -c 'import sys,json;print("log",json.load(sys.stdin)[0]["results"])'
+echo "--- map link"
+if [ -f maplink.txt ]; then
+  F=$(curl -sL -o /tmp/map.html -m 25 -w '%{url_effective}' -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' "$(cat maplink.txt)")
+  echo "map final: ${F:0:240}"
+  LL=$(F="$F" python3 -c '
+import os,re,urllib.parse
+f=urllib.parse.unquote(urllib.parse.unquote(os.environ["F"]))
+h=open("/tmp/map.html",errors="ignore").read()
+m=re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",f) or re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"[?&](?:q|ll|query)=(-?\d+\.\d+),(-?\d+\.\d+)",f) or re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)",h) or re.search(r"center=(-?\d+\.\d+)%2C(-?\d+\.\d+)",h)
+if m and 29<float(m.group(1))<38 and 38<float(m.group(2))<49: print(m.group(1),m.group(2))')
+  echo "map coords: $LL"
+  if [ -n "$LL" ]; then
+    LA=${LL% *}; LO=${LL#* }; MU=$(cat maplink.txt)
+    $W d1 execute hhshop --remote --command "insert into settings(k,v) values('mapLat','\"$LA\"'),('mapLng','\"$LO\"'),('mapUrl','\"$MU\"') on conflict(k) do update set v=excluded.v; update settings set v=cast(v as integer)+1 where k='_ver'" -y >/dev/null 2>&1 && echo "map saved"
+    curl -s -o /dev/null https://handhst.com/__hh/purge
+  fi
+fi
+echo "--- dump"
+$W d1 execute hhshop --remote --json --command "select p.id, p.src, p.auto, p.ov, p.ai, m.txt from products p left join msgs m on m.id=p.post" 2>/dev/null > ../out/prods.json; python3 -c "import json;print('dump',len(json.load(open('../out/prods.json'))[0]['results']))"
 echo "--- host upload"
 $W d1 execute hhshop --remote --command "create table if not exists vault (k text primary key, v text)" -y >/dev/null 2>&1
 KEY=$($W d1 execute hhshop --remote --json --command "select v from vault where k='cp'" 2>/dev/null | python3 -c 'import sys,json

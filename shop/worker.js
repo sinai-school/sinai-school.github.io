@@ -377,7 +377,7 @@ async function syncLogo(env, html, st) {
 }
 
 // ---------- الإحصائيات (بدون كوكيز، بدون أي خدمة خارجية) ----------
-const CHN = ['wa1', 'wa2', 'tg', 'ig', 'fb', 'tt', 'tgc', 'wac', 'wag', 'map', 'dir', 'call', 'share', 'vtg', 'vig', 'vtt', 'vfb'];
+const CHN = ['waze', 'wa1', 'wa2', 'tg', 'ig', 'fb', 'tt', 'tgc', 'wac', 'wag', 'map', 'dir', 'call', 'share', 'vtg', 'vig', 'vtt', 'vfb'];
 const normQ = s => digits(s).toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ًٌٍَُِّْـ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
 function srcOf(r) {
   r = String(r || '').toLowerCase();
@@ -523,6 +523,21 @@ async function page(env, url, O, prod) {
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A45"/><stop offset="1" stop-color="#FF4D6D"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="#141B33"/><text x="256" y="318" font-family="Arial,sans-serif" font-size="176" fill="url(#g)" text-anchor="middle" font-weight="800">H&amp;H</text></svg>`;
 let HOSTV = '';
+// يخلي الموقع يفتح فوراً حتى على نت ضعيف: الصفحة من الذاكرة وتتحدث بالخلفية، والصور تنحفظ بالجهاز
+const SW = `const V='hh-p2',IMG='hh-i2';
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k!==V&&k!==IMG)await caches.delete(k);await self.clients.claim()})()));
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;let u;try{u=new URL(r.url)}catch(x){return}
+ if(u.pathname.startsWith('/img/')&&u.pathname!=='/img/logo'){e.respondWith(img(r));return}
+ if(u.origin!==location.origin||u.pathname.startsWith('/admin')||u.pathname.startsWith('/api/')||u.pathname.startsWith('/__hh'))return;
+ if(r.mode==='navigate')e.respondWith(page(r,e));});
+async function img(r){const c=await caches.open(IMG);const m=await c.match(r.url);if(m)return m;try{const res=await fetch(r.url,{mode:'cors',credentials:'omit'});if(res.ok&&/max-age=31536000/.test(res.headers.get('cache-control')||'')){c.put(r.url,res.clone());trim(c)}return res}catch(x){return fetch(r)}}
+async function page(r,e){const c=await caches.open(V);const key=new URL(r.url).pathname;const m=await c.match(key);
+ const net=fetch(r).then(res=>{if(res.ok&&res.type==='basic')c.put(key,res.clone());return res});
+ if(m){e.waitUntil(net.catch(()=>{}));return m}
+ try{return await net}catch(x){return (await c.match('/'))||new Response('<meta charset=utf-8><meta name=viewport content="width=device-width"><body style="font-family:sans-serif;text-align:center;padding-top:30vh">ما كو إنترنت حالياً — حاول بعد شوي</body>',{headers:{'content-type':'text/html; charset=utf-8'}})}}
+let n=0;async function trim(c){if(++n%25)return;const ks=await c.keys();for(let i=0;i<ks.length-500;i++)await c.delete(ks[i])}
+`;
 
 async function aiOne(env, id) { await env.DB.prepare('update products set ai=null where id=?').bind(id).run(); return aiEnrichIds(env, [id]); }
 async function aiEnrichIds(env, ids) {
@@ -665,8 +680,18 @@ export default {
       }
       if (p.startsWith('/img/')) {
         const k = p.slice(5).replace(/\W/g, '');
-        const cache = caches.default, key = new Request(url.origin + '/img3/' + k + (k === 'logo' ? '?' + Math.floor(now() / 864e5) : ''));
-        let r = await cache.match(key); if (r) return r;
+        // ?w=s = نسخة مصغّرة خفيفة (webp) للكروت — أسرع بكثير على النت الضعيف
+        const small = url.searchParams.get('w') === 's' && k !== 'logo';
+        const cache = caches.default;
+        if (small) {
+          const sk = new Request(url.origin + '/img3/' + k + '_s');
+          let r = await cache.match(sk); if (r) return r;
+          const t = await env.DB.prepare('select ct,data from imgs where k=?').bind(k + '_s').first();
+          if (t) { r = new Response(t.data instanceof ArrayBuffer ? t.data : new Uint8Array(t.data), { headers: { 'content-type': t.ct, 'cache-control': 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*', 'timing-allow-origin': '*' } }); ctx.waitUntil(cache.put(sk, r.clone())); return r; }
+        }
+        const key = new Request(url.origin + '/img3/' + k + (k === 'logo' ? '?' + Math.floor(now() / 864e5) : ''));
+        const soft = r0 => { if (!small) return r0; const h = new Headers(r0.headers); h.set('cache-control', 'public, max-age=600'); return new Response(r0.body, { status: r0.status, headers: h }); };
+        let r = await cache.match(key); if (r) return soft(r);
         let row = await env.DB.prepare('select ct,data from imgs where k=?').bind(k).first();
         let data, ct;
         if (row) { data = row.data; ct = row.ct; }
@@ -674,13 +699,15 @@ export default {
         if (!data) return new Response(ICON, { status: 404, headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
         r = new Response(data instanceof ArrayBuffer ? data : new Uint8Array(data), { headers: { 'content-type': ct, 'cache-control': k === 'logo' ? 'public, max-age=86400' : 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*', 'timing-allow-origin': '*' } });
         ctx.waitUntil(cache.put(key, r.clone()));
-        return r;
+        return soft(r);
       }
       if (p.startsWith('/__hh/')) return new Response(null, { status: 204 });
       if (p === '/host/v' || p === '/host/index.php' || p === '/host/htaccess') {
         if (!HOSTV) HOSTV = (await sha(HOST_PHP + '\n' + HOST_HT)).slice(0, 16);
         return new Response(p === '/host/v' ? HOSTV : p === '/host/htaccess' ? HOST_HT : HOST_PHP, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-hh-hostv': HOSTV } });
       }
+      if (p === '/sw.js') return new Response(SW, { headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache' } });
+      if (p === '/admin.webmanifest') return J({ name: 'لوحة تحكم H&H', short_name: 'لوحة H&H', start_url: '/admin', scope: '/admin', display: 'standalone', background_color: '#141B33', theme_color: '#141B33', dir: 'rtl', lang: 'ar', icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: '/icon.png', sizes: '320x320', type: 'image/jpeg' }] }, 200, { 'cache-control': 'public, max-age=86400' });
       if (p === '/' + INDEXNOW_KEY + '.txt') return new Response(INDEXNOW_KEY, { headers: { 'content-type': 'text/plain' } });
       if (p === '/icon.svg' || p === '/favicon.ico') return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } });
       if (p === '/icon.png') { const s = await getSettings(env); const k = s.logoU || (s._logoAt ? 'logo' : ''); if (k) return Response.redirect(url.origin + '/img/' + k, 302); return new Response(ICON, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' } }); }
