@@ -50,36 +50,48 @@ if [ -z "$KEY" ]; then
 elif [ -f box.b64 ]; then
   echo "$KEY" | base64 -d > /tmp/k.pem
   CP=$(base64 -d box.b64 | openssl pkeyutl -decrypt -inkey /tmp/k.pem -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 2>/dev/null)
-  echo "::add-mask::${CP#*:}"
   rm -f /tmp/k.pem
   [ -n "$CP" ] && echo "box: ok" || echo "box: decrypt failed"
+  U=${CP%%:*}; PW=${CP#*:}; OKU=0
   for H in handhst.com:2083 142.132.255.23:2083; do
-    R=$(curl -sk -m 40 -u "$CP" "https://$H/execute/Fileman/get_file_content?dir=%2Fhome%2Fhandhstc%2Fpublic_html&file=.htaccess")
-    echo "$R" | python3 -c 'import sys,json
-try: j=json.load(sys.stdin);print("get htaccess status",j.get("status"),(j.get("errors") or "")) 
-except Exception as e: print("get htaccess: not json")' 
-    if echo "$R" | grep -q '"status":1'; then
-      echo "$R" | python3 -c '
+    rm -f /tmp/cj
+    L=$(curl -sk -m 40 -c /tmp/cj -b /tmp/cj "https://$H/login/?login_only=1" --data-urlencode "user=$U" --data-urlencode "pass=$PW")
+    TOKP=$(echo "$L" | python3 -c 'import sys,json
+try: j=json.load(sys.stdin);print(j.get("security_token","") if j.get("status")==1 else "")
+except Exception: print("")')
+    echo "login $H: $( [ -n "$TOKP" ] && echo ok || echo "$L" | python3 -c 'import sys,json
+try: j=json.load(sys.stdin);print("fail",j.get("message") or j.get("status"))
+except Exception: print("fail not-json")')"
+    [ -z "$TOKP" ] && continue
+    R=$(curl -sk -m 40 -b /tmp/cj "https://$H$TOKP/execute/Fileman/get_file_content?dir=%2Fhome%2Fhandhstc%2Fpublic_html&file=.htaccess")
+    echo "$R" | python3 -c '
 import sys,json,re
-old=json.load(sys.stdin)["data"]["content"]
+try: j=json.load(sys.stdin)
+except Exception: print("get htaccess not json"); sys.exit()
+old=(j.get("data") or {}).get("content") or ""
+print("get htaccess status",j.get("status"),len(old))
 new=open("host/htaccess.txt").read()
 if "# HH-BEGIN" in old: out=re.sub(r"# HH-BEGIN.*?# HH-END\n?",lambda m:new,old,flags=re.S)
 else:
   keep="".join(re.findall(r"# php -- BEGIN cPanel-generated handler.*?# php -- END cPanel-generated handler[^\n]*\n?",old,flags=re.S))
   out=new+("\n"+keep if keep else "")
 open("/tmp/ht.new","w").write(out)
-print("htaccess kept cpanel lines:", "cPanel-generated" in out)'
-      for F in index.php .htaccess; do
-        SRC=host/index.php; [ "$F" = ".htaccess" ] && SRC=/tmp/ht.new
-        curl -sk -m 60 -u "$CP" "https://$H/execute/Fileman/save_file_content" --data-urlencode "dir=/home/handhstc/public_html" --data-urlencode "file=$F" --data-urlencode "content@$SRC" | python3 -c 'import sys,json
+print("htaccess keeps cpanel handler:", "cPanel-generated" in out)'
+    [ -f /tmp/ht.new ] || continue
+    for F in index.php .htaccess; do
+      SRC=host/index.php; [ "$F" = ".htaccess" ] && SRC=/tmp/ht.new
+      curl -sk -m 60 -b /tmp/cj "https://$H$TOKP/execute/Fileman/save_file_content" --data-urlencode "dir=/home/handhstc/public_html" --data-urlencode "file=$F" --data-urlencode "content@$SRC" | python3 -c 'import sys,json
 try: j=json.load(sys.stdin);print("save",sys.argv[1],"status",j.get("status"),j.get("errors") or "")
-except Exception: print("save",sys.argv[1],"not json")' "$F"
-      done
-      break
-    fi
+except Exception: print("save",sys.argv[1],"not json")' "$F" | tee -a /tmp/saves
+    done
+    curl -sk -m 20 -b /tmp/cj "https://$H$TOKP/logout/" -o /dev/null
+    grep -q "status 1" /tmp/saves && OKU=1
+    break
   done
+  rm -f /tmp/cj
+  PW=""
+  [ "$OKU" = 1 ] && $W d1 execute hhshop --remote --command "delete from vault where k='cp'" -y >/dev/null 2>&1 && echo "uploaded; key deleted"
   CP=""
-  $W d1 execute hhshop --remote --command "delete from vault where k='cp'" -y >/dev/null 2>&1 && echo "key deleted"
   sleep 3
   curl -s -D - -o /dev/null https://handhst.com/ | grep -i 'etag\|x-hh' | tr -d '\r'
   curl -s -D - -o /dev/null https://handhst.com/ | grep -i 'etag\|x-hh' | tr -d '\r'

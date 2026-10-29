@@ -20,7 +20,7 @@ export const DEF = {
   waChannel: 'https://whatsapp.com/channel/0029VbCZofYISTkPK9NW1729',
   hours: 'يومياً من ١٠ الصبح لحد ١٢ بالليل — الجمعة من ١ الظهر لحد ١٢ بالليل',
   sched: [[10, 24], [10, 24], [10, 24], [10, 24], [10, 24], [13, 24], [10, 24]],
-  mapQ: 'مطعم الكوخ شارع فلسطين بغداد',
+  mapQ: 'H&H شارع فلسطين قرب الكوخ بغداد',
 };
 
 export const CATS = [
