@@ -53,7 +53,7 @@ async function private_() {
 async function private0_() {
   const P = await kvJ('priv', null) || { s: {}, t: {} }, X = await kvJ('privx', {});
   for (const k of ['s', 't']) { P[k] = P[k] || {}; for (const id in (X[k] || {})) if (!P[k][id]) P[k][id] = X[k][id]; }
-  P.s[TST_S] = TST_PS; P.t[TST_T] = TST_PT;
+  try { P.s[TST_S] = await tstPS206_(); P.t[TST_T] = await tstPT206_(); } catch (e) { P.s[TST_S] = TST_PS; P.t[TST_T] = TST_PT; }
   return MEMO.priv = P;
 }
 const privBump_ = () => kvPut('PRIVV', uid().slice(0, 10)).then(() => { G_PRIV = null; MEMO.priv = null; });
@@ -176,8 +176,8 @@ const noteHas_ = async id => !!id && !!(await one('select id from notes where id
 async function sentFor_(name) {
   name = String(name || '').replace(/\s+/g, ' ').trim(); if (!name) return [];
   const P = await private_(), M = {};
-  for (const r of await all("select id,key from seen where kind='s'")) (M[r.id] = M[r.id] || []).push(r.key);
-  const cnt = {}; for (const k in (P.s || {})) { const v = P.s[k] || {}; for (const s of (v.secs || (v.s ? [v.s] : []))) cnt[s] = (cnt[s] || 0) + 1; }
+  for (const r of await all("select id,key from seen where kind='s' and key not like 'tst-%'")) (M[r.id] = M[r.id] || []).push(r.key);
+  const cnt = {}; for (const k in (P.s || {})) { if (/^tst-/.test(k)) continue; const v = P.s[k] || {}; for (const s of (v.secs || (v.s ? [v.s] : []))) cnt[s] = (cnt[s] || 0) + 1; }
   const o = [];
   for (const n of await notesAll_()) {
     if (String(n.from || '').replace(/\s+/g, ' ').trim() !== name || n.cat !== 'tch') continue;
@@ -289,7 +289,7 @@ async function extra202_(o, x) {
   if (x.kind === 's') {
     o.tg = await all('select tname,subj,label,val,note,date from tgr where skey=? order by date desc limit 300', x.key);
     const rel = (await kvJ('REL', { c: [] })).c || [], pv = o.private;
-    if (pv && Array.isArray(pv.g)) { o.private = { ...pv, g: pv.g.map(r => r.map((v, i) => i === 0 || rel.includes(i) ? v : '')), rel }; }
+    if (pv && Array.isArray(pv.g) && !/^tst-/.test(x.key)) { o.private = { ...pv, g: pv.g.map(r => r.map((v, i) => i === 0 || rel.includes(i) ? v : '')), rel }; }
   }
 }
 async function editAcc202_(b) {
@@ -349,7 +349,7 @@ async function extra204_(o, x) {
 /* ---------- الأوامر ---------- */
 async function handle(b) {
   const a = String(b.a || '');
-  await ens202_(); await ens205_();
+  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { }
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -389,6 +389,7 @@ async function handle(b) {
     await run('insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', kind, key, acc.name, ph, t, t, gn);
     return bundle_({ a: acc, kind, key }, b);
   }
+  if (a === 'tstSet') { const y = await auth_(b); if (y.err) return y; if (!/^tst-/.test(y.key)) return { err: 'role' }; return tstSelf206_(y, b); }
   if (['save', 'photo', 'report', 'notify', 'seen', 'inbox', 'repReply', 'tgrade', 'tgrades'].includes(a)) {
     const y = await auth_(b); if (y.err) return y;
     if (y.bind) await accNid_(y.kind, y.key, y.bind);
@@ -445,7 +446,7 @@ async function admin_(b) {
     try { const old = await kvJ('priv', null), nw = b.data || {}; if (old && old.s && nw.s) for (const k in nw.s) { const o = old.s[k], n = nw.s[k]; if (!o || !n) continue; if (!nid_(n.nid2) && !nid_(n.pre && n.pre.nid)) { const keep = nid_(o.nid2) || nid_(o.pre && o.pre.nid); if (keep) n.nid2 = keep; } } } catch (e) { }
     await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
   if (b.op === 'pull') {
-    const seen = {}; for (const r of await all('select id,kind,key from seen')) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
+    const seen = {}; for (const r of await all("select id,kind,key from seen where key not like 'tst-%'")) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
     return { ok: 1, sheet: '',
       acc: (await all("select * from acc where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
       prof: (await all("select kind,key,name,json,photo,updated,status from prof where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
@@ -497,6 +498,8 @@ async function admin_(b) {
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
   if (b.op === 'exPub') return exPub204_(b);
   if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
+  if (b.op === 'tstGet') return { ok: 1, x: await kvJ('TST206', {}), ps: await tstPS206_(), pt: await tstPT206_() };
+  if (b.op === 'tstSet') return tstAdm206_(b);
   return { err: 'op' };
 }
 
@@ -504,7 +507,10 @@ async function admin_(b) {
 async function snapPut_(b) {
   const at = String(b.at || ''), z = String(b.z || '');
   if (!at || !z || z.length > 4000000) return { err: 'bad' };
-  await blobPut('snap', JSON.stringify({ at, z })); await kvPut('snapat', at); return { ok: 1, at };
+  let old = null; try { old = JSON.parse(await blobGet('snap') || 'null'); } catch (e) { }
+  await blobPut('snap', JSON.stringify({ at, z })); await kvPut('snapat', at); MEMO.snapJ = null;
+  try { await ttNote206_(old && old.z, z); } catch (e) { }
+  return { ok: 1, at };
 }
 async function snapGet_(b) {
   const at = await kvGet('snapat'); if (!at) return { ok: 1, none: 1 };
@@ -1086,3 +1092,68 @@ export default {
     } catch (err) { return out({ err: 'server', msg: String(err && err.stack || err).slice(0, 400) }); }
   }
 };
+
+/* ---------- v206: الحسابات التجريبية الكاملة، تبليغ تفعيل الإشعارات، تبليغ تحديث الجدول ---------- */
+async function snapJ206_(z) {
+  if (!z) { if (MEMO.snapJ) return MEMO.snapJ; const o = JSON.parse(await blobGet('snap') || '{}'); z = o.z; if (!z) return null; return MEMO.snapJ = JSON.parse(dec.decode(await gunz(unb64(z)))); }
+  return JSON.parse(dec.decode(await gunz(unb64(z))));
+}
+const TT206 = j => j ? JSON.stringify([j.sn, j.days, j.per, j.times, j.cells]) : '';
+async function ttNote206_(oz, nz) {
+  if (!oz) return;
+  const a = await snapJ206_(oz), b = await snapJ206_(nz);
+  if (!a || !b || TT206(a) === TT206(b)) return;
+  const last = Date.parse((await kvGet('TTN206')) || '') || 0;
+  if (Date.now() - last < 20 * 60e3) return;
+  await kvPut('TTN206', now());
+  await noteAdd_({ id: 'tt' + uid().slice(0, 10), scope: 'all', target: '', from: 'إدارة المدرسة', title: 'تم تحديث جدول الدروس الأسبوعي', body: 'صار تعديل على جدول الدروس الأسبوعي — افتح «جدولي» حتى تشوف الجدول الجديد.', date: now(), cat: 'adm', files: '' });
+}
+let E206 = 0;
+async function ens206_() {
+  if (E206) return; E206 = 1;
+  if ((await kvGet('E206')) === '1') return;
+  await kvPut('E206', '1');
+  if (await noteHas_('n206push')) return;
+  await noteAdd_({ id: 'n206push', scope: 'all', target: '', from: 'إدارة المدرسة', title: 'مهم: فعّل الإشعارات', body: 'حتى توصلك التبليغات والدرجات وتحديثات جدول الدروس فوراً وبصوت: افتح البوابة أو التطبيق واضغط «تفعيل الإشعارات» ثم «سماح». على الآيفون: أضف البوابة للشاشة الرئيسية من Safari (مشاركة ← إضافة إلى الشاشة الرئيسية) وافتحها من الأيقونة ثم فعّل الإشعارات.', date: now(), cat: 'adm', files: '' });
+}
+const TST_SECS206 = ['الرابع العلمي', 'الرابع الأدبي', 'الخامس العلمي', 'الخامس الأدبي', 'السادس العلمي', 'السادس الأدبي'];
+async function tstDemoG206_(sec) {
+  const j = await snapJ206_(); if (!j || !Array.isArray(j.sn)) return [];
+  const i = j.sn.indexOf(sec); if (i < 0) return [];
+  const seen = []; for (const c of (j.cells[i] || [])) if (Array.isArray(c) && j.subj[c[0]] && !seen.includes(j.subj[c[0]])) seen.push(j.subj[c[0]]);
+  return seen.map((n, k) => { const v = d => String(Math.min(100, 62 + ((k * 7 + d * 5) % 34))); const a = v(1), m = v(2), bb = v(3), y = String(Math.round((+a + +m + +bb) / 3)), e = v(4), f = String(Math.round((+y + +e) / 2)); return [n, a, m, bb, y, e, f]; });
+}
+const cl206 = (v, n) => String(v == null ? '' : v).slice(0, n || 80);
+async function tstPS206_() {
+  const X = await kvJ('TST206', {}), s = X.s || {}, sec = cl206(s.sec || 'الرابع العلمي أ');
+  const g = Array.isArray(s.g) && s.g.length ? s.g : await tstDemoG206_(sec);
+  const days = Array.isArray(s.days) ? s.days : [];
+  const abs = days.length, aw = abs >= 21 ? 'إنذار بالفصل' : abs >= 14 ? 'إنذار نهائي' : abs >= 7 ? 'إنذار أولي' : '';
+  return { ...TST_PS, s: sec, secs: [sec, TST_SEC], g, days, abs, aw, res: s.res != null ? cl206(s.res, 200) : 'ناجح', test: 1, demo: !(Array.isArray(s.g) && s.g.length) ? 1 : 0 };
+}
+async function tstPT206_() {
+  const X = await kvJ('TST206', {}), t = X.t || {}, P = TST_PT;
+  return { ...P, as: cl206(t.as || ''), studs2: [[TST_S, 'طالب تجريبي', TST_SEC]] };
+}
+async function tstSave206_(X) { await kvPut('TST206', X); await privBump_(); }
+async function tstSelf206_(y, b) {
+  const X = await kvJ('TST206', {});
+  if (y.kind === 's' && b.sec != null) { const sec = cl206(b.sec); const j = await snapJ206_(); if (j && Array.isArray(j.sn) && !j.sn.includes(sec)) return { err: 'sec' }; X.s = { ...(X.s || {}), sec }; if (!(X.s.gm)) delete X.s.g; }
+  if (y.kind === 't' && b.as != null) X.t = { ...(X.t || {}), as: cl206(b.as) };
+  await tstSave206_(X); return { ok: 1 };
+}
+async function tstAdm206_(b) {
+  const X = await kvJ('TST206', {}), s = b.s, t = b.t;
+  if (s && typeof s === 'object') {
+    const o = { ...(X.s || {}) };
+    if (s.sec != null) o.sec = cl206(s.sec);
+    if (s.g !== undefined) { if (Array.isArray(s.g) && s.g.length) { o.g = s.g.slice(0, 40).map(r => (Array.isArray(r) ? r : []).slice(0, 7).map((v, i) => cl206(v, i ? 10 : 80))); o.gm = 1; } else { delete o.g; delete o.gm; } }
+    if (s.days !== undefined) o.days = (Array.isArray(s.days) ? s.days : []).map(String).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).slice(0, 60);
+    if (s.res !== undefined) o.res = cl206(s.res, 200);
+    X.s = o;
+  }
+  if (t && typeof t === 'object') X.t = { ...(X.t || {}), as: cl206(t.as || '') };
+  if (b.reset) { delete X.s; delete X.t; }
+  await tstSave206_(X);
+  return { ok: 1, x: X, ps: await tstPS206_(), pt: await tstPT206_() };
+}
