@@ -67,6 +67,57 @@
         off += per;
       });
     } catch (e) { console.warn("v204 jard", e); }
+    /* الإجازات: كل صفحة تكمل من اللي قبلها (ما يتكرر نفس الاسم بكل صفحة) */
+    try {
+      const lv = FSD.staff().concat((typeof STF != "undefined" ? STF : []).filter(f => f && !FSD.staff().includes(f))).filter(f => f && /مجاز/.test(f.status || ""));
+      const seenL = new Set, LV = lv.filter(f => { if (seenL.has(f.id)) return false; seenL.add(f.id); return true; });
+      let lo = 0;
+      DXF.tables(host).filter(t => /^الا?إ?جازات/.test(DXF.text(t.rows[0]))).forEach(t => {
+        const per = t.rows.length - 2, part = LV.slice(lo, lo + per);
+        const C = fxCols(t, 1), col = re => C.m[Object.keys(C.m).find(x => re.test(x))];
+        DXF.rows(t, 2, part, (c, f, k) => { const g = DXF.grid(t)[c[0].parentElement.rowIndex]; const put = (re, v) => { const ci = col(re); if (ci != null && g[ci]) DXF.put(g[ci], v); }; put(/^ت$/, lo + k + 1); put(/الاس/, FSD.n3(f.name)); put(/نوع/, f.lvType || f.lvDur || ""); put(/الامر|الأمر/, f.lvOrder || ""); put(/المدة/, f.lvDur || ""); put(/ابتداء/, FSD.dmy(f.lvFrom)); }, { min: per });
+        lo += per;
+      });
+    } catch (e) { console.warn("v204 lv", e); }
+    /* ملاك المدرسة + عدد المدرسين: من بيانات النظام (نفس الأرقام بكل صفحة) */
+    try {
+      const pres = FSD.staff().filter(f => !away(f) && !FSD.isSrv(f));
+      const fem = f => /أنثى|انثى/.test(f.gender || "");
+      const isP = f => FSD.isPrin(f), isA = f => !isP(f) && (FSD.isAsst(f) || /معاون/.test(jb(f)));
+      const cnt = (L, g) => L.filter(f => g == "m" ? !fem(f) : g == "f" ? fem(f) : true);
+      const lvAll = (typeof STF != "undefined" ? STF : []).filter(f => f && /مجاز/.test(f.status || ""));
+      const lvT = (f, re) => re.test((f.lvType || "") + " " + (f.lvDur || "") + " " + (f.status || ""));
+      const OUT = [["امومة|أمومة", /امومة|أمومة/], ["ولادة", /ولادة/], ["دراسية", /دراس/], ["اعتيادية", /اعتياد/], ["مرضية", /مرض/]];
+      const outOf = (g, lab) => { const L = cnt(lvAll, g); if (/اخرى|أخرى/.test(lab)) return L.filter(f => !OUT.some(([, re]) => lvT(f, re))).length; const o = OUT.find(([k]) => new RegExp(k).test(lab)); return o ? L.filter(f => lvT(f, o[1])).length : null; };
+      const tchCell = g => { const L = cnt(pres, g).filter(f => !isP(f) && !isA(f)), m = L.filter(f => /مرشد/.test(jb(f))).length, n = L.length - m; return m ? (n ? A0(n) + "+مرشد" : "مرشد") : (n || ""); };
+      const A0 = v => v;
+      DXF.tables(host).filter(t => /^ملاك المدرسة/.test(DXF.text(t.rows[0]))).forEach(t => {
+        const G = DXF.grid(t), hr = G.findIndex(r => r && r.some(td => td && /الوظيفة/.test(DXF.text(td))));
+        if (hr < 0) return;
+        const labs = G[hr].map(td => td ? DXF.text(td).replace(/[\s\u200b]+/g, " ").trim() : "");
+        const iW = labs.findIndex(l => /الوظيفة/.test(l)), iM = labs.findIndex(l => /مدرس/.test(l)); const kind = labs.map((l, c) => /المجموع/.test(l) ? (Math.abs(c - iM) == 1 ? "sumIn" : "sumOut") : l);
+        for (let r = hr + 1; r < G.length; r++) {
+          const row = G[r]; if (!row) continue;
+          const lab = DXF.text(row[iW] || row[0]).replace(/[\s\u200b]+/g, " ").trim();
+          const g = /ذكور/.test(lab) ? "m" : /اناث|إناث/.test(lab) ? "f" : /المجموع/.test(lab) ? "a" : null; if (!g) continue;
+          const done = new Set;
+          kind.forEach((k, c) => {
+            const td = row[c]; if (!td || done.has(td) || c == iW) return; done.add(td);
+            if (/مدير/.test(k)) DXF.put(td, cnt(pres, g).filter(isP).length || "");
+            else if (/معاون/.test(k)) DXF.put(td, cnt(pres, g).filter(isA).length || "");
+            else if (/مدرس/.test(k)) DXF.put(td, tchCell(g));
+            else if (k == "sumIn") DXF.put(td, cnt(pres, g).length || "");
+            else if (k == "sumOut") DXF.put(td, cnt(lvAll, g).length || "");
+            else { const v = outOf(g, k); if (v != null) DXF.put(td, v || ""); }
+          });
+        }
+      });
+      /* عدد المدرسين بجدول أعداد الطلاب */
+      DXF.tables(host).filter(t => /^اعداد الطلاب/.test(DXF.text(t.rows[0]))).forEach(t => {
+        const G = DXF.grid(t);
+        G.forEach(row => (row || []).forEach((td, c) => { if (td && /^المدرسين$/.test(DXF.text(td).replace(/[\s\u200b]+/g, ''))) { let nx = null; for (let i = c - 1; i >= 0; i--) if (row[i] && row[i] !== td) { nx = row[i]; break; } if (nx && !/[ء-ي]/.test(DXF.text(nx))) DXF.put(nx, pres.length); } }));
+      });
+    } catch (e) { console.warn("v204 malak", e); }
     const S = {};
     U.forEach(u => { const f = FSD.staffOfT(u.t); if (!f || !isPeople(f)) return; const x = S[u.sj] = S[u.sj] || { h: 0, t: new Set, x: new Set }; x.h += u.h * u.secs.length; if (FSD.isPrin(f)) x.x.add("مدير"); else if (FSD.isAsst(f)) x.x.add("معاون"); else x.t.add(f.id); });
     const SUM = DIRORD.filter(sj => S[sj]).concat(Object.keys(S).filter(sj => !DIRORD.includes(sj))).map(sj => [DIRLAB[sj] || FSD.sjName(sj), S[sj].h, S[sj].t.size + (S[sj].x.size ? " + " + [...S[sj].x].join(" + ") : "")]);
@@ -168,7 +219,41 @@
       a.dataset.fit = ok ? "1" : "0";
     });
   }
+  /* الجداول الطافية بنفس الصفحة ما تتداخل: إذا تداخلت يصغر الجدول (من جهة الالتصاق) لحد ما ينفصل */
+  function unOverlap(root) {
+    root.querySelectorAll(".dxpg").forEach(pg => {
+      for (let pass = 0; pass < 4; pass++) {
+        const B = [...pg.querySelectorAll(".da")].map(a => a.querySelector("table")).filter(Boolean).filter((t, i, L) => !L.some((u, j) => j != i && u.contains(t)));
+        let ch = 0;
+        for (let i = 0; i < B.length; i++) for (let j = 0; j < B.length; j++) {
+          if (i == j) continue;
+          const a = B[i].getBoundingClientRect(), b = B[j].getBoundingClientRect();
+          const dx = Math.min(a.right, b.right) - Math.max(a.left, b.left), dy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (dx <= 1 || dy <= 1) continue;
+          let t, k;
+          if (dx < dy) { /* تداخل بالعرض: يصغر الجدول اللي على اليمين (يبقى ملتصق بيمين صندوقه) */ t = a.left > b.left ? B[i] : B[j]; const r = t.getBoundingClientRect(), o = t === B[i] ? b : a; k = (r.right - o.right - 4) / r.width; }
+          else { /* تداخل بالطول: يصغر الجدول اللي فوك */ t = a.top < b.top ? B[i] : B[j]; const r = t.getBoundingClientRect(), o = t === B[i] ? b : a; k = (o.top - r.top - 4) / r.height; }
+          if (!(k > 0.5 && k < 1)) continue;
+          const z = (parseFloat(t.style.zoom) || 1) * k; t.style.zoom = z.toFixed(3); ch = 1;
+        }
+        if (!ch) break;
+      }
+    });
+  }
+  /* عناوين الشعب بجدول المديرية: كلها بنفس حجم الخط (ما يصغر بعضها على بعض الأجهزة) */
+  function secHeads(root) {
+    root.querySelectorAll(".dxpg table").forEach(t => {
+      if (!t.rows[0] || !/الصفوف والشعب/.test(t.rows[0].textContent)) return;
+      const r = t.rows[1]; if (!r) return;
+      const cs = [...r.cells].filter(td => /^(الرابع|الخامس|السادس)/.test(td.textContent.replace(/[\s​]+/g, " ").trim()));
+      if (cs.length < 2) return;
+      const sz = cs.map(td => { const s = td.querySelector("span"); return s ? parseFloat(getComputedStyle(s).fontSize) : 0; }).filter(Boolean);
+      if (!sz.length) return;
+      const f = Math.max(...sz);
+      cs.forEach(td => td.querySelectorAll("span,.p").forEach(s => { s.style.fontSize = f + "px"; }));
+    });
+  }
   const _dl = dxLayout;
-  dxLayout = function (host, opt) { const r = _dl.apply(this, arguments); try { fitBoxes(host); } catch (e) { console.warn("v204 fit", e); } return r; };
+  dxLayout = function (host, opt) { const r = _dl.apply(this, arguments); try { secHeads(host); fitBoxes(host); unOverlap(host); } catch (e) { console.warn("v204 fit", e); } return r; };
   window.v204Fit = fitBoxes;
 })();

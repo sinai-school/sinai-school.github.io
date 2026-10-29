@@ -82,6 +82,23 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
   });
   W.v204Cred = () => { try { const n = (typeof nid133K == "function" && typeof lsG == "function") ? (lsG(nid133K(PS.kind, PS.key)) || "") : ""; return { kind: PS.kind, key: PS.key, phone: PS.phone, nid: n }; } catch (e) { return null; } };
 
+  /* المرفقات المحفوظة على خادم المدرسة (cf…): روابطها كانت تروح لـ Google Drive فما تنفتح — هسه تنفتح وتنعرض مباشرة */
+  const apiBase = () => { try { return String((SNAP && SNAP.pc && SNAP.pc.api) || (has("APIK") && APIK && APIK.url) || "https://sinai.7svyn82yzr.workers.dev").replace(/\/$/, ""); } catch (e) { return "https://sinai.7svyn82yzr.workers.dev"; } };
+  function fixAtt(root) {
+    try {
+      const keep = [];
+      (root.querySelectorAll ? root : D).querySelectorAll('a[href*="drive.google.com/file/d/cf"], img[src*="drive.google.com/thumbnail?id=cf"]').forEach(el => {
+        const u = el.tagName == "A" ? el.getAttribute("href") : el.getAttribute("src");
+        const m = /\/file\/d\/(cf[A-Za-z0-9_-]+)|[?&]id=(cf[A-Za-z0-9_-]+)/.exec(u || ""); if (!m) return;
+        const nu = apiBase() + "/f/" + (m[1] || m[2]);
+        if (el.tagName == "A") el.setAttribute("href", nu); else el.setAttribute("src", nu);
+        keep.push(nu);
+      });
+      if (keep.length) keepFiles(keep);
+    } catch (e) { }
+  }
+  on(() => { fixAtt(D); new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType == 1) fixAtt(n); }).observe(D.documentElement, { childList: true, subtree: true }); });
+
   /* ================= (٢) البحث: الضغط على اسم الطالب يفتح ملفه مباشرة ================= */
   on(() => {
     if (!has("gsStu") || !has("pfOpen")) return;

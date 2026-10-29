@@ -30,6 +30,8 @@ const ar2en = x => String(x || '').replace(/[٠-٩]/g, c => c.charCodeAt(0) - 16
 function phone_(x) { let d = ar2en(x).replace(/\D/g, '').slice(-10); return d.length === 10 && d[0] === '7' ? '0' + d : ''; }
 function nid_(x) { const d = ar2en(x).replace(/\D/g, ''); return /^(19|20)\d{10}$/.test(d) ? d : ''; }
 const cid_ = b => String(b.cid || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
+/* المرفقات المرفوعة لهذا الخادم: نضيف رابطها المباشر حتى تنفتح وتنعرض (صور/ملفات) */
+const fu_ = L => (L || []).map(f => f && !f.u && /^cf[A-Za-z0-9_-]+$/.test(String(f.id || '')) && ORIGIN ? Object.assign({}, f, { u: ORIGIN + '/f/' + f.id }) : f);
 const fl_ = s => { try { return s ? JSON.parse(String(s)) : []; } catch (e) { return []; } };
 const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 32768) s += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(s); };
 const unb64 = s => { const t = atob(String(s || '')); const a = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) a[i] = t.charCodeAt(i); return a; };
@@ -129,7 +131,7 @@ async function upList_(L, R) {
     const id = String(x && x.id || '').replace(/[^A-Za-z0-9_-]/g, '');
     const ok = id && await one('select id from ups where id=? and exp>?', id, Date.now());
     if (!ok) { R.err.push(String(x && x.n || '') + ': upload'); continue; }
-    R.out.push({ n: String(x.n || 'ملف').slice(0, 120), m: String(x.m || '').slice(0, 100), id, s: +x.s || 0 }); R.n++;
+    R.out.push({ n: String(x.n || 'ملف').slice(0, 120), m: String(x.m || '').slice(0, 100), id, s: +x.s || 0, u: ORIGIN + '/f/' + id }); R.n++;
   }
 }
 async function allFiles_(b) { const R = { out: [], n: 0, err: [] }; await files_(b.files, R); await upList_(b.fl, R); return R; }
@@ -147,7 +149,7 @@ async function upOne_(b) {
 async function notesAll_() {
   if (MEMO.notes) return MEMO.notes;
   const R = await all('select * from notes order by seq');
-  return MEMO.notes = R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fl_(n.files) }));
+  return MEMO.notes = R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fu_(fl_(n.files)) }));
 }
 async function notesFor_(kind, key, secs) {
   const o = [];
@@ -260,7 +262,7 @@ async function extra202_(o, x) {
   const R = x.kind === 's'
     ? await all("select id,text,date,status,tgt,files,reply,rdate from reports where kind=? and key=? order by date desc limit 60", x.kind, x.key)
     : await all("select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports where (kind=? and key=?) or tgt=? order by date desc limit 150", x.kind, x.key, 't:' + x.key);
-  const mine = R.filter(r => !r.kind || (r.kind === x.kind && r.key === x.key)).map(r => ({ id: r.id, text: r.text, date: r.date, status: r.status, to: r.tgt || 'adm', files: fl_(r.files), reply: r.reply || '', rdate: r.rdate || '' }));
+  const mine = R.filter(r => !r.kind || (r.kind === x.kind && r.key === x.key)).map(r => ({ id: r.id, text: r.text, date: r.date, status: r.status, to: r.tgt || 'adm', files: fu_(fl_(r.files)), reply: r.reply || '', rdate: r.rdate || '' }));
   o.myreps = mine;
   if (x.kind === 't') o.reps = R.filter(r => r.tgt === 't:' + x.key).map(r => ({ id: r.id, kind: r.kind, key: r.key, name: r.name, text: r.text, date: r.date, status: r.status, files: fl_(r.files), reply: r.reply || '', rdate: r.rdate || '' }));
   if (x.kind === 's') {
