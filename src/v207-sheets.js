@@ -156,7 +156,7 @@ ${expBar()}`;
     const di = AT7.days == "2" ? [0, 2] : [0, 1, 2, 3, 4];
     const st = AT7.start || sunday(); const d0 = new Date(st + "T12:00:00");
     const dates = di.map(i => { const d = new Date(d0); d.setDate(d.getDate() + i); return d; });
-    const fmt = d => AD(d.getDate()) + "/" + AD(d.getMonth() + 1) + "/" + AD(d.getFullYear());
+    const fmt = d => (W.dmy207 ? W.dmy207(d.getDate(), d.getMonth() + 1, d.getFullYear()) : AD(d.getDate()) + "/" + AD(d.getMonth() + 1) + "/" + AD(d.getFullYear()));
     const L = adm ? admList() : staffIn();
     const h1 = [{ v: "ت", h: 1, rs: 2 }, { v: "الاسم", h: 1, rs: 2 }, ...(adm ? [{ v: "العنوان الوظيفي", h: 1, rs: 2 }] : []), ...di.map((i, k) => ({ v: DN[i] + "  " + fmt(dates[k]), h: 1, cs: 4 }))];
     const h2 = di.flatMap(() => [{ v: "وقت الحضور", h: 1 }, { v: "التوقيع", h: 1 }, { v: "وقت الانصراف", h: 1 }, { v: "التوقيع", h: 1 }]);
