@@ -70,7 +70,7 @@
       ["gs", "شؤون الطلبة", "users", "أسماء الطلبة، المحاولات، الانتساب، الغياب، القيد العام، الترحيل والخريجون، استمارات الطلاب",
         ["p", "mh", "int70", "a", "q", "pm137", "gr137", "s6", "fx:f_reg", "fx:f_info", "fx:f_med", "fx:f_muh", "fx:f_books"]],
       ["ge", "الدرجات والنتائج", "chart", "إدخال الدرجات، النتائج والبطاقات، السجل الوسطي، سجل درجات المدرسين، نسب النجاح، الأرشيف",
-        ["g", "r", "sw", "fx:r_grd", "n", "fx:f_pr12", "fx:f_prf", "fx:f_prm", "z"]],
+        ["g", "r", "sw", "fx:r_grd", "fx:f_prf", "fx:f_pr12", "fx:f_prm", "z"]],
       ["gex", "الامتحانات", "doc", "جداول الامتحانات، خارطة جلوس الطلبة، السيطرة الامتحانية، المراكز الامتحانية، الفاحصين والمدققين",
         ["ex", "seat207", "fx:r_ctl", "fx:f_mrk", "fx:f_exa", "fx:f_exs"]],
       ["gt", "الجداول", "cal", "الجدول الأسبوعي، الاحتياط، مراقبة الساحة، جدول المديرية",
@@ -84,7 +84,7 @@
       ["gy", "البوابة والإعدادات", "globe", "الشعب والمواد، البوابة وحساباتها، التطبيق، الصلاحيات، النسخ الاحتياطي، الحسابات التجريبية",
         ["c", "w", "pp", "app", "pr", "b", "adv202", "tst206"]]
     ];
-    const used = new Set(["fx_r_att"]);  /* سجل الحضور القديم انبدل بسجل الحضور الأسبوعي الجديد */
+    const used = new Set(["fx_r_att", "n"]);  /* «نسب النجاح» القديمة مكررة — الثلاث استمارات الرسمية تغطيها */  /* سجل الحضور القديم انبدل بسجل الحضور الأسبوعي الجديد */
     const out = NEW.map(([id, n, icn, d, kids]) => { const k = K(kids).filter(x => !used.has(x)); k.forEach(x => used.add(x)); return [id, n, icn, d, k]; });
     /* أي قسم قديم ما انذكر: يروح لأقرب مجموعة حتى ما يضيع */
     HUBS.forEach(h => (h[4] || []).forEach(k => { if (!used.has(k) && has(k)) { used.add(k); const g = out.find(x => x[0] == h[0]) || out[out.length - 1]; g[4].push(k); } }));
@@ -343,7 +343,7 @@
     const _gc = gxCall;
     let CK = null, saveT = 0;
     const key = () => "gx_" + ((typeof GX != "undefined" && GX.u) || "x");
-    const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(() => { if (CK) IDB.put(key(), { rev: CK.rev, docs: CK.docs, at: Date.now(), v: 1 }); }, 1500); };
+    const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(() => { if (CK) IDB.put(key(), { rev: CK.rev, docs: CK.docs, acc: CK.acc, at: Date.now(), v: 1 }); }, 1500); };
     const merge = (r) => {
       for (const x of (r.docs || [])) {
         if (x.del) delete CK.docs[x.p];
@@ -358,20 +358,20 @@
         const c = CK || await IDB.get(key());
         if (c && c.docs && c.rev && c.v == 1) {
           CK = c;
-          let r = null;
-          try { r = await _gc.call(this, { ...body, since: c.rev }, again); } catch (e) { throw e; }
-          if (!r || !r.ok) return r;
-          /* الخادم رجع للصفر (نُسخ/استُرجع)؟ نجيب كلشي من جديد */
-          if ((+r.rev || 0) < c.rev) { CK = { rev: 0, docs: {} }; const f = await _gc.call(this, body, again); if (f && f.ok) { merge(f); saveSoon(); } return f; }
-          merge(r); saveSoon();
-          return { ...r, docs: Object.values(CK.docs), rev: CK.rev };
+          /* فوري: النظام ينفتح من النسخة المحفوظة بالجهاز بدون انتظار الإنترنت، والجديد يوصل بعد لحظة بالخلفية */
+          setTimeout(() => { try { if (typeof gxPoll == "function") gxPoll(); } catch (e) { } }, 50);
+          return { ok: 1, rev: CK.rev, docs: Object.values(CK.docs), acc: c.acc || undefined };
         }
         const f = await _gc.apply(this, arguments);
-        if (f && f.ok) { CK = { rev: 0, docs: {} }; merge(f); saveSoon(); }
+        if (f && f.ok) { CK = { rev: 0, docs: {}, acc: f.acc }; merge(f); saveSoon(); }
         return f;
       }
       const r = await _gc.apply(this, arguments);
-      try { if (r && r.ok && CK && (r.docs || []).length) { merge(r); saveSoon(); } else if (r && r.ok && CK) CK.rev = Math.max(CK.rev, +r.rev || 0); } catch (e) { }
+      try {
+        if (r && r.ok && CK && since > 0 && (+r.rev || 0) < since) { CK = { rev: 0, docs: {} }; IDB.del(key()); setTimeout(() => { try { GX.rev = 0; gxPoll(); } catch (e) { } }, 100); return r; }
+        if (r && r.ok && CK && (r.docs || []).length) { merge(r); saveSoon(); } else if (r && r.ok && CK) CK.rev = Math.max(CK.rev, +r.rev || 0);
+        if (r && r.acc && CK) CK.acc = r.acc;
+      } catch (e) { }
       return r;
     };
     /* تسجيل الخروج يمسح النسخة المحفوظة */
