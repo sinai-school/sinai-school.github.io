@@ -297,6 +297,7 @@ ${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "الس�
     return out.sort((x, y) => String(y.b.yr).localeCompare(String(x.b.yr)));
   }
   W.bxFind207 = bxFind;
+  W.bxSub207 = bxSub; W.bxN207 = () => BX ? BX.length : -1;
   const bxCard = ({ b, r }) => {
     const g = r[3] || [], pass = /ناجح/.test(r[4]);
     return `<div class="bx207"><div class="h"><b>${E(r[2])}</b><span class="chip ${pass ? "good" : "bad"}">${E(r[4] || "")}</span></div>
