@@ -496,6 +496,8 @@
     };
     const nm = sj => { try { return String(FSD.sjName(sj) || sj); } catch (e) { return String(sj); } };
     const R = FXR.f_prf;
+    /* القالب ثابت (١٠ أسطر بكل جدول) — ما يحتاج تصغير خط، فيبقى ١٦ مثل الأصل */
+    try { if (typeof PG130 != "undefined") PG130.ids = PG130.ids.filter(x => x != "f_prf"); } catch (e) { }
     R.fill = function (host, o) {
       if (o.r == "2") DXF.rep(host, /الدور الأول/g, "الدور الثاني");
       const T2 = DXF.tables(host);
