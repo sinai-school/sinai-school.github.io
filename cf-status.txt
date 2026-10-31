@@ -1,0 +1,231 @@
+has-bearer=1
+tok-len=53 acc-len=32 acc-hex=yes tok-shape=ok
+check: {"result":{"id":"90553433ec17b364776daf0ed1119613","status":"active"},"success":true,"errors":[],"messages":[{"code":10000,"message":"This API Token is valid and active","type":null}]}
+subdomain=7svyn82yzr
+npm warn deprecated rollup-plugin-inject@3.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-31_13-34-26_423.log"
+db=99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-31_13-34-30_097.log"
+fdb=8fed9997-c9c6-474d-bc18-d3f47d05d76c
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+✅ Successfully created DB 'sinai_files2' in region ENAM
+Created your new D1 database.
+
+{
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sinai_files2",
+      "database_id": "be9cd1f6-5165-4a79-8355-e38f0730ed72"
+    }
+  ]
+}
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files2 (be9cd1f6-5165-4a79-8355-e38f0730ed72):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.50ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.5049
+      },
+      "duration": 0.5049,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": true,
+      "size_after": 20480,
+      "rows_read": 1,
+      "rows_written": 3,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files (8fed9997-c9c6-474d-bc18-d3f47d05d76c):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.15ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.155
+      },
+      "duration": 0.155,
+      "changes": 0,
+      "last_row_id": 2533,
+      "changed_db": false,
+      "size_after": 426127360,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1m⚠️ This process may take some time, during which your D1 database will be unavailable to serve queries.[0m
+
+
+🌀 Executing on remote database sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+Note: if the execution fails to complete, your DB will return to its original state and you can safely retry.
+├ Checking if file needs uploading
+│
+🌀 File already uploaded. Processing.
+🌀 Starting import...
+🌀 Processed 15 queries.
+🚣 Executed 15 queries in 3.17ms (0 rows read, 0 rows written)
+   Database is currently at bookmark 00000096-00001673-00005115-ad8dfeaae62e7f5dcbd9a8ae2b2689bc.
+[
+  {
+    "results": [
+      {
+        "Total queries executed": 15,
+        "Rows read": 0,
+        "Rows written": 0,
+        "Database size (MB)": "85.77"
+      }
+    ],
+    "success": true,
+    "finalBookmark": "00000096-00001673-00005115-ad8dfeaae62e7f5dcbd9a8ae2b2689bc",
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "WNAM",
+      "served_by_colo": "SJC",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 3.1737
+      },
+      "duration": 3.1737,
+      "changes": 1,
+      "last_row_id": 3199,
+      "changed_db": true,
+      "size_after": 85766144,
+      "rows_read": 0,
+      "rows_written": 0,
+      "num_tables": 16,
+      "total_attempts": 1
+    }
+  }
+]
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 3.114.17 (update available 4.156.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+Total Upload: 109.96 KiB / gzip: 28.28 KiB
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0)
+  - FDB: sinai_files (8fed9997-c9c6-474d-bc18-d3f47d05d76c)
+  - FDB2: sinai_files2 (be9cd1f6-5165-4a79-8355-e38f0730ed72)
+Uploaded sinai (1.66 sec)
+Deployed sinai triggers (0.47 sec)
+  https://sinai.7svyn82yzr.workers.dev
+  schedule: * * * * *
+Current Version ID: 4f421213-7c94-4653-ba5f-5bc3830066e9
+url=https://sinai.7svyn82yzr.workers.dev
+test: {"ok":1,"service":"sinai-portal","host":"cloudflare","v":5,"nid":1,"bk":1,"stf":1,"fast":1,"bridge":1,"files":1,"seen":1,"relay":1,"v6":1,"fget":1,"snap":1,"v7":1,"sent":1,"v8":1,"up":1,"v202":1,"v204":1,"ready":1}
+pk: {"ok":1,"pub":{"kty":"RSA","key_ops":["encrypt"],"alg":"RSA-OAEP-256","ext":true,"n":"t6w2ik9hAAUlx1g0mXy3oRVurBda17_18DMIiQAdG9THSG2LEn_DlvcEkdlTe8DmFw-Zi8LDGt1rjCP_1Hh1eNGI27UBNwCIldbV6xpfEXHYt7iN7HwpfKLZiyL7IZB_XM4vs9i2NtoI7EbQzRWbTZrYbo7jZYdQjKC2oftnbg0LJmkAXsn_AambZbFkljkc9prhI-fxOU46QtODqmOhfuIULiE6AZuYxNz50KPUBOHRwWFJu-Q4_UVLKusKf-4TYMJnOiuzpyAzkDyZ04ynBQo5_9baJm-0-uSgdw8SXkbYT-cTPehbRQ50UG4lfyLEuzKhm33N28vHufH0wbOCEw","e":"AQAB"}}
+tst-s: 1 None  الخامس الأدبي أ 12
+tst-t: 1 None مدرس تجريبي
+sizes [{'t': 'blobs', 'n': 190, 'bytes': 21851617}, {'t': 'docs', 'n': 474, 'bytes': 1904934}]
+biggest [{'p': 'stuinfo/g5', 'b': 105024}, {'p': 'stuinfo/g4', 'b': 85020}, {'p': 'stuinfo/g6', 'b': 80682}, {'p': 'school/students', 'b': 67615}, {'p': 'qaid/c018', 'b': 59268}, {'p': 'qaid/c017', 'b': 59264}, {'p': 'formreplies/students2026', 'b': 58487}, {'p': 'qaid/c016', 'b': 58275}]
+mvblob 25: {"ok":1,"moved":6,"left":"more"}
+mvblob done at 32: {"ok":1,"moved":4,"left":"done"}
+│ database_size         │ 63.7 MB                              │
+│ database_size         │ 453 MB                               │
+│ database_size         │ 20.5 kB                              │
+recent [{'p': 'arch/b7cb5dvmofzdka', 'by': 'o:imp207', 't': '2026-10-31 13:36:11'}, {'p': 'archpart/b7cb5dvmofzdka_4', 'by': 'o:imp207', 't': '2026-10-31 13:36:10'}, {'p': 'archpart/b7cb5dvmofzdka_3', 'by': 'o:imp207', 't': '2026-10-31 13:36:08'}, {'p': 'archpart/b7cb5dvmofzdka_2', 'by': 'o:imp207', 't': '2026-10-31 13:36:07'}, {'p': 'archpart/b7cb5dvmofzdka_1', 'by': 'o:imp207', 't': '2026-10-31 13:36:05'}, {'p': 'archpart/b7cb5dvmofzdka_0', 'by': 'o:imp207', 't': '2026-10-31 13:36:04'}, {'p': 'arch/b71049l24124ti2k', 'by': 'o:imp207', 't': '2026-10-31 13:36:00'}, {'p': 'archpart/b71049l24124ti2k_6', 'by': 'o:imp207', 't': '2026-10-31 13:35:58'}, {'p': 'archpart/b71049l24124ti2k_5', 'by': 'o:imp207', 't': '2026-10-31 13:35:57'}, {'p': 'archpart/b71049l24124ti2k_4', 'by': 'o:imp207', 't': '2026-10-31 13:35:55'}, {'p': 'archpart/b71049l24124ti2k_3', 'by': 'o:imp207', 't': '2026-10-31 13:35:53'}, {'p': 'archpart/b71049l24124ti2k_2', 'by': 'o:imp207', 't': '2026-10-31 13:35:52'}, {'p': 'archpart/b71049l24124ti2k_1', 'by': 'o:imp207', 't': '2026-10-31 13:35:50'}, {'p': 'archpart/b71049l24124ti2k_0', 'by': 'o:imp207', 't': '2026-10-31 13:35:48'}, {'p': 'arch/b7bzgr5jh9kq4n', 'by': 'o:imp207', 't': '2026-10-31 13:35:34'}, {'p': 'archpart/b7bzgr5jh9kq4n_6', 'by': 'o:imp207', 't': '2026-10-31 13:35:33'}, {'p': 'archpart/b7bzgr5jh9kq4n_5', 'by': 'o:imp207', 't': '2026-10-31 13:35:31'}, {'p': 'archpart/b7bzgr5jh9kq4n_4', 'by': 'o:imp207', 't': '2026-10-31 13:35:30'}, {'p': 'archpart/b7bzgr5jh9kq4n_3', 'by': 'o:imp207', 't': '2026-10-31 13:35:28'}, {'p': 'archpart/b7bzgr5jh9kq4n_2', 'by': 'o:imp207', 't': '2026-10-31 13:35:26'}, {'p': 'archpart/b7bzgr5jh9kq4n_1', 'by': 'o:imp207', 't': '2026-10-31 13:35:24'}, {'p': 'archpart/b7bzgr5jh9kq4n_0', 'by': 'o:imp207', 't': '2026-10-31 13:35:23'}, {'p': 'arch/b7w25aws19ktiqg', 'by': 'o:imp207', 't': '2026-10-31 13:35:18'}, {'p': 'archpart/b7w25aws19ktiqg_5', 'by': 'o:imp207', 't': '2026-10-31 13:35:17'}, {'p': 'archpart/b7w25aws19ktiqg_4', 'by': 'o:imp207', 't': '2026-10-31 13:35:15'}]
+kv [{'k': 'DREV', 'v': '5653'}, {'k': 'snapat', 'v': '2026-10-31T13:35:53.186Z'}]
