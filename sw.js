@@ -60,5 +60,5 @@ async function pushShow(){
  }catch(e){}
  return self.registration.showNotification(title,{body,tag,renotify:true,icon:'icon-192.png',badge:'icon-192.png',vibrate:[300,150,300,150,500],silent:false,dir:'rtl',lang:'ar',data:{u:'./'}});
 }
-self.addEventListener('push',e=>{e.waitUntil(pushShow().then(r=>r,()=>self.registration.showNotification('إعدادية سيناء للبنين',{body:'وصلك تبليغ جديد',icon:'icon-192.png',tag:'sinai-note'})))});
+self.addEventListener('push',e=>{self.clients.matchAll({type:'window',includeUncontrolled:true}).then(L=>L.forEach(c=>{try{c.postMessage({t:'push207'})}catch(x){}})).catch(()=>{});e.waitUntil(pushShow().then(r=>r,()=>self.registration.showNotification('إعدادية سيناء للبنين',{body:'وصلك تبليغ جديد',icon:'icon-192.png',tag:'sinai-note'})))});
 self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(L=>{for(const c of L){if('focus' in c){try{c.postMessage({t:'nt91'})}catch(x){}return c.focus()}}return clients.openWindow('./#notes')}))});

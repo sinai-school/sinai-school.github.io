@@ -206,20 +206,24 @@ public class MainActivity extends Activity {
                 ContentValues cv = new ContentValues();
                 cv.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
                 cv.put(MediaStore.MediaColumns.MIME_TYPE, mime);
-                cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-                out = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                boolean img = mime.startsWith("image/");
+                /* الصور تروح للاستوديو (الصور / إعدادية سيناء)، والملفات للتنزيلات */
+                cv.put(MediaStore.MediaColumns.RELATIVE_PATH, img ? Environment.DIRECTORY_PICTURES + "/إعدادية سيناء" : Environment.DIRECTORY_DOWNLOADS);
+                out = getContentResolver().insert(img ? MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
                 try (OutputStream os = getContentResolver().openOutputStream(out)) { os.write(bytes); }
             } else {
-                File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                boolean img = mime.startsWith("image/");
+                File dir = getExternalFilesDir(img ? Environment.DIRECTORY_PICTURES : Environment.DIRECTORY_DOWNLOADS);
                 File f = new File(dir, name);
                 try (FileOutputStream os = new FileOutputStream(f)) { os.write(bytes); }
                 out = Uri.fromFile(f);
+                if (img) { try { android.media.MediaScannerConnection.scanFile(this, new String[]{ f.getAbsolutePath() }, new String[]{ mime }, null); } catch (Exception x) { } }
             }
             final Uri fu = out;
             final String fm = mime;
             final String fn = name;
             runOnUiThread(() -> {
-                Toast.makeText(this, "انحفظ الملف بالتنزيلات: " + fn, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, (fm.startsWith("image/") ? "انحفظت الصورة بالاستوديو: " : "انحفظ الملف بالتنزيلات: ") + fn, Toast.LENGTH_LONG).show();
                 try {
                     Intent i = new Intent(Intent.ACTION_VIEW);
                     i.setDataAndType(fu, fm);

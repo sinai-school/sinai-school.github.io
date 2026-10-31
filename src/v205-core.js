@@ -329,6 +329,7 @@
     (ST || []).forEach(s => {
       const k = pgK(s.pg); if (!k || !byPg[k]) return;
       const L = byPg[k]; if (L.length != 1) return;
+      if (L[0].lk) return;  /* v207: سجل انصحح أو انختار بيده — التلقائي ما يلمسه */
       const r = L[0], x = (typeof INF != "undefined" && INF && INF[s.id] && INF[s.id].x) || null;
       const pn = x ? nmJoin([x.n1, x.n2, x.n3, x.n4]) : "";
       const c = qCmp(s.n, r.n, pn);
