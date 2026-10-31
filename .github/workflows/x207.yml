@@ -39,6 +39,6 @@ jobs:
           git checkout --orphan x207-out-tmp
           git rm -rfq --cached . >/dev/null
           cp /tmp/xout/*.json . 2>/dev/null || true
-          git add meta.json log.json qaid.json parts*.json 2>/dev/null; true
+          for f in /tmp/xout/*.json; do git add -f "$(basename "$f")"; done; true
           git commit -qm "نسخة الأرشيف (مشفّرة)" || true
           git push -qf origin HEAD:$(python3 -c "import json;print(json.load(open('ops/x207.json')).get('out','x207-out'))")
