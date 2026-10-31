@@ -11,19 +11,22 @@
 
   /* ---------- تحميل الملف: كل القطع بنفس الوقت + نسخة بالجهاز (المرة الثانية فورية) ---------- */
   const MEM = new Map(), PEND = new Map();
-  const ver = a => a.id + ":" + (a.at2 || a.at || "") + ":" + (a.parts || 1);
+  /* v207g: النسخة تعتمد على الملف نفسه (مو على وقت تعديل المعلومات) حتى نقل الملف أو تغيير عنوانه ما يمسح النسخة المحفوظة بالجهاز */
+  const ver = a => a.id + ":" + (a.size || 0) + ":" + (a.parts || 1);
+  const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1));
   async function blob207(a) {
     if (a._b) return a._b;
     const k = ver(a);
     if (MEM.has(k)) return MEM.get(k);
     if (PEND.has(k)) return PEND.get(k);
     const p = (async () => {
-      try { const c = IDB() && await IDB().get("ab_" + a.id); if (c && c.k == k && c.d) { MEM.set(k, c.d); return c.d; } } catch (e) { }
+      try { const c = IDB() && await IDB().get("ab_" + a.id); if (okC(c, a)) { MEM.set(k, c.d); return c.d; } } catch (e) { }
+      if (navigator.onLine === false) throw "offline";
       const n = a.parts || 1, out = new Array(n); let i = 0;
       const worker = async () => { while (i < n) { const j = i++; let t = 0; for (; ;) { try { const d = await DB.doc("archpart/" + a.id + "_" + j).get(); if (!d.exists) throw "missing"; out[j] = (d.data() || {}).d || ""; break; } catch (e) { if (++t > 3) throw e; await new Promise(r => setTimeout(r, 600 * t)); } } } };
       await Promise.all(Array.from({ length: Math.min(8, n) }, worker));
       const s = out.join("");
-      MEM.set(k, s); if (MEM.size > 40) MEM.delete(MEM.keys().next().value);
+      MEM.set(k, s); if (MEM.size > 12) MEM.delete(MEM.keys().next().value);
       try { if (IDB()) IDB().put("ab_" + a.id, { k, d: s, at: Date.now() }); } catch (e) { }
       return s;
     })();
@@ -31,6 +34,41 @@
     try { return await p; } finally { PEND.delete(k); }
   }
   W.blob207 = blob207;
+  /* محفوظ بالجهاز؟ (بدون تحميل) */
+  W.has207 = async a => { if (MEM.has(ver(a))) return true; try { return okC(IDB() && await IDB().get("ab_" + a.id), a); } catch (e) { return false; } };
+  /* رابط داخلي للصورة (Blob) — أسرع بكثير من data: ويتفك بالخلفية */
+  const URLS = new Map(), DEC = new Map();
+  async function url207(a) {
+    if (URLS.has(a.id)) return URLS.get(a.id);
+    let b;
+    if (isImg(a)) { const d = await blob207(a), bin = atob(d), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); b = new Blob([u], { type: a.type }); }
+    else b = await pdfImg207(a);
+    const u = URL.createObjectURL(b); URLS.set(a.id, u);
+    if (URLS.size > 30) { const [k0, u0] = URLS.entries().next().value; URLS.delete(k0); DEC.delete(k0); try { URL.revokeObjectURL(u0); } catch (e) { } }
+    return u;
+  }
+  /* نجهّز الصورة مفكوكة بالذاكرة حتى تطلع بلحظة */
+  function decode207(a) {
+    if (DEC.has(a.id)) return DEC.get(a.id);
+    const p = url207(a).then(u => new Promise((ok, no) => { const im = new Image; im.decoding = "async"; im.onload = () => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => ok(im)); im.onerror = no; im.src = u; }));
+    DEC.set(a.id, p); p.catch(() => DEC.delete(a.id)); return p;
+  }
+  W.url207 = url207;
+  /* PDF: نرسم صفحاته داخل النظام (pdf.js) كصورة وحدة، وننحفظ بالجهاز */
+  let PJ = null;
+  const pdfjs = () => PJ || (PJ = new Promise((ok, no) => { if (W.pdfjsLib) return ok(W.pdfjsLib); const s = D.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload = () => { try { W.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; } catch (e) { } ok(W.pdfjsLib); }; s.onerror = e => { PJ = null; no(e); }; D.head.appendChild(s); }));
+  async function pdfImg207(a) {
+    try { const c = IDB() && await IDB().get("pr_" + a.id); if (c && c.k == ver(a) && c.b) return c.b; } catch (e) { }
+    const d = await blob207(a), lib = await pdfjs(), bin = atob(d), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const doc = await lib.getDocument({ data: u }).promise, n = Math.min(doc.numPages, 12), pages = [];
+    for (let i = 1; i <= n; i++) { const pg = await doc.getPage(i), v0 = pg.getViewport({ scale: 1 }), sc = Math.min(2.2, 1700 / v0.width), v = pg.getViewport({ scale: sc }); const c = D.createElement("canvas"); c.width = v.width; c.height = v.height; await pg.render({ canvasContext: c.getContext("2d"), viewport: v }).promise; pages.push(c); }
+    const W2 = Math.max(...pages.map(c => c.width)), gap = 16, H = pages.reduce((s, c) => s + c.height, 0) + gap * (pages.length - 1);
+    const out = D.createElement("canvas"); out.width = W2; out.height = Math.min(H, 30000); const g = out.getContext("2d"); g.fillStyle = "#555"; g.fillRect(0, 0, out.width, out.height);
+    let y = 0; pages.forEach(c => { g.drawImage(c, (W2 - c.width) / 2, y); y += c.height + gap; });
+    const b = await new Promise(ok => out.toBlob(ok, "image/jpeg", .9));
+    try { if (IDB()) IDB().put("pr_" + a.id, { k: ver(a), b, at: Date.now() }); } catch (e) { }
+    return b;
+  }
   on(() => { if (typeof aBlob == "function") aBlob = blob207; });
 
   /* ---------- العارض ---------- */
@@ -57,7 +95,7 @@
 
   const isImg = a => /^image\//.test(a.type || "");
   const listFor = a => {
-    const L = (typeof ARC != "undefined" ? ARC : []).filter(x => x.src == "db" && x.sec == a.sec && (x.yr || "") == (a.yr || "") && (!AB || brOf(x) == AB) && (isImg(x) || /pdf/.test(x.type || "")));
+    const L = (typeof ARC != "undefined" ? ARC : []).filter(x => x.src == "db" && x.sec == a.sec && (x.yr || "") == (a.yr || "") && (!AB || a.sec != "brd" || brOf(x) == AB) && (isImg(x) || /pdf/.test(x.type || "")));
     return L.sort((x, y) => String(x.cls || "").localeCompare(String(y.cls || ""), "ar") || String(x.title || "").localeCompare(String(y.title || ""), "ar", { numeric: true }));
   };
   let V7 = null;
@@ -69,14 +107,23 @@
     w.querySelector(".nav.p").disabled = i == 0; w.querySelector(".nav.n").disabled = i == S.L.length - 1;
     w.querySelectorAll(".foot button").forEach((b, j) => { b.classList.toggle("on", j == i); if (j == i) b.scrollIntoView({ inline: "center", block: "nearest" }); });
     const img = S.img, msg = w.querySelector(".msg");
-    img.style.visibility = "hidden"; msg.textContent = "جارٍ الفتح…"; msg.style.display = "";
-    if (!isImg(a)) { msg.innerHTML = `ملف PDF — <button class="btn sm" id="pdf207">فتح الملف</button>`; w.querySelector("#pdf207").onclick = () => openPdf(a); return; }
-    let d; try { d = await blob207(a); } catch (e) { if (V7 && V7.i == i) msg.textContent = "تعذّر الفتح — تأكد من الإنترنت"; return; }
+    msg.style.display = "none";
+    let im;
+    const slow = setTimeout(() => { if (V7 && V7.i == i) { msg.textContent = isImg(a) ? "جارٍ الفتح…" : "جارٍ تجهيز ملف PDF…"; msg.style.display = ""; img.style.visibility = "hidden"; } }, 120);
+    try { im = await decode207(a); } catch (e) {
+      clearTimeout(slow); if (!V7 || V7.i != i) return;
+      img.style.visibility = "hidden"; msg.style.display = "";
+      msg.innerHTML = navigator.onLine === false ? "هذا الملف بعده ما محفوظ بالجهاز — يتحفظ وحده أول ما يرجع الإنترنت" : `تعذّر الفتح — <button class="btn sm" id="rt207">إعادة المحاولة</button>`;
+      const rb = w.querySelector("#rt207"); if (rb) rb.onclick = () => show(i);
+      return;
+    }
+    clearTimeout(slow);
     if (!V7 || V7.i != i) return;
-    img.onload = () => { if (!V7 || V7.i != i) return; msg.style.display = "none"; img.style.visibility = ""; fit(); };
-    img.src = "data:" + a.type + ";base64," + d;
+    if (img.src != im.src) img.src = im.src;
+    const done = () => { if (!V7 || V7.i != i) return; msg.style.display = "none"; img.style.visibility = ""; fit(); };
+    if (img.complete && img.naturalWidth) done(); else img.onload = done;
     /* تجهيز اللي بعده واللي قبله بالخلفية حتى ينفتحن فوراً */
-    [i + 1, i - 1, i + 2].forEach(j => { const b = S.L[j]; if (b && isImg(b)) blob207(b).catch(() => { }); });
+    [i + 1, i - 1, i + 2, i + 3].forEach(j => { const b = S.L[j]; if (b) decode207(b).catch(() => { }); });
   }
   async function openPdf(a) {
     try { const b = await blob207(a); const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const url = URL.createObjectURL(new Blob([u], { type: "application/pdf" })); W.open(url, "_blank"); setTimeout(() => URL.revokeObjectURL(url), 6e5); } catch (e) { T("تعذّر فتح الملف", "err"); }
@@ -165,10 +212,11 @@
   const short = a => String(a.title || a.name || "").replace(/^السادس\s+\S+\s+20\d\d-20\d\d\s+—\s+/, "").replace(/^الادبي|^الأدبي|^العلمي/, m => m);
   W.ap207 = async id => {
     const a = (typeof ARC != "undefined" ? ARC : []).find(x => x.id == id); if (!a) return;
-    if (!isImg(a)) return openPdf(a);
     T("جارٍ تجهيز الطباعة…");
     try {
-      const d = await blob207(a), src = "data:" + a.type + ";base64," + d;
+      let src;
+      if (isImg(a)) src = "data:" + a.type + ";base64," + await blob207(a);
+      else { const b = await pdfImg207(a); src = await new Promise(ok => { const r = new FileReader; r.onload = () => ok(r.result); r.readAsDataURL(b); }); }
       const im = await new Promise((ok, no) => { const i = new Image; i.onload = () => ok(i); i.onerror = no; i.src = src; });
       const land = im.naturalWidth > im.naturalHeight;
       const body = `<div style="text-align:center"><img src="${src}" style="max-width:100%;max-height:${land ? 185 : 272}mm;width:auto;height:auto"></div>`;
@@ -264,7 +312,7 @@ ${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "الس�
         bxSub();
         const q = typeof AQ != "undefined" ? String(AQ).trim() : "";
         if (q && typeof AS0 != "undefined" && AS0 == "brd") {
-          const R = bxFind(q);
+          const R = (W.bxFind207 || bxFind)(q);
           const box = `<div class="box hl"><h3>${I("search")} نتيجة البحث بالبوردات (${A(R.length)})</h3>${R.length ? R.slice(0, 30).map(bxCard).join("") : `<p class="muted" style="margin:0">ما لكيت هذا الاسم بالبوردات المقروءة لحد هسه${BX ? " (" + A(BX.length) + " بورد مقروء)" : ""}.</p>`}</div>`;
           h = box + h.replace(/<div class="box empty">[\s\S]*?<\/div>/, "");
         }
