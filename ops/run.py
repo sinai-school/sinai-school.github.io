@@ -47,6 +47,10 @@ if REQ.get('imp207'):
     q("insert into kv(k,v) values('IMP207','%d') on conflict(k) do update set v=excluded.v" % until)
     log['imp207'] = until
 
+if REQ.get('sizes'):
+    log['main_big_left'] = q("select count(distinct id) n, sum(length(d)) b from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%'")
+    log['main_all'] = q("select count(*) n, sum(length(d)) b from chunks")
+
 files = sorted(glob.glob('ops/in/*.json'))
 if files:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
