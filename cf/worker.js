@@ -22,20 +22,28 @@ const BIGID_RE = /^d_(archpart|qaidimg|mailimg|staffphoto)\//;
 const big_ = id => !!(ENV && ENV.FDB) && BIGID_RE.test(String(id));
 async function blobPut(id, s) {
   if (big_(id)) {
-    s = String(s); const F = ENV.FDB, st = [F.prepare('delete from chunks where id=?').bind(id)];
-    for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
-    for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
-    await run('delete from chunks where id=?', id); return;
+    s = String(s);
+    /* FDB تمتلي؟ (حد ٥٠٠ م.ب) — يكمل بالقاعدة الثالثة FDB2 */
+    for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) {
+      try {
+        const st = [F.prepare('delete from chunks where id=?').bind(id)];
+        for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
+        for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
+        for (const G of [ENV.FDB, ENV.FDB2].filter(x => x && x !== F)) { try { await G.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } }
+        await run('delete from chunks where id=?', id); return;
+      } catch (e) { if (!/maximum DB size|SQLITE_FULL/i.test(String(e))) throw e; try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (x) { } }
+    }
+    throw new Error('storage full');
   }
   s = String(s); const st = [DB.prepare('delete from chunks where id=?').bind(id)];
   for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(DB.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
   for (let i = 0; i < st.length; i += 40) await DB.batch(st.slice(i, i + 40));
 }
 async function blobGet(id) {
-  if (big_(id)) { const r = (await ENV.FDB.prepare('select d from chunks where id=? order by i').bind(id).all()).results || []; if (r.length) return r.map(x => x.d).join(''); }
+  if (big_(id)) for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) { try { const r = (await F.prepare('select d from chunks where id=? order by i').bind(id).all()).results || []; if (r.length) return r.map(x => x.d).join(''); } catch (e) { } }
   const r = await all('select d from chunks where id=? order by i', id); return r.length ? r.map(x => x.d).join('') : null;
 }
-const blobDel = async id => { if (big_(id)) await ENV.FDB.prepare('delete from chunks where id=?').bind(id).run(); return run('delete from chunks where id=?', id); };
+const blobDel = async id => { if (big_(id)) for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) { try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } } return run('delete from chunks where id=?', id); };
 /* نقل الصور القديمة للقاعدة الثانية شوية شوية (كل دقيقة) */
 async function mvblob_(n) {
   if (!ENV || !ENV.FDB) return { ok: 0, err: 'nofdb' };
@@ -44,11 +52,7 @@ async function mvblob_(n) {
   let moved = 0;
   for (const { id } of ids) {
     const rows = await all('select i,d from chunks where id=? order by i', id);
-    const F = ENV.FDB, st = [F.prepare('delete from chunks where id=?').bind(id)];
-    for (const r of rows) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, r.i, r.d));
-    for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
-    const chk = await F.prepare('select count(*) c from chunks where id=?').bind(id).first();
-    if (chk && chk.c == rows.length) { await run('delete from chunks where id=?', id); moved++; }
+    try { await blobPut(id, rows.map(r => r.d).join('')); moved++; } catch (e) { return { ok: 0, err: String(e).slice(0, 120), moved }; }
   }
   return { ok: 1, moved, left: ids.length == (n || 8) ? 'more' : 'done' };
 }

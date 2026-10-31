@@ -53,7 +53,10 @@ jobs:
           npx -y wrangler@3 d1 create sinai_files >> ../$L 2>&1 || true
           FDBID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files"][0])' || true)
           echo "fdb=$FDBID" >> ../$L
-          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n[[d1_databases]]\nbinding = "FDB"\ndatabase_name = "sinai_files"\ndatabase_id = "%s"\n[triggers]\ncrons = ["* * * * *"]\n' "$DBID" "$FDBID" > wrangler.toml
+          npx -y wrangler@3 d1 create sinai_files2 >> ../$L 2>&1 || true
+          FDB2ID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files2"][0])' || true)
+          npx -y wrangler@3 d1 execute sinai_files2 --remote -y --command "create table if not exists chunks(id text, i integer, d text, primary key(id,i))" >> ../$L 2>&1 || true
+          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n[[d1_databases]]\nbinding = "FDB"\ndatabase_name = "sinai_files"\ndatabase_id = "%s"\n[[d1_databases]]\nbinding = "FDB2"\ndatabase_name = "sinai_files2"\ndatabase_id = "%s"\n[triggers]\ncrons = ["* * * * *"]\n' "$DBID" "$FDBID" "$FDB2ID" > wrangler.toml
           npx -y wrangler@3 d1 execute sinai_files --remote -y --command "create table if not exists chunks(id text, i integer, d text, primary key(id,i))" >> ../$L 2>&1 || true
           [ -f schema.sql ] && npx -y wrangler@3 d1 execute sinai --remote --file schema.sql -y >> ../$L 2>&1 || true
           npx -y wrangler@3 deploy >> ../$L 2>&1 || echo "DEPLOY FAILED" >> ../$L
@@ -71,6 +74,7 @@ jobs:
           if [ -n "$SEC" ]; then for i in $(seq 1 400); do R=$(curl -s -m 60 -X POST -H 'Content-Type: text/plain' -d "{\"a\":\"admin\",\"op\":\"mvblob\",\"n\":6,\"secret\":\"$SEC\"}" $URL); echo "$R" | grep -q '"left":"done"' && { echo "mvblob done at $i: $R" >> $L; break; }; [ $((i % 25)) = 0 ] && echo "mvblob $i: $R" >> $L; done; fi
           (cd cf && npx -y wrangler@3 d1 info sinai 2>/dev/null | grep -i -E "size|database_size" | head -3) >> $L 2>&1 || true
           (cd cf && npx -y wrangler@3 d1 info sinai_files 2>/dev/null | grep -i -E "size" | head -3) >> $L 2>&1 || true
+          (cd cf && npx -y wrangler@3 d1 info sinai_files2 2>/dev/null | grep -i -E "size" | head -3) >> $L 2>&1 || true
           if [ -f cf/boot.json ]; then python3 -u cf/boot.py $URL roles >> $L 2>&1 || echo "BOOT FAILED" >> $L; fi
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select p, by, datetime(at/1000,'unixepoch') t from docs where at > (strftime('%s','now')-7200)*1000 order by at desc limit 25" 2>/dev/null | python3 -c "import sys,json;print('recent',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
           (cd cf && npx -y wrangler@3 d1 execute sinai --remote --json --command "select k, substr(v,1,40) v from kv where k in ('snapat','DREV')" 2>/dev/null | python3 -c "import sys,json;print('kv',json.load(sys.stdin)[0]['results'])") >> $L 2>&1 || true
