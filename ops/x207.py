@@ -19,12 +19,29 @@ def save(name, obj):
     k = AESGCM.generate_key(256); iv = os.urandom(12)
     json.dump({'ek': base64.b64encode(pub.encrypt(k, oaep)).decode(), 'iv': base64.b64encode(iv).decode(), 'ct': base64.b64encode(AESGCM(k).encrypt(iv, raw, None)).decode()}, open(os.path.join(OUT, name), 'w'))
     return len(raw)
+ACC = os.environ.get('CLOUDFLARE_ACCOUNT_ID', ''); TOK = os.environ.get('CLOUDFLARE_API_TOKEN', '')
+DBID = [l.split('"')[1] for l in open('cf/wrangler.toml') if l.startswith('database_id')][0]
+import urllib.request, concurrent.futures
+def hq(sql, params):
+    body = json.dumps({'sql': sql, 'params': params}).encode()
+    for t in range(5):
+        try:
+            rq = urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{ACC}/d1/database/{DBID}/query', data=body, headers={'Authorization': 'Bearer ' + TOK, 'Content-Type': 'application/json'})
+            with urllib.request.urlopen(rq, timeout=120) as r: j = json.loads(r.read().decode())
+            if j.get('success'): return j['result'][0]['results']
+        except Exception as e: err = str(e)[:100]
+        time.sleep(2 + 3 * t)
+    print('hq-fail'); return None
+FAIL = []
+def one(p):
+    r = hq('select i,d from chunks where id=? order by i', ['d_' + p])
+    if r is None: FAIL.append(p); return p, None
+    return p, ''.join(x['d'] for x in r)
 def docs(paths):
     out = {}
-    for i in range(0, len(paths), 3):
-        inn = ','.join("'d_" + p.replace("'", "''") + "'" for p in paths[i:i + 3])
-        for r in q(f"select id,i,d from chunks where id in ({inn}) order by id,i"):
-            out[r['id'][2:]] = out.get(r['id'][2:], '') + r['d']
+    with concurrent.futures.ThreadPoolExecutor(6) as ex:
+        for p, d in ex.map(one, paths):
+            if d: out[p] = d
     return out
 meta = [m['p'] for m in q("select p from docs where p like 'arch/%' and h<>'DEL'")]
 M = docs(meta)
@@ -42,5 +59,5 @@ if want:
         buf.update(docs(P[i:i + 40])); sz = sum(len(v) for v in buf.values())
         if sz > 22e6: save('parts%03d.json' % n, buf); n += 1; buf = {}
     if buf: save('parts%03d.json' % n, buf); n += 1
-    log['parts'] = len(P); log['files'] = n
+    log['parts'] = len(P); log['files'] = n; log['fail'] = len(FAIL)
 json.dump(log, open(os.path.join(OUT, 'log.json'), 'w')); print(json.dumps(log))
