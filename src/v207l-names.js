@@ -27,7 +27,8 @@
   const dGet = () => { try { return JSON.parse(localStorage.getItem(DK) || "[]"); } catch (e) { return []; } };
   const dPut = L => { try { localStorage.setItem(DK, JSON.stringify(L.slice(-3000))); } catch (e) { } };
   const jk = (it, f) => pgK(it.r && it.r.pg) + "|" + sq(it.r && it.r.n) + "|" + sq(it.s && it.s.n) + "|" + f;
-  let busy = 0, last = 0;
+  /* v207n: يشتغل مرة وحدة بس بعد ما يهدأ النظام (دقيقة من الفتح)، بدون رسائل وبدون إعادة رسم بكل خطوة — ما يثقّل النظام */
+  let busy = 0, ran = 0;
   async function run() {
     if (busy || !W.GXOWN || typeof W.q205 != "function") return;
     if (typeof guard == "function") { try { if (guard()) return; } catch (e) { return; } }
@@ -35,14 +36,15 @@
     const done = new Set(dGet());
     const jobs = []; Q.rev.forEach((it, i) => { const f = decide(it); if (f && typeof W[f] == "function" && !done.has(jk(it, f))) jobs.push([i, f, jk(it, f)]); });
     if (!jobs.length) return;
-    busy = 1; const _c = W.confirm, _t = W.toast; let n = 0;
-    const L = dGet(); jobs.forEach(j => L.push(j[2])); dPut(L);
+    busy = 1; const _c = W.confirm, _t = W.toast, _r = W.render;
+    const L = dGet(); jobs.slice(0, 30).forEach(j => L.push(j[2])); dPut(L);
     try {
-      W.confirm = () => true; W.toast = () => { };
-      for (let k = jobs.length - 1; k >= 0; k--) { const [i, f] = jobs[k]; try { await W[f](i); n++; } catch (e) { } }
-    } finally { W.confirm = _c; W.toast = _t; busy = 0; }
-    try { if (typeof render == "function" && typeof AS0 != "undefined") { const v = D.querySelector(".q206a,#qaidv"); if (v) render(); } } catch (e) { }
+      W.confirm = () => true; W.toast = () => { }; W.render = () => { };
+      const J = jobs.slice(0, 30);
+      for (let k = J.length - 1; k >= 0; k--) { const [i, f] = J[k]; try { await W[f](i); } catch (e) { } await new Promise(r => setTimeout(r, 30)); }
+    } finally { W.confirm = _c; W.toast = _t; W.render = _r; busy = 0; }
   }
   W.names207l = run;
-  on(() => setInterval(() => { if (Date.now() - last > 20000 && !document.hidden) { last = Date.now(); run(); } }, 5000));
+  const idle = fn => (W.requestIdleCallback ? W.requestIdleCallback(fn, { timeout: 5000 }) : setTimeout(fn, 200));
+  on(() => setTimeout(() => idle(() => { if (!ran) { ran = 1; run(); } }), 60000));
 })();
