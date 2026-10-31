@@ -112,7 +112,7 @@
     V.z = function () {
       try { if (typeof AS0 != "undefined" && AS0 == "qyd") AS0 = "brd"; } catch (e) { }
       let h = _vz.apply(this, arguments);
-      try { if (!(typeof ASEL != "undefined" && ASEL) && !(typeof AQ != "undefined" && String(AQ).trim())) h = h.replace(/(<div class="sel207">)/, chip() + "$1"); } catch (e) { }
+      /* شريط «جارٍ حفظ الأرشيف» انشال (طلب المستخدم) — الحفظ يكمل بالخلفية بدون ما يبين */
       return h;
     };
   });
