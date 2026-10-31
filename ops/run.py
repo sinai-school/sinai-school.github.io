@@ -42,6 +42,11 @@ if REQ.get('dump'):
     os.makedirs(OUT, exist_ok=True); json.dump(box, open(os.path.join(OUT, 'dump.json'), 'w'))
     log['dump'] = {'docs': len(docs), 'prof': len(D['prof']), 'acc': len(D['acc']), 'bytes': len(raw)}
 
+if REQ.get('imp207'):
+    until = int((time.time() + 60 * float(REQ.get('imp207'))) * 1000)
+    q("insert into kv(k,v) values('IMP207','%d') on conflict(k) do update set v=excluded.v" % until)
+    log['imp207'] = until
+
 files = sorted(glob.glob('ops/in/*.json'))
 if files:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
