@@ -21,8 +21,8 @@ def save(name, obj):
     return len(raw)
 def docs(paths):
     out = {}
-    for i in range(0, len(paths), 10):
-        inn = ','.join("'d_" + p.replace("'", "''") + "'" for p in paths[i:i + 10])
+    for i in range(0, len(paths), 3):
+        inn = ','.join("'d_" + p.replace("'", "''") + "'" for p in paths[i:i + 3])
         for r in q(f"select id,i,d from chunks where id in ({inn}) order by id,i"):
             out[r['id'][2:]] = out.get(r['id'][2:], '') + r['d']
     return out
@@ -33,6 +33,7 @@ want = REQ.get('parts')  # قائمة معرّفات الملفات، أو "all"
 if want:
     P = [m['p'] for m in q("select p from docs where p like 'archpart/%' and h<>'DEL'")]
     if want != 'all': P = [p for p in P if p.split('/')[1].rsplit('_', 1)[0] in set(want)]
+    if REQ.get('skip'): P = [p for p in P if p.split('/')[1].rsplit('_', 1)[0] not in set(REQ['skip'])]
     P.sort(); n = 0; buf = {}; sz = 0
     for i in range(0, len(P), 40):
         buf.update(docs(P[i:i + 40])); sz = sum(len(v) for v in buf.values())

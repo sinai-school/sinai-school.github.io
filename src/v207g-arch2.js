@@ -83,8 +83,7 @@
   });
 
   /* ---------- ٣) صور «قيود اعدادية سيناء للبنين» مو بوردات: تنتقل لقسم «صور سجل القيود» ---------- */
-  on(() => { if (typeof ASEC != "undefined") ASEC.qyd = "صور سجل القيود"; });
-  const isQyd = a => a && a.sec == "brd" && /قيود/.test(String(a.title || "") + " " + String(a.cls || "") + " " + String(a.name || ""));
+    const isQyd = a => a && a.sec == "brd" && /قيود/.test(String(a.title || "") + " " + String(a.cls || "") + " " + String(a.name || ""));
   let MIG = 0;
   function migrate() {
     if (MIG || !W.GXOWN || typeof aPut != "function") return; MIG = 1;
@@ -96,45 +95,19 @@
       a.title = "سجل القيود — صورة (" + (n || "") + ")";
       try { aPut(a); } catch (e) { }
     });
-    if (L.length) { try { toast("انتقلت " + A(L.length) + " صورة من البوردات إلى «صور سجل القيود»"); } catch (e) { } }
     linkQaid();
   }
   W.mig207g = () => { MIG = 0; migrate(); };
 
-  /* تبويب «صور سجل القيود» بجنب تبويبات الأرشيف */
+  /* صور القيود ما إلها تبويب ولا أيقونة: بس مربوطة بصفحاتها بالقيد العام */
   on(() => {
     if (typeof V == "undefined" || typeof V.z != "function") return;
     const _vz = V.z;
     V.z = function () {
+      try { if (typeof AS0 != "undefined" && AS0 == "qyd") AS0 = "brd"; } catch (e) { }
       let h = _vz.apply(this, arguments);
-      try {
-        if (typeof ASEL != "undefined" && ASEL) return h;
-        const n = arc().filter(a => a.sec == "qyd").length;
-        const btn = `<button class="${AS0 == "qyd" ? "on" : ""}" onclick="aTab('qyd')">صور سجل القيود (${A(n)})</button>`;
-        h = h.replace(/(<div class="seg">(?:(?!<\/div>)[\s\S])*?aTab\('brd'\)[\s\S]*?)(<\/div>)/, (m, a, b) => a.indexOf("aTab('qyd')") >= 0 ? m : a + btn + b);
-        if (AS0 == "qyd") h = h.replace(/<span class="sub">[^<]*<\/span>/, `<span class="sub">صور صفحات سجل القيود العام — كل صورة مربوطة بصفحتها</span>`);
-        if (typeof AQ == "undefined" || !String(AQ).trim()) h = h.replace(/(<div class="sel207">)/, chip() + "$1");
-      } catch (e) { }
+      try { if (!(typeof ASEL != "undefined" && ASEL) && !(typeof AQ != "undefined" && String(AQ).trim())) h = h.replace(/(<div class="sel207">)/, chip() + "$1"); } catch (e) { }
       return h;
-    };
-  });
-  /* قائمة صور القيود: بالترتيب، وكل صورة بيها رقم صفحتها والأسماء اللي بيها من القيد العام */
-  const qdAll = () => (typeof QD != "undefined" ? QD : []);
-  function qydList() {
-    const L = arc().filter(a => a.sec == "qyd").sort((x, y) => (+x.pg || 1e9) - (+y.pg || 1e9) || (x.n || 0) - (y.n || 0));
-    if (!L.length) return typeof emptyState == "function" ? emptyState("ما بيه صور بعد", "") : "";
-    const row = a => {
-      const names = a.pg ? qdAll().filter(x => +x.pg == +a.pg).map(x => x.n) : [];
-      return `<div class="arw207 qy207"><span class="t">${a.pg ? "صفحة القيد " + A(a.pg) : E(a.title || "")}<small>${names.length ? E(names.slice(0, 4).join("، ")) + (names.length > 4 ? "…" : "") : a.pg ? "" : "بانتظار ربطها بصفحتها"}</small></span><span class="b"><button class="btn sm" onclick="av207('${a.id}')">${I("eye") || ""}فتح</button><button class="btn ghost sm" onclick="ap207('${a.id}')">${I("print")} طباعة</button><button class="btn ghost sm" onclick="aGet('${a.id}')">${I("inst")} تنزيل</button></span></div>`;
-    };
-    return `<div class="box"><h3>صور سجل القيود <span class="sub">(${A(L.length)})</span></h3>${L.map(row).join("")}</div>`;
-  }
-  on(() => {
-    if (typeof aResHTML != "function") return;
-    const _ar = aResHTML;
-    aResHTML = function () {
-      try { if (typeof AS0 != "undefined" && AS0 == "qyd" && !(typeof AQ != "undefined" && String(AQ).trim())) return qydList(); } catch (e) { }
-      return _ar.apply(this, arguments);
     };
   });
   /* العارض: صور القيود بالترتيب حسب رقم الصفحة */
