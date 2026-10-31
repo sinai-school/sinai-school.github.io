@@ -29,6 +29,9 @@ def docs(paths):
 meta = [m['p'] for m in q("select p from docs where p like 'arch/%' and h<>'DEL'")]
 M = docs(meta)
 log = {'id': REQ.get('id'), 'arch': len(M), 'meta_bytes': save('meta.json', M)}
+if REQ.get('qaid'):
+    qp = [m['p'] for m in q("select p from docs where (p like 'qaid/%' or p like 'school/q%') and h<>'DEL'")]
+    log['qaid'] = len(qp); log['qaid_bytes'] = save('qaid.json', docs(qp))
 want = REQ.get('parts')  # قائمة معرّفات الملفات، أو "all"
 if want:
     P = [m['p'] for m in q("select p from docs where p like 'archpart/%' and h<>'DEL'")]

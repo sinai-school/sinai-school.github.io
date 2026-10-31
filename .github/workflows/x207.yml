@@ -35,9 +35,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p /tmp/xout
+          cp ops/x207.json /tmp/req.json
           git checkout --orphan x207-out-tmp
           git rm -rfq --cached . >/dev/null
           cp /tmp/xout/*.json . 2>/dev/null || true
-          git add meta.json log.json parts*.json 2>/dev/null; true
+          git add meta.json log.json qaid.json parts*.json 2>/dev/null; true
           git commit -qm "نسخة الأرشيف (مشفّرة)" || true
-          git push -qf origin HEAD:x207-out
+          git push -qf origin HEAD:$(python3 -c "import json;print(json.load(open('ops/x207.json')).get('out','x207-out'))")
