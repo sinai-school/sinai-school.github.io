@@ -16,7 +16,7 @@
   on(() => {
     if (typeof refresh != "function") return;
     const _r = refresh;
-    refresh = function () { try { if (typeof AREADY != "undefined" && AREADY && arc().length) saveArc(); } catch (e) { } return _r.apply(this, arguments); };
+    refresh = function () { try { if (typeof AREADY != "undefined" && AREADY && arc().length) { saveArc(); lqSoon(); } } catch (e) { } return _r.apply(this, arguments); };
   });
   async function restoreArc() {
     try {
@@ -85,18 +85,24 @@
   /* ---------- ٣) صور «قيود اعدادية سيناء للبنين» مو بوردات: تنتقل لقسم «صور سجل القيود» ---------- */
     const isQyd = a => a && a.sec == "brd" && /قيود/.test(String(a.title || "") + " " + String(a.cls || "") + " " + String(a.name || ""));
   let MIG = 0;
+  /* رقم صفحة القيد من اسم الملف: «1 (23).jpg» = صفحة ٢٣ (سجل ١)، «Doc_2000061.jpg» = صفحة ٦١+١٩٩ (سجل ٢) — مطابق لقراءة الصور */
+  const pgOf = a => { const nm = String(a.name || ""); let m = nm.match(/^1 \((\d+)\)/); if (m) return +m[1] == 1 ? "2" : m[1]; m = nm.match(/^Doc_2000(\d+)/); if (m) return String(+m[1] + 199); return ""; };
+  W.pgOf207 = pgOf;
   function migrate() {
     if (MIG || !W.GXOWN || typeof aPut != "function") return; MIG = 1;
-    const L = arc().filter(isQyd);
-    L.forEach(a => {
+    arc().forEach(a => {
+      if (!(isQyd(a) || (a.sec == "qyd" && !a.pg))) return;
+      const b0 = [a.sec, a.title, a.pg, a.cls].join("|");
       const n = (String(a.title || "").match(/\((\d+)\)\s*$/) || [])[1] || "";
-      a.sec = "qyd"; a.yr = ""; a.cls = "سجل القيود";
-      a.n = +n || a.n || 0;
-      a.title = "سجل القيود — صورة (" + (n || "") + ")";
-      try { aPut(a); } catch (e) { }
+      a.sec = "qyd"; a.yr = ""; a.cls = "سجل القيود"; a.n = +n || a.n || 0;
+      const pg = a.pg || pgOf(a); if (pg) { a.pg = pg; a.title = "سجل القيود — صفحة " + pg; } else a.title = "سجل القيود — صورة (" + (n || "") + ")";
+      if ([a.sec, a.title, a.pg, a.cls].join("|") != b0) { try { aPut(a); } catch (e) { } }
     });
     linkQaid();
   }
+  /* كل ما تتحدث قائمة الأرشيف أو القيد: نربط اللي انضاف (مرة كل ٢٠ ثانية بالأكثر) */
+  let lqT = 0, lqAt = 0;
+  const lqSoon = () => { if (!W.GXOWN || lqT) return; lqT = setTimeout(() => { lqT = 0; if (Date.now() - lqAt < 2e4) return lqSoon(); lqAt = Date.now(); try { if (MIG) { MIG = 0; migrate(); } } catch (e) { } }, 3000); };
   W.mig207g = () => { MIG = 0; migrate(); };
 
   /* صور القيود ما إلها تبويب ولا أيقونة: بس مربوطة بصفحاتها بالقيد العام */
@@ -122,11 +128,12 @@
   });
 
   /* ---------- ٤) ربط كل صورة بصفحتها بالقيد العام: الطالب بتلك الصفحة تطلع صورته بملفه ---------- */
+  const qdAll = () => (typeof QD != "undefined" ? QD : []);
   let LQ = 0;
   function linkQaid() {
     if (!W.GXOWN || typeof QD == "undefined") return;
     try { if (typeof qSub == "function") qSub(); } catch (e) { }
-    if (!(typeof QREADY != "undefined" && QREADY) || !QD.length) { if (++LQ < 60) setTimeout(linkQaid, 5000); return; }
+    if (!(typeof QREADY != "undefined" && QREADY) || !QD.length) { if (++LQ < 60) setTimeout(linkQaid, 5000); return; } LQ = 0;
     const L = arc().filter(a => a.sec == "qyd" && a.pg);
     const ch = new Set();
     L.forEach(a => {
