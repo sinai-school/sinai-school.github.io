@@ -17,13 +17,41 @@ async function kvGet(k) { const r = await one('select v from kv where k=?', k); 
 async function kvJ(k, d) { const v = await kvGet(k); if (v == null) return d; try { return JSON.parse(v); } catch (e) { return d; } }
 const kvPut = (k, v) => run('insert into kv(k,v) values(?,?) on conflict(k) do update set v=excluded.v', k, typeof v === 'string' ? v : JSON.stringify(v));
 /* نص كبير مقسّم قطع */
+/* v207g: الصور والملفات الكبيرة (البوردات، صور القيد، صور الكتب والملاك) بقاعدة ثانية FDB — القاعدة الأساسية ما تتعبى */
+const BIGID_RE = /^d_(archpart|qaidimg|mailimg|staffphoto)\//;
+const big_ = id => !!(ENV && ENV.FDB) && BIGID_RE.test(String(id));
 async function blobPut(id, s) {
+  if (big_(id)) {
+    s = String(s); const F = ENV.FDB, st = [F.prepare('delete from chunks where id=?').bind(id)];
+    for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
+    for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
+    await run('delete from chunks where id=?', id); return;
+  }
   s = String(s); const st = [DB.prepare('delete from chunks where id=?').bind(id)];
   for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(DB.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
   for (let i = 0; i < st.length; i += 40) await DB.batch(st.slice(i, i + 40));
 }
-async function blobGet(id) { const r = await all('select d from chunks where id=? order by i', id); return r.length ? r.map(x => x.d).join('') : null; }
-const blobDel = id => run('delete from chunks where id=?', id);
+async function blobGet(id) {
+  if (big_(id)) { const r = (await ENV.FDB.prepare('select d from chunks where id=? order by i').bind(id).all()).results || []; if (r.length) return r.map(x => x.d).join(''); }
+  const r = await all('select d from chunks where id=? order by i', id); return r.length ? r.map(x => x.d).join('') : null;
+}
+const blobDel = async id => { if (big_(id)) await ENV.FDB.prepare('delete from chunks where id=?').bind(id).run(); return run('delete from chunks where id=?', id); };
+/* نقل الصور القديمة للقاعدة الثانية شوية شوية (كل دقيقة) */
+async function mvblob_(n) {
+  if (!ENV || !ENV.FDB) return { ok: 0, err: 'nofdb' };
+  try { await ENV.FDB.prepare('create table if not exists chunks(id text, i integer, d text, primary key(id,i))').run(); } catch (e) { }
+  const ids = await all("select distinct id from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%' limit ?", n || 8);
+  let moved = 0;
+  for (const { id } of ids) {
+    const rows = await all('select i,d from chunks where id=? order by i', id);
+    const F = ENV.FDB, st = [F.prepare('delete from chunks where id=?').bind(id)];
+    for (const r of rows) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, r.i, r.d));
+    for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
+    const chk = await F.prepare('select count(*) c from chunks where id=?').bind(id).first();
+    if (chk && chk.c == rows.length) { await run('delete from chunks where id=?', id); moved++; }
+  }
+  return { ok: 1, moved, left: ids.length == (n || 8) ? 'more' : 'done' };
+}
 
 /* ---------- أدوات ---------- */
 const ar2en = x => String(x || '').replace(/[٠-٩]/g, c => c.charCodeAt(0) - 1632);
@@ -371,6 +399,7 @@ async function handle(b) {
       if (b.op === 'init') return { err: 'op' };
       b.secret = await secret_();
     }
+    if (b.op === 'mvblob') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; return mvblob_(+b.n || 8); }
     if (b.op === 'imp207open') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; const until = Date.now() + 30 * 60e3; await kvPut('IMP207', String(until)); return { ok: 1, until }; }
     return admin_(b);
   }
@@ -1076,7 +1105,7 @@ async function pushNote205_(o) {
 
 /* ---------- الدخول ---------- */
 export default {
-  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
+  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await mvblob_(6); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
     DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || '';
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
