@@ -49,6 +49,7 @@ if REQ.get('imp207'):
 
 if REQ.get('sizes'):
     log['main_big_left'] = q("select count(distinct id) n, sum(length(d)) b from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%'")
+    log['arch_n'] = q("select count(*) n from docs where p like 'arch/%' and h<>'DEL'")
     log['main_all'] = q("select count(*) n, sum(length(d)) b from chunks")
 
 files = sorted(glob.glob('ops/in/*.json'))
