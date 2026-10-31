@@ -7,7 +7,7 @@ const enc = new TextEncoder(), dec = new TextDecoder();
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID().replace(/-/g, '');
 const CH = 400000;
-let DB, ENV, ORIGIN, MEMO;
+let DB, ENV, ORIGIN, MEMO, HDR_ORIGIN = '';
 
 /* ---------- قاعدة البيانات ---------- */
 const all = (q, ...a) => DB.prepare(q).bind(...a).all().then(r => r.results || []);
@@ -363,6 +363,7 @@ async function handle(b) {
   if (a === 'up') { const y = await auth_(b); if (y.err) return y; return upOne_(b); }
   if (a === 'relay') return relay_(b);
   if (a === 'exack') return exack_(b);
+  if (a === 'imp207') return imp207_(b);
   if (a === 'admin') {
     if (String(b.secret || '').startsWith('own:')) {
       const ac = await stfAcc_(String(b.secret).slice(4));
@@ -370,6 +371,7 @@ async function handle(b) {
       if (b.op === 'init') return { err: 'op' };
       b.secret = await secret_();
     }
+    if (b.op === 'imp207open') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; const until = Date.now() + 30 * 60e3; await kvPut('IMP207', String(until)); return { ok: 1, until }; }
     return admin_(b);
   }
   if (a === 'boot') return boot_(b);
@@ -1076,7 +1078,7 @@ async function pushNote205_(o) {
 export default {
   async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
-    DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin;
+    DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || '';
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
     try {
       if (req.method === 'GET') {
@@ -1156,4 +1158,25 @@ async function tstAdm206_(b) {
   if (b.reset) { delete X.s; delete X.t; }
   await tstSave206_(X);
   return { ok: 1, x: X, ps: await tstPS206_(), pt: await tstPT206_() };
+}
+
+/* ---------- v207: استيراد بوردات السادس من OneDrive للأرشيف ----------
+   مدير النظام يفتح نافذة استيراد (٣٠ دقيقة، عملية imp207open)، وصفحة OneDrive (بحساب المدرسة) ترفع الصور قطعة قطعة.
+   يقبل بس من onedrive.live.com وبس داخل النافذة، وبس ملفات الأرشيف (arch/ و archpart/). */
+async function imp207_(b) {
+  const until = +(await kvGet('IMP207')) || 0;
+  if (Date.now() > until) return { err: 'closed' };
+  if (!/^https:\/\/onedrive\.live\.com$/.test(HDR_ORIGIN)) return { err: 'origin' };
+  const id = String(b.id || '');
+  if (!/^[a-z0-9]{8,40}$/.test(id)) return { err: 'id' };
+  if (b.part != null) {
+    const i = +b.part, d = String(b.d || '');
+    if (!(i >= 0 && i < 2000) || !d || d.length > 300000 || !/^[A-Za-z0-9+/=]+$/.test(d)) return { err: 'data' };
+    const t = canon_({ d }); const r = await dput_('archpart/' + id + '_' + i, t, syH_(t), 'o:imp207', null);
+    return { ok: 1, rev: r.rev };
+  }
+  const m = b.meta || {};
+  const o = { at: String(m.at || now()), at2: Date.now() + '_' + id.slice(0, 8), cls: String(m.cls || '').slice(0, 80), idx: String(m.idx || '').slice(0, 200000), name: String(m.name || '').slice(0, 200), notes: String(m.notes || '').slice(0, 300), parts: +m.parts || 1, sec: m.sec === 'rec' ? 'rec' : 'brd', size: +m.size || 0, src: 'db', title: String(m.title || '').slice(0, 200), type: /^(image\/(jpeg|png)|application\/pdf)$/.test(m.type) ? m.type : 'image/jpeg', yr: String(m.yr || '').slice(0, 20) };
+  const t = canon_(o); const r = await dput_('arch/' + id, t, syH_(t), 'o:imp207', null);
+  return { ok: 1, rev: r.rev };
 }
