@@ -229,6 +229,53 @@ ${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "الس�
 .arw207:last-child{border-bottom:0}.arw207 .t{font-weight:700;font-size:15px}.arw207 .b{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .sel207{position:sticky;top:0;z-index:3;background:var(--bg,#f5f6f4);padding:6px 0 8px}`;
 
+  /* ---------- البحث باسم الطالب داخل البوردات: يطلع اسمه ورقمه الامتحاني ودرجاته (من البوردات المقروءة) ---------- */
+  let BX = null, BXS = 0;
+  function bxSub() {
+    if (BXS || typeof DB == "undefined" || !DB) return; BXS = 1;
+    try { DB.collection("brdx").onSnapshot(qs => { BX = qs.docs.map(d => ({ id: d.id, ...(d.data() || {}) })); try { const e = D.getElementById("ares"); if (e && typeof aResHTML == "function") e.innerHTML = aResHTML(); } catch (x) { } }); } catch (e) { }
+  }
+  const NZ = t => String(t || "").replace(/[ًٌٍَُِّْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/\s+/g, " ").trim().replace(/(^|\s)(عبد|ابو)\s+/g, "$1$2");
+  function bxFind(q) {
+    if (!BX) return [];
+    const T = NZ(q).split(" ").filter(Boolean); if (!T.length) return [];
+    const num = T.length == 1 && /^\d{4,}$/.test(T[0].replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)));
+    const out = [];
+    BX.forEach(b => (b.rows || []).forEach(r => {
+      const n = NZ(r[2]).split(" ");
+      const ok = num ? String(r[1]).endsWith(T[0].replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c))) : T.every((t, i) => n[i] && (n[i] == t || (i == T.length - 1 && n[i].startsWith(t))));
+      if (ok) out.push({ b, r });
+    }));
+    return out.sort((x, y) => String(y.b.yr).localeCompare(String(x.b.yr)));
+  }
+  W.bxFind207 = bxFind;
+  const bxCard = ({ b, r }) => {
+    const g = r[3] || [], pass = /ناجح/.test(r[4]);
+    return `<div class="bx207"><div class="h"><b>${E(r[2])}</b><span class="chip ${pass ? "good" : "bad"}">${E(r[4] || "")}</span></div>
+<div class="m">الرقم الامتحاني: <b dir="ltr">${A(r[1])}</b> · السادس ${E(b.br)} · ${E(b.round)} · ${A(E(b.yr))}</div>
+<div class="g">${(b.cols || []).map((c, i) => { const v = g[i] == null ? "" : String(g[i]); const low = /^\d+$/.test(v) && +v < 50 || /صفر|^م$|ست/.test(v); return `<div><span>${E(c)}</span><b style="${low ? "color:#b00020" : ""}">${E(A(v))}</b></div>`; }).join("")}<div class="s"><span>المجموع</span><b>${A(r[5] || 0)}</b></div><div class="s"><span>المعدل</span><b>${A(r[6] || 0)}</b></div></div></div>`;
+  };
+  on(() => {
+    if (typeof aResHTML != "function") return;
+    const _ar = aResHTML;
+    aResHTML = function () {
+      let h = _ar.apply(this, arguments);
+      try {
+        bxSub();
+        const q = typeof AQ != "undefined" ? String(AQ).trim() : "";
+        if (q && typeof AS0 != "undefined" && AS0 == "brd") {
+          const R = bxFind(q);
+          const box = `<div class="box hl"><h3>${I("search")} نتيجة البحث بالبوردات (${A(R.length)})</h3>${R.length ? R.slice(0, 30).map(bxCard).join("") : `<p class="muted" style="margin:0">ما لكيت هذا الاسم بالبوردات المقروءة لحد هسه${BX ? " (" + A(BX.length) + " بورد مقروء)" : ""}.</p>`}</div>`;
+          h = box + h.replace(/<div class="box empty">[\s\S]*?<\/div>/, "");
+        }
+      } catch (e) { console.warn(e); }
+      return h;
+    };
+  });
+  st.textContent += `.bx207{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:var(--surface,#fff)}
+.bx207 .h{display:flex;justify-content:space-between;align-items:center;gap:8px}.bx207 .h b{font-size:16px}.bx207 .m{font-size:13.5px;margin:4px 0 6px;color:var(--muted,#555)}
+.bx207 .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}.bx207 .g>div{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:14px}.bx207 .g b{font-size:16px}.bx207 .g .s{background:var(--sunk,#f2f4f1)}`;
+
   /* aOpenBtn: الـPDF بالأرشيف يفتح بالعارض هم */
   on(() => {
     if (typeof aOpenBtn != "function") return;
