@@ -20,9 +20,14 @@ def save(name, obj):
     json.dump({'ek': base64.b64encode(pub.encrypt(k, oaep)).decode(), 'iv': base64.b64encode(iv).decode(), 'ct': base64.b64encode(AESGCM(k).encrypt(iv, raw, None)).decode()}, open(os.path.join(OUT, name), 'w'))
     return len(raw)
 ACC = os.environ.get('CLOUDFLARE_ACCOUNT_ID', ''); TOK = os.environ.get('CLOUDFLARE_API_TOKEN', '')
-DBID = [l.split('"')[1] for l in open('cf/wrangler.toml') if l.startswith('database_id')][0]
+def dbs():
+    rq = urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{ACC}/d1/database?per_page=50', headers={'Authorization': 'Bearer ' + TOK})
+    with urllib.request.urlopen(rq, timeout=60) as r: L = json.loads(r.read().decode())['result']
+    m = {d['name']: d['uuid'] for d in L}
+    return [m[n] for n in ('sinai', 'sinai_files', 'sinai_files2') if n in m]
 import urllib.request, concurrent.futures
-def hq(sql, params):
+DBS = None
+def hq(sql, params, DBID):
     body = json.dumps({'sql': sql, 'params': params}).encode()
     for t in range(5):
         try:
@@ -34,9 +39,12 @@ def hq(sql, params):
     print('hq-fail'); return None
 FAIL = []
 def one(p):
-    r = hq('select i,d from chunks where id=? order by i', ['d_' + p])
-    if r is None: FAIL.append(p); return p, None
-    return p, ''.join(x['d'] for x in r)
+    global DBS
+    if DBS is None: DBS = dbs()
+    for D in DBS:
+        r = hq('select i,d from chunks where id=? order by i', ['d_' + p], D)
+        if r: return p, ''.join(x['d'] for x in r)
+    FAIL.append(p); return p, None
 def docs(paths):
     out = {}
     with concurrent.futures.ThreadPoolExecutor(6) as ex:
