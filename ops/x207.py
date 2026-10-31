@@ -36,7 +36,7 @@ if want:
     P.sort(); n = 0; buf = {}; sz = 0
     for i in range(0, len(P), 40):
         buf.update(docs(P[i:i + 40])); sz = sum(len(v) for v in buf.values())
-        if sz > 40e6: save('parts%03d.json' % n, buf); n += 1; buf = {}
+        if sz > 22e6: save('parts%03d.json' % n, buf); n += 1; buf = {}
     if buf: save('parts%03d.json' % n, buf); n += 1
     log['parts'] = len(P); log['files'] = n
 json.dump(log, open(os.path.join(OUT, 'log.json'), 'w')); print(json.dumps(log))

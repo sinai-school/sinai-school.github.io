@@ -5,7 +5,7 @@ on:
     paths: ['ops/x207.json']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   x:
     runs-on: ubuntu-latest
@@ -29,9 +29,15 @@ jobs:
           printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n' "$DBID" > wrangler.toml
           cd ..
           python3 ops/x207.py /tmp/xout
-      - uses: actions/upload-artifact@v4
+      - name: Save
         if: always()
-        with:
-          name: x207
-          path: /tmp/xout
-          retention-days: 1
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p /tmp/xout
+          git checkout --orphan x207-out-tmp
+          git rm -rfq --cached . >/dev/null
+          cp /tmp/xout/*.json . 2>/dev/null || true
+          git add meta.json log.json parts*.json 2>/dev/null; true
+          git commit -qm "نسخة الأرشيف (مشفّرة)" || true
+          git push -qf origin HEAD:x207-out
