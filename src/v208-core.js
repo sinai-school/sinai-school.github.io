@@ -67,58 +67,98 @@
   W.merge208 = merge3;
   let ACT0 = Date.now();
   ["pointerdown", "keydown", "touchstart"].forEach(e => addEventListener(e, () => { ACT0 = Date.now(); }, { passive: true, capture: true }));
+  const PROT = /^(school\/(config|timetable|students)|qaid\/c\d+)$/;
+  const qpOff = p => { if (/^qaid\//.test(p) && typeof QPEND != "undefined") delete QPEND[p.slice(5)]; };
+  /* الحفظ الأساسي: base + sid، وإذا الخادم عنده أحدث → دمج ثلاثي وإعادة حفظ (بدون رسائل) */
+  async function putCore(p, n, base, baseD) {
+    GX.pend[p] = (GX.pend[p] || 0) + 1;
+    try {
+      for (let tries = 0; ; tries++) {
+        let body;
+        if (n == null) body = { op: "put", p, del: 1 };
+        else { const t = canon(n); body = { op: "put", p, d: t, h: syH(t) }; }
+        body.base = base; body.sid = SID;
+        const r = await gxCall(body);
+        if (r && (r.err == "stale" || r.err == "upd") && tries < 4) {
+          const s = await gxCall({ op: "one", p });
+          if (!s || !s.ok) throw gxErr("unavailable", "one");
+          const theirs = s.del ? null : JSON.parse(s.d);
+          base = +s.rev || 0;
+          if (baseD === undefined || n == null || theirs == null) {
+            GX.M.set(p, { d: theirs, rev: base }); GX.ack[p] = Math.max(GX.ack[p] || 0, base); qpOff(p); gxNotify([p]);
+            return;
+          }
+          n = merge3(baseD, n, theirs); baseD = theirs;
+          continue;
+        }
+        if (!r || !r.ok) {
+          if (r && (r.err == "ro" || r.err == "path" || r.err == "data" || r.err == "big")) throw gxErr("invalid_argument", r.err);
+          throw gxErr("unavailable", r && r.err || "bad");
+        }
+        const rev = +r.rev || 0;
+        GX.ack[p] = Math.max(GX.ack[p] || 0, rev);
+        if (tries) { GX.M.set(p, { d: n, rev }); qpOff(p); gxNotify([p]); }
+        else { const e = GX.M.get(p); if (e) e.rev = Math.max(e.rev || 0, rev); }
+        if (r.mod) await reload208(p);
+        return;
+      }
+    } finally { GX.pend[p]--; }
+  }
+  /* طابور الحفظ بدون إنترنت (v120) — ينحفظ وياه النسخة الأصلية حتى الدمج يشتغل لما يرجع الإنترنت */
+  const QK = () => "gxq_" + GX.u;
+  async function qAdd(p, n, base, baseD) {
+    GXQ120 = GXQ120.filter(x => x.p != p);
+    const old = null;
+    GXQ120.push({ p, d: n, b: baseD === undefined ? null : baseD, r: base, v: 208 });
+    try { gxPin120(p); } catch (e) { }
+    await IDB120.set(QK(), GXQ120); try { gxSave120(); gxQMsg120(); } catch (e) { }
+  }
   on(() => {
     if (typeof gxPut != "function") return;
     gxPut = async function (p, d) {
       if (!SY_RE.test(p)) throw gxErr("invalid_argument", "path");
       if (RO) throw gxErr("invalid_argument", "ro");
-      const prev = GX.M.get(p); let base = prev ? (+prev.rev || 0) : 0;
-      const baseD = prev && prev.d !== undefined ? prev.d : undefined;
-      let n = d == null ? null : syNorm(d);
+      const prev = GX.M.get(p), base = prev ? (+prev.rev || 0) : 0;
+      const q0 = (typeof GXQ120 != "undefined") && GXQ120.find(x => x.p == p);
+      /* إذا الملف أصلاً بالطابور: نحتفظ بالنسخة الأصلية الأولى */
+      const baseD = q0 && q0.v == 208 ? (q0.b == null ? undefined : q0.b) : (prev && prev.d !== undefined ? prev.d : undefined);
+      const base2 = q0 && q0.v == 208 ? q0.r : base;
+      const n = d == null ? null : syNorm(d);
       if (n != null && new TextEncoder().encode(canon(n)).length > 256 * 1024) throw gxErr("invalid_argument", "big");
-      GX.M.set(p, { d: n, rev: base });
-      gxNotify([p]); GX.pend[p] = (GX.pend[p] || 0) + 1;
-      try {
-        for (let tries = 0; ; tries++) {
-          let body;
-          if (n == null) body = { op: "put", p, del: 1 };
-          else { const t = canon(n); body = { op: "put", p, d: t, h: syH(t) }; }
-          body.base = base; body.sid = SID;
-          const r = await gxCall(body);
-          if (r && (r.err == "stale" || r.err == "upd") && tries < 4) {
-            const s = await gxCall({ op: "one", p });
-            if (!s || !s.ok) throw gxErr("unavailable", "one");
-            const theirs = s.del ? null : JSON.parse(s.d);
-            base = +s.rev || 0;
-            if (baseD === undefined || n == null || theirs == null) {
-              /* ما نعرف شنو تغيّر — نخلي نسخة الخادم */
-              GX.M.set(p, { d: theirs, rev: base }); GX.ack[p] = Math.max(GX.ack[p] || 0, base);
-              if (/^qaid\//.test(p) && typeof QPEND != "undefined") delete QPEND[p.slice(5)];
-              gxNotify([p]);
-              if (Date.now() - ACT0 < 8000) TS("انحفظ تعديل أحدث من جهاز ثاني وتحدّثت البيانات — إذا تعديلك الأخير ما ظهر سوّه مرة ثانية.", "err");
-              return;
-            }
-            n = merge3(baseD, n, theirs);
-            continue;
-          }
-          if (!r || !r.ok) {
-            if (r && (r.err == "ro" || r.err == "path" || r.err == "data" || r.err == "big")) { GX.rev = 0; setTimeout(gxPoll, 50); throw gxErr("invalid_argument", r.err); }
-            throw gxErr("unavailable", r && r.err || "bad");
-          }
-          GX.ack[p] = Math.max(GX.ack[p] || 0, +r.rev || 0);
-          if (tries) {
-            /* انحفظت النسخة المدموجة — الشاشة تاخذها (فيها تعديلك + تعديل الجهاز الثاني) */
-            GX.M.set(p, { d: n, rev: +r.rev || 0 });
-            if (/^qaid\//.test(p) && typeof QPEND != "undefined") delete QPEND[p.slice(5)];
-            gxNotify([p]);
-          } else { const e = GX.M.get(p); if (e) e.rev = Math.max(e.rev || 0, +r.rev || 0); }
-          if (r.mod) await reload208(p);
-          setSync("ok", "متصل — محفوظ");
-          return;
-        }
-      } catch (e) { if (e && e.code == "unavailable") { GX.rev = 0; setTimeout(gxPoll, 4e3); } throw e; }
-      finally { GX.pend[p]--; }
+      GX.M.set(p, { d: n, rev: base }); gxNotify([p]);
+      if (q0 || (typeof navigator != "undefined" && navigator.onLine === false)) { await qAdd(p, n, base2, baseD); return; }
+      try { await putCore(p, n, base, baseD); setSync("ok", "متصل — محفوظ"); }
+      catch (e) {
+        if (e && e.code == "unavailable" && e.message != "auth" && GX.on && typeof GXQ120 != "undefined") { await qAdd(p, n, base, baseD); setTimeout(() => { try { gxFlush120(); } catch (x) { } }, 5000); return; }
+        throw e;
+      }
     };
+    /* إرسال الطابور: بالدمج. التعديل القديم (قبل v208) على الجدول/الطلاب/القيد ما نعرف أصله فما ينكتب فوق الأحدث */
+    if (typeof gxFlush120 == "function") gxFlush120 = async function () {
+      if (GXF120 || !GX.on || !GXQ120.length || navigator.onLine === false) return;
+      GXF120 = 1; let n = 0;
+      try {
+        while (GXQ120.length) {
+          const x = GXQ120[0];
+          if (x.v == 208 || !PROT.test(x.p)) {
+            try { await putCore(x.p, x.d, x.v == 208 ? x.r : ((GX.M.get(x.p) || {}).rev || 0), x.v == 208 ? (x.b == null ? undefined : x.b) : undefined); n++; }
+            catch (e) { if (!(e && e.code == "invalid_argument")) break; }
+          }
+          GXQ120.shift(); try { gxUnpin120(x.p); } catch (e) { }
+          await IDB120.set(QK(), GXQ120);
+          if (PROT.test(x.p) && x.v != 208) { try { GX.ack[x.p] = 0; GX.rev = 0; } catch (e) { } }
+        }
+        if (!GXQ120.length) setSync("ok", "متصل — محفوظ"); else gxQMsg120();
+      } finally { GXF120 = 0; }
+    };
+    /* أول التحميل: تعديل قديم (قبل v208) على الجدول/الطلاب/القيد ما يتعرض بدل بيانات الخادم */
+    if (typeof gxQLoad120 == "function") {
+      const _ql = gxQLoad120;
+      gxQLoad120 = async function () {
+        try { const L = (await IDB120.get(QK())) || []; const K = Array.isArray(L) ? L.filter(x => x && (x.v == 208 || !PROT.test(x.p))) : []; if (!Array.isArray(L) || K.length != L.length) await IDB120.set(QK(), K); } catch (e) { }
+        return _ql.apply(this, arguments);
+      };
+    }
   });
 
   /* ---------- (٢) الجدول الورقي ما يختفي ---------- */
