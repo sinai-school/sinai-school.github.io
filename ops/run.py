@@ -53,6 +53,7 @@ if REQ.get('sizes'):
     log['main_all'] = q("select count(*) n, sum(length(d)) b from chunks")
 
 files = [] if REQ.get('noapply') else sorted(glob.glob('ops/in/*.json'))
+if REQ.get('only'): files = [f for f in files if os.path.basename(f) in REQ['only']]
 if files:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
     pk = json.loads(kv['PK']); sec = kv['SECRET']; j = pk['prv']

@@ -136,9 +136,11 @@
     if (!(typeof QREADY != "undefined" && QREADY) || !QD.length) { if (++LQ < 60) setTimeout(linkQaid, 5000); return; } LQ = 0;
     const L = arc().filter(a => a.sec == "qyd" && a.pg);
     const ch = new Set();
+    /* v208: فهرس حسب رقم الصفحة بدل المرور على كل القيد لكل صورة (چان يعلّك الجهاز) */
+    const byPg = new Map(); qdAll().forEach(x => { const k = +x.pg; if (!k) return; let l = byPg.get(k); if (!l) byPg.set(k, l = []); l.push(x); });
     L.forEach(a => {
       const im = "arch:" + a.id;
-      qdAll().forEach(x => { if (+x.pg == +a.pg && x.im != im && (!x.im || /^arch:/.test(x.im) || a.force)) { x.im = im; ch.add(x.c); } });
+      (byPg.get(+a.pg) || []).forEach(x => { if (x.im != im && (!x.im || /^arch:/.test(x.im) || a.force)) { x.im = im; ch.add(x.c); } });
     });
     if (ch.size && typeof qSaveChunk == "function") { ch.forEach(c => { try { qSaveChunk(c); } catch (e) { } }); }
   }

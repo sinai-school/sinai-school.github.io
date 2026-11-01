@@ -686,11 +686,62 @@ async function stf_(b) {
     if (d.length > 4e6) return { err: 'big' };
     if (p === 'school/roles') { const k = await rolesFromDoc_(d); if (k < 1) return { err: 'data' }; }
     if (p === 'school/custom' && !a.own) return { err: 'role' };
-    const rr = await dput_(p, d, String(b.h || ''), 's:' + a.u, null);
+    /* v208: ما ينكتب فوق ملف أحدث من نسخة الجهاز (جهاز بنسخة قديمة چان يرجّع الجدول والقيد للقديم) */
+    const g8 = await guard208_(p, b, d);
+    if (g8.err) return g8;
+    const rr = await dput_(p, g8.d, g8.d === d ? String(b.h || '') : g8.h, 's:' + a.u, null);
+    if (PROT208_RE.test(p)) await kvPut('ds_' + p, String(b.sid || ''));
     if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
-    return { ok: 1, rev: rr.rev };
+    return g8.d === d ? { ok: 1, rev: rr.rev } : { ok: 1, rev: rr.rev, mod: 1 };
   }
   return { err: 'op' };
+}
+/* ---------- v208: حماية الجدول والقيد العام من النسخ القديمة ----------
+   (١) ملفات PROT208: الجهاز يرسل base (رقم نسخة الملف اللي عنده) و sid (جلسته). إذا الملف بالخادم انحفظ بعدها من جلسة ثانية → يرفض (stale)
+       والجهاز يسحب الأحدث. النسخة القديمة من التطبيق (بدون base) ما تكدر تكتب هالملفات.
+   (٢) سجل تصحيحات القيد school/qfix205 ما يتصغّر أبداً (يندمج).
+   (٣) قرارات القيد العام (QLK): كل اسم انصحح أو انختار يبقى بالخادم، وأي حفظ لملف qaid يرجّعه للقرار — ما يرجع أبداً. */
+const PROT208_RE = /^(school\/(config|timetable|students)|qaid\/c\d+)$/;
+async function qlk208_() {
+  let Q = await kvJ('QLK208', null);
+  if (Q) return Q;
+  Q = {};
+  try {
+    /* أول مرة: من سجل التصحيحات — بس القرار اللي بعده اسم الطالب بالنظام نفسه (إذا انختار بعدين اسم القيد، القرار القديم ما ينفرض) */
+    const S = {}; try { const es = await dmeta_('school/students'); let so = JSON.parse((await dget_(es)) || '{}'); if (so.json) so = JSON.parse(so.json); for (const x of (so.list || [])) S[x.id] = x.n; } catch (e) { }
+    const e = await dmeta_('school/qfix205'); const o = JSON.parse((await dget_(e)) || '{}');
+    for (const x of (o.list || [])) if (x.why !== 'تلقائي' && S[x.sid] === x.nw) qlkAdd208_(Q, x.i, x.nw, x.why === 'البطاقة' ? 'البطاقة' : 'اسم الصف', Date.parse(x.at) || 0);
+  } catch (e) { }
+  await kvPut('QLK208', Q); return Q;
+}
+function qlkAdd208_(Q, i, n, lk, t) { if (!i || !n) return 0; const o = Q[i]; if (o && o.t >= t) return 0; Q[i] = { n: String(n), lk: String(lk || 'يدوي'), t: +t || 0 }; return 1; }
+async function guard208_(p, b, d) {
+  if (p === 'school/qfix205') {
+    let inc = []; try { inc = JSON.parse(d).list || []; } catch (e) { }
+    let old = []; try { const e = await dmeta_(p); old = JSON.parse((await dget_(e)) || '{}').list || []; } catch (e) { }
+    const by0 = {}; for (const x of old) if (x && x.i) by0[x.i + '|' + x.at] = 1;
+    const by = {}; for (const x of old.concat(inc)) if (x && x.i) by[x.i + '|' + x.at] = x;
+    const L = Object.values(by).sort((a, c) => String(a.at).localeCompare(String(c.at))).slice(-3000);
+    const Q = await qlk208_(); let ch = 0;
+    for (const x of inc) if (x && x.why !== 'تلقائي' && !by0[x.i + '|' + x.at]) ch += qlkAdd208_(Q, x.i, x.nw, x.why === 'البطاقة' ? 'البطاقة' : 'اسم الصف', Date.parse(x.at) || 0);
+    if (ch) await kvPut('QLK208', Q);
+    const t = canon_({ list: L }); return { d: t, h: syH_(t) };
+  }
+  if (!PROT208_RE.test(p)) return { d };
+  const e = await dmeta_(p);
+  if (b.base === undefined || b.base === null) { if (e && e.h !== 'DEL') return { err: 'upd' }; }
+  else if (e && e.h !== 'DEL' && +b.base < e.rev && (await kvGet('ds_' + p)) !== String(b.sid || '')) return { err: 'stale', rev: e.rev };
+  if (!/^qaid\//.test(p)) return { d };
+  let o; try { o = JSON.parse(d); } catch (x) { return { d }; }
+  const Q = await qlk208_(); let ch = 0, mod = 0;
+  for (const r of (o.list || [])) {
+    if (r && r.lk && r.lkt) ch += qlkAdd208_(Q, r.i, r.n, r.lk, +r.lkt);
+    const k = r && Q[r.i];
+    if (k && (r.n !== k.n || r.lk !== k.lk || +r.lkt !== k.t)) { r.n = k.n; r.lk = k.lk; r.lkt = k.t; mod = 1; }
+  }
+  if (ch) await kvPut('QLK208', Q);
+  if (!mod) return { d };
+  const t = canon_(o); return { d: t, h: syH_(t) };
 }
 async function osync_(b) {
   if (b.roles) await dput_('__roles', JSON.stringify({ list: b.roles }), String(b.rh || ''), 'o', '');
@@ -1013,6 +1064,12 @@ async function snapOk205_(b, a) {
     if (JSON.stringify(n.sn) !== JSON.stringify(o.sn) || !Array.isArray(n.cells) || n.cells.length !== o.cells.length) return false;
     const cnt = x => (x.stu || []).reduce((t, l) => t + (l || []).length, 0);
     if (cnt(n) < cnt(o) * 0.97 || (n.tch || []).length < (o.tch || []).length * 0.9) return false;
+    /* v208: موظف ما يغيّر الجدول بالبوابة إلا إذا ملف الجدول أو بيانات المدرسين انحفظت بعد آخر نشر (نسخة جهازه مو قديمة) */
+    if (JSON.stringify(n.cells) !== JSON.stringify(o.cells)) {
+      const at = Date.parse(o0.at || o.at || '') || 0;
+      const t1 = await dmeta_('school/timetable'), t2 = await dmeta_('school/config');
+      if (!((t1 && +t1.at > at) || (t2 && +t2.at > at))) return false;
+    }
     return true;
   } catch (e) { return false; }
 }
@@ -1138,7 +1195,11 @@ async function ttNote206_(oz, nz) {
   if (!oz) return;
   const a = await snapJ206_(oz), b = await snapJ206_(nz);
   if (!a || !b || TT206(a) === TT206(b)) return;
+  /* v208: التبليغ بس إذا ملف الجدول نفسه انحفظ قبل شوية (تعديل حقيقي) — مو لأن جهاز بنسخة قديمة نشر البوابة */
+  const te = await dmeta_('school/timetable');
+  if (!te || Date.now() - (+te.at || 0) > 30 * 60e3) return;
   const last = Date.parse((await kvGet('TTN206')) || '') || 0;
+  if (last >= (+te.at || 0)) return;
   if (Date.now() - last < 20 * 60e3) return;
   await kvPut('TTN206', now());
   await noteAdd_({ id: 'tt' + uid().slice(0, 10), scope: 'all', target: '', from: 'إدارة المدرسة', title: 'تم تحديث جدول الدروس الأسبوعي', body: 'صار تعديل على جدول الدروس الأسبوعي — افتح «جدولي» حتى تشوف الجدول الجديد.', date: now(), cat: 'adm', files: '' });
