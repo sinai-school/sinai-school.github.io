@@ -52,7 +52,7 @@ if REQ.get('sizes'):
     log['arch_n'] = q("select count(*) n from docs where p like 'arch/%' and h<>'DEL'")
     log['main_all'] = q("select count(*) n, sum(length(d)) b from chunks")
 
-files = sorted(glob.glob('ops/in/*.json'))
+files = [] if REQ.get('noapply') else sorted(glob.glob('ops/in/*.json'))
 if files:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
     pk = json.loads(kv['PK']); sec = kv['SECRET']; j = pk['prv']
