@@ -28,35 +28,94 @@
     } catch (e) { }
   }
   W.reload208 = reload208;
+  /* دمج ثلاثي: ينطبق على نسخة الخادم بس اللي هذا الجهاز غيّره فعلاً (مقارنة بالنسخة اللي كان شايفها).
+     جهاز قديم ما غيّر بيانات المدرسين؟ يعني بياناته القديمة ما تنكتب فوق الجديدة — وتعديلك إنت ما يضيع ولا تطلع رسالة. */
+  const C_ = v => canon(v === undefined ? null : v);
+  const idOf = a => Array.isArray(a) && a.length && a.every(x => x && typeof x == "object" && !Array.isArray(x) && (x.id != null || x.i != null)) ? (x => x.id != null ? "id:" + x.id : "i:" + x.i) : null;
+  function merge3(b, m, t) {
+    const cb = C_(b), cm = C_(m);
+    if (cm == cb) return t;
+    const ct = C_(t);
+    if (ct == cb || ct == cm) return m;
+    if (typeof b == "string" && typeof m == "string" && typeof t == "string" && /^[\[{]/.test(m)) {
+      try { return JSON.stringify(merge3(JSON.parse(b), JSON.parse(m), JSON.parse(t))); } catch (e) { return m; }
+    }
+    const k = idOf(m) || idOf(t);
+    if (k && Array.isArray(b) && Array.isArray(m) && Array.isArray(t)) {
+      const B = new Map(b.map(x => [k(x), x])), M = new Map(m.map(x => [k(x), x]));
+      const out = [];
+      for (const x of t) {
+        const id = k(x);
+        if (M.has(id)) out.push(B.has(id) ? merge3(B.get(id), M.get(id), x) : M.get(id));
+        else if (!B.has(id)) out.push(x);          /* جديد من الجهاز الثاني */
+        /* انحذف بهذا الجهاز → ما ينضاف */
+      }
+      const T0 = new Set(t.map(k));
+      for (const x of m) { const id = k(x); if (!T0.has(id) && !B.has(id)) out.push(x); }  /* جديد من هذا الجهاز */
+      return out;
+    }
+    if (b && m && t && typeof b == "object" && typeof m == "object" && typeof t == "object" && !Array.isArray(b) && !Array.isArray(m) && !Array.isArray(t)) {
+      const o = {};
+      for (const key of new Set([...Object.keys(t), ...Object.keys(m), ...Object.keys(b)])) {
+        const v = merge3(b[key], m[key], t[key]);
+        if (v !== undefined) o[key] = v;
+      }
+      return o;
+    }
+    return m;
+  }
+  W.merge208 = merge3;
+  let ACT0 = Date.now();
+  ["pointerdown", "keydown", "touchstart"].forEach(e => addEventListener(e, () => { ACT0 = Date.now(); }, { passive: true, capture: true }));
   on(() => {
     if (typeof gxPut != "function") return;
     gxPut = async function (p, d) {
       if (!SY_RE.test(p)) throw gxErr("invalid_argument", "path");
       if (RO) throw gxErr("invalid_argument", "ro");
-      const prev = GX.M.get(p), base = prev ? (+prev.rev || 0) : 0; let body;
-      if (d == null) { GX.M.set(p, { d: null, rev: base }); body = { op: "put", p, del: 1 }; }
-      else {
-        const n = syNorm(d), t = canon(n);
-        if (new TextEncoder().encode(t).length > 256 * 1024) throw gxErr("invalid_argument", "big");
-        GX.M.set(p, { d: n, rev: base }); body = { op: "put", p, d: t, h: syH(t) };
-      }
-      body.base = base; body.sid = SID;
+      const prev = GX.M.get(p); let base = prev ? (+prev.rev || 0) : 0;
+      const baseD = prev && prev.d !== undefined ? prev.d : undefined;
+      let n = d == null ? null : syNorm(d);
+      if (n != null && new TextEncoder().encode(canon(n)).length > 256 * 1024) throw gxErr("invalid_argument", "big");
+      GX.M.set(p, { d: n, rev: base });
       gxNotify([p]); GX.pend[p] = (GX.pend[p] || 0) + 1;
       try {
-        const r = await gxCall(body);
-        if (r && (r.err == "stale" || r.err == "upd")) {
-          await reload208(p);
-          TS("انحفظ تعديل أحدث من جهاز ثاني — تحدّثت البيانات عندك. إذا تعديلك الأخير ما ظهر، سوّه مرة ثانية.", "err");
+        for (let tries = 0; ; tries++) {
+          let body;
+          if (n == null) body = { op: "put", p, del: 1 };
+          else { const t = canon(n); body = { op: "put", p, d: t, h: syH(t) }; }
+          body.base = base; body.sid = SID;
+          const r = await gxCall(body);
+          if (r && (r.err == "stale" || r.err == "upd") && tries < 4) {
+            const s = await gxCall({ op: "one", p });
+            if (!s || !s.ok) throw gxErr("unavailable", "one");
+            const theirs = s.del ? null : JSON.parse(s.d);
+            base = +s.rev || 0;
+            if (baseD === undefined || n == null || theirs == null) {
+              /* ما نعرف شنو تغيّر — نخلي نسخة الخادم */
+              GX.M.set(p, { d: theirs, rev: base }); GX.ack[p] = Math.max(GX.ack[p] || 0, base);
+              if (/^qaid\//.test(p) && typeof QPEND != "undefined") delete QPEND[p.slice(5)];
+              gxNotify([p]);
+              if (Date.now() - ACT0 < 8000) TS("انحفظ تعديل أحدث من جهاز ثاني وتحدّثت البيانات — إذا تعديلك الأخير ما ظهر سوّه مرة ثانية.", "err");
+              return;
+            }
+            n = merge3(baseD, n, theirs);
+            continue;
+          }
+          if (!r || !r.ok) {
+            if (r && (r.err == "ro" || r.err == "path" || r.err == "data" || r.err == "big")) { GX.rev = 0; setTimeout(gxPoll, 50); throw gxErr("invalid_argument", r.err); }
+            throw gxErr("unavailable", r && r.err || "bad");
+          }
+          GX.ack[p] = Math.max(GX.ack[p] || 0, +r.rev || 0);
+          if (tries) {
+            /* انحفظت النسخة المدموجة — الشاشة تاخذها (فيها تعديلك + تعديل الجهاز الثاني) */
+            GX.M.set(p, { d: n, rev: +r.rev || 0 });
+            if (/^qaid\//.test(p) && typeof QPEND != "undefined") delete QPEND[p.slice(5)];
+            gxNotify([p]);
+          } else { const e = GX.M.get(p); if (e) e.rev = Math.max(e.rev || 0, +r.rev || 0); }
+          if (r.mod) await reload208(p);
+          setSync("ok", "متصل — محفوظ");
           return;
         }
-        if (!r || !r.ok) {
-          if (r && (r.err == "ro" || r.err == "path" || r.err == "data" || r.err == "big")) { GX.rev = 0; setTimeout(gxPoll, 50); throw gxErr("invalid_argument", r.err); }
-          throw gxErr("unavailable", r && r.err || "bad");
-        }
-        GX.ack[p] = Math.max(GX.ack[p] || 0, +r.rev || 0);
-        const e = GX.M.get(p); if (e) e.rev = Math.max(e.rev || 0, +r.rev || 0);
-        if (r.mod) await reload208(p);
-        setSync("ok", "متصل — محفوظ");
       } catch (e) { if (e && e.code == "unavailable") { GX.rev = 0; setTimeout(gxPoll, 4e3); } throw e; }
       finally { GX.pend[p]--; }
     };
