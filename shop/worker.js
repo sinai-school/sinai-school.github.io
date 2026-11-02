@@ -315,13 +315,31 @@ async function drainImgs(env, n) {
   return ok;
 }
 
+/* v210: كثير منشورات تكتب «للاجهزة المذكوره» أو «المواصفات داخل الفديو» والاسم الحقيقي بس على الكارتونة بالصورة —
+   نقرا صورة المنتج (ثاني صورة بالألبوم، الأولى غالباً بوستر العرض) بنموذج رؤية حتى الاسم يطلع صحيح */
+const VIS = '@cf/meta/llama-3.2-11b-vision-instruct';
+async function visionName(env, id) {
+  try {
+    const row = await env.DB.prepare('select media from products where id=?').bind(id).first();
+    const ks = JSON.parse((row && row.media) || '[]').filter(x => !x.v).map(x => x.k);
+    const k = ks.length >= 2 ? ks[1] : ks[0]; if (!k) return '';
+    const im = await env.DB.prepare('select data from imgs where k=?').bind(k).first(); if (!im) return '';
+    const image = [...new Uint8Array(im.data instanceof ArrayBuffer ? im.data : new Uint8Array(im.data))];
+    const ask = () => env.AI.run(VIS, { messages: [{ role: 'user', content: 'What exact product is shown? Read the brand, model number and product type printed on the box or device (e.g. "hoco Z65 240W dual cigarette lighter car charger"). Answer in one short English line only.' }], image, max_tokens: 60 });
+    let r;
+    try { r = await ask(); } catch (e) { if (!/agree|licen/i.test(String(e && e.message || e))) throw e; await env.AI.run(VIS, { prompt: 'agree' }).catch(() => { }); r = await ask(); }
+    return String((r && r.response) || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+  } catch (e) { return ''; }
+}
+
 async function aiEnrich(env, n, only) {
   if (!env.AI) return 0;
   const rows = only ? ((await env.DB.prepare('select id,auto,ov from products where id=?').bind(only).all()).results || []) : ((await env.DB.prepare("select id,auto,ov from products where ai is null and json_extract(ov,'$.del') is null order by (json_extract(auto,'$.name')='منتج') desc, dt desc limit ?").bind(n).all()).results || []);
   let ok = 0;
   for (const p of rows) {
     const a = { ...JSON.parse(p.auto), ...JSON.parse(p.ov || '{}') };
-    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\nالماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)","cat":"قسم واحد بالضبط من هذه القائمة: ${Object.values(CNAME).join('، ')}، منوعات","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
+    const seen = await visionName(env, p.id);
+    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\n${seen ? 'وهذا المكتوب/الظاهر على صورة المنتج نفسه (اعتمد عليه لاسم المنتج ونوعه وماركته إذا المنشور ما يذكر الاسم): «' + seen + '»\n' : ''}الماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)","cat":"قسم واحد بالضبط من هذه القائمة: ${Object.values(CNAME).join('، ')}، منوعات","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
     try {
       const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: prompt }], max_tokens: 700, temperature: 0.3 });
       const t = (res && (res.response || res.result?.response)) || '';
@@ -380,7 +398,21 @@ export async function sync(env, opt = {}) {
   let pages = 0, msgs = 0;
   const html = await fetchPage(0); pages++;
   const cur = parseChannel(html);
+  /* v210: إذا السيرفر وكف ونزلت منشورات أكثر من صفحة وحدة، نرجع نسحب الفجوة (لحد ٣ صفحات بكل دورة) */
+  const gap = [];
+  if (cur.length) {
+    const minCur = Math.min(...cur.map(x => x.id));
+    const pm = await env.DB.prepare('select max(id) m from msgs where id < ?').bind(minCur).first();
+    let prevMax = pm && pm.m, before = minCur;
+    for (let i = 0; prevMax && before - prevMax > 1 && i < 3; i++) {
+      const g = parseChannel(await fetchPage(before)); pages++;
+      if (!g.length) break;
+      gap.push(...g);
+      const gm = Math.min(...g.map(x => x.id)); if (gm >= before) break; before = gm;
+    }
+  }
   msgs += await saveMsgs(env, cur);
+  if (gap.length) msgs += await saveMsgs(env, gap);
   // تكملة الأرشيف القديم صفحة بكل دورة
   const bf = st._backfill;
   let old = [];
@@ -395,10 +427,11 @@ export async function sync(env, opt = {}) {
     await setSetting(env, '_backfill', !minId || minId >= before || tooOld ? 'done' : minId);
   }
   let made = 0;
-  for (const l of [cur, old]) if (l.length) { const ids = l.map(x => x.id); made += await rebuild(env, Math.min(...ids), Math.max(...ids)); }
+  for (const l of [cur, gap, old]) if (l.length) { const ids = l.map(x => x.id); made += await rebuild(env, Math.min(...ids), Math.max(...ids)); }
   if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
   if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
   await syncLogo(env, html, st);
+  if (st._vis210 !== 1) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10)").run(); await setSetting(env, '_vis210', 1); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   if (ai) await bump(env);
