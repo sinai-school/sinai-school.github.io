@@ -341,7 +341,7 @@ async function aiEnrich(env, n, only) {
   for (const p of rows) {
     const a = { ...JSON.parse(p.auto), ...JSON.parse(p.ov || '{}') };
     const seen = await visionName(env, p.id);
-    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\n${seen ? 'وهذا المكتوب/الظاهر على صورة المنتج نفسه (اعتمد عليه لاسم المنتج ونوعه وماركته إذا المنشور ما يذكر الاسم): «' + seen + '»\n' : ''}الماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)","cat":"قسم واحد بالضبط من هذه القائمة: ${Object.values(CNAME).join('، ')}، منوعات","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
+    const prompt = `أنت خبير منتجات إكسسوارات هواتف وتقنية في متجر عراقي. هذا منشور منتج:\n"""${(a.name || '') + '\n' + (a.desc || '')}\n${(a.specs || '')}"""\n${seen ? 'وهذا المكتوب/الظاهر على صورة المنتج نفسه (اعتمد عليه لاسم المنتج ونوعه وماركته إذا المنشور ما يذكر الاسم): «' + seen + '»\n' : ''}الماركة: ${a.brand || 'غير معروفة'} — القسم: ${a.cat}\nأعطني JSON فقط بهذا الشكل بدون أي كلام آخر:\n{"title":"اسم واضح ومرتب للمنتج بالعربي (حد أقصى 60 حرف)، والماركة والموديل يبقون بالحروف الإنجليزية كما هي مثل hoco Z65 بدون خلط حروف","cat":"قسم واحد بالضبط من هذه القائمة: ${Object.values(CNAME).join('، ')}، منوعات","desc":"وصف تسويقي صادق بجملتين بالعربي الفصيح البسيط","specs":[["اسم المواصفة","القيمة"]],"uses":["استخدام 1","استخدام 2","استخدام 3"]}\nالمواصفات من 4 إلى 7، عامة ومنطقية لهذا النوع من المنتجات، لا تخترع أرقاماً دقيقة غير مذكورة بالمنشور (استخدم "حسب الموديل" إذا غير متأكد).`;
     try {
       const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: prompt }], max_tokens: 700, temperature: 0.3 });
       const t = (res && (res.response || res.result?.response)) || '';
@@ -433,7 +433,7 @@ export async function sync(env, opt = {}) {
   if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
   if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
   await syncLogo(env, html, st);
-  if (st._vis210 !== 3) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10 or post >= 30540)").run(); await setSetting(env, '_vis210', 3); }
+  if (st._vis210 !== 4) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10 or post >= 30580)").run(); await setSetting(env, '_vis210', 4); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   if (ai) await bump(env);
