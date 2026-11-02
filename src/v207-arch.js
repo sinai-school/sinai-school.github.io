@@ -117,7 +117,8 @@
     msg.style.display = "none";
     let im;
     const slow = setTimeout(() => { if (V7 && V7.i == i) { msg.textContent = isImg(a) ? "جارٍ الفتح…" : "جارٍ تجهيز ملف PDF…"; msg.style.display = ""; img.style.visibility = "hidden"; } }, 120);
-    try { im = await decode207(a); } catch (e) { if (e && e.type) e = "decode";
+    /* v210: إذا الخادم ما رد خلال ٢٥ ثانية ما نبقى على «جارٍ الفتح…» للأبد — نطلع رسالة وزر إعادة */
+    try { im = await Promise.race([decode207(a), new Promise((_, no) => setTimeout(() => no("slow"), 25000))]); } catch (e) { if (e && e.type) e = "decode";
       clearTimeout(slow); if (!V7 || V7.i != i) return;
       img.style.visibility = "hidden"; msg.style.display = "";
       msg.innerHTML = navigator.onLine === false ? "هذا الملف بعده ما محفوظ بالجهاز — يتحفظ وحده أول ما يرجع الإنترنت" : e === "missing" ? `<div style="text-align:center;line-height:1.9;padding:0 18px">هذا الملف رفعه ما كمل (قطعة منه ناقصة على الخادم)<br><small style="opacity:.8">لازم ينرفع من جديد من «إضافة ملف» بالأرشيف — باقي الملفات سليمة</small></div>` : `<div style="text-align:center">ما انفتح هسه (الخادم مشغول) — <button class="btn sm" id="rt207">إعادة المحاولة</button></div>`;
