@@ -350,6 +350,9 @@ async function aiEnrich(env, n, only) {
       if (!Array.isArray(j.specs)) throw 0;
       j.specs = j.specs.filter(x => Array.isArray(x) && x.length === 2).slice(0, 8).map(x => [String(x[0]).slice(0, 40), String(x[1]).slice(0, 80)]);
       j.title = String(j.title || '').slice(0, 70); j.desc = String(j.desc || '').slice(0, 400);
+      /* v210h: النموذج أحياناً يخلط حرف عربي بأول الماركة («هoco») — نرجّع الكلمة الإنجليزية من قراءة الصورة */
+      const fixMix = t => t.replace(/[\u0621-\u064A]+([A-Za-z][A-Za-z0-9-]*)/g, (m, lat) => { const w = (seen.match(/[A-Za-z][A-Za-z0-9-]*/g) || []).find(x => x.toLowerCase().endsWith(lat.toLowerCase()) && x.length > lat.length); return w || lat; });
+      j.title = fixMix(j.title); j.desc = fixMix(j.desc);
       j.cat = String(j.cat || '').trim(); if (!Object.values(CNAME).includes(j.cat) && j.cat !== 'منوعات') j.cat = 'منوعات';
       j.uses = (j.uses || []).slice(0, 4).map(x => String(x).slice(0, 60));
       await env.DB.prepare('update products set ai=? where id=?').bind(JSON.stringify(j), p.id).run(); ok++;
@@ -433,7 +436,7 @@ export async function sync(env, opt = {}) {
   if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
   if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
   await syncLogo(env, html, st);
-  if (st._vis210 !== 4) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10 or post >= 30580)").run(); await setSetting(env, '_vis210', 4); }
+  if (st._vis210 !== 5) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10 or post >= 30580)").run(); await setSetting(env, '_vis210', 5); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   if (ai) await bump(env);
