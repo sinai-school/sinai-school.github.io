@@ -8,13 +8,16 @@ src=src.replace("REQ = json.load(open('ops/x207.json'))","REQ={}").replace("pub 
 exec(src)
 meta=[m['p'] for m in q("select p from docs where p like 'arch/%' and h<>'DEL'")]
 M=docs(meta); print('meta',len(meta),'loaded',len(M))
+k0=next(iter(M)); print('SAMPLE',k0,M[k0][:400])
 bad=[]; tot=0
 def chk(a):
   n=a.get('parts') or 1; out=[]
   for j in range(n):
     p='archpart/%s_%d'%(a['id'],j); _,d=one(p)
     if d is None: return 'missing part %d/%d'%(j,n)
-    try: d=json.loads(d).get('d','')
+    try:
+      j0=json.loads(d); d=j0.get('d','') if isinstance(j0,dict) else ''
+      if isinstance(j0,dict) and isinstance(j0.get('json'),str): d=json.loads(j0['json']).get('d','')
     except Exception: return 'bad json part %d'%j
     if not d: return 'empty part %d/%d'%(j,n)
     out.append(d)
@@ -27,11 +30,16 @@ def chk(a):
 import concurrent.futures
 items=[]
 for p,v in M.items():
-  try: a=json.loads(v)
+  try:
+    a=json.loads(v)
+    if isinstance(a,dict) and 'json' in a and isinstance(a['json'],str): a=json.loads(a['json'])
+    if isinstance(a,dict) and 'd' in a and isinstance(a['d'],dict): a=a['d']
   except Exception: continue
-  if a.get('src','db')!='db' or not a.get('id'): continue
+  a.setdefault('id', p.split('/',1)[1])
+  if a.get('src','db')!='db': continue
   items.append(a)
 tgt=[a for a in items if '2015' in str(a.get('yr','')) or '2015' in str(a.get('title',''))]
+print('srcs',{str(a.get('src')) for a in items} if items else None)
 print('items',len(items),'2015-2016',len(tgt))
 with concurrent.futures.ThreadPoolExecutor(6) as ex:
   for a,r in zip(items,ex.map(chk,items)):
