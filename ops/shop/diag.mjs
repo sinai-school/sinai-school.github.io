@@ -7,3 +7,6 @@ const q = async (sql, params = []) => { const j = await (await fetch(`${API}/${D
 for (const r of await q("select id,kind,dt,substr(replace(coalesce(txt,''),char(10),' '),1,140) t from msgs where id>30560 order by id")) console.log('MSG', JSON.stringify(r));
 for (const r of await q("select id,post,src,substr(auto,1,200) auto,ov,media,dt from products where post>30540 order by post")) console.log('PROD', JSON.stringify(r).slice(0, 400));
 for (const r of await q("select at,msg from log order by at desc limit 15")) console.log('LOG', new Date(r.at).toISOString(), r.msg.slice(0, 200));
+for (const r of await q("select id,substr(ai,1,300) ai from products where post>30540 order by post")) console.log('AI', JSON.stringify(r));
+const h = await (await fetch('https://t.me/s/husseinhandh?before=30584', { headers: { 'user-agent': 'Mozilla/5.0 Chrome/124' } })).text();
+console.log('TG ids', [...h.matchAll(/data-post="husseinhandh\/(\d+)"/g)].map(m => m[1]).join(','));
