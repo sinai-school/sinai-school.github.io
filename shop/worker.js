@@ -741,7 +741,14 @@ async function dropOrphans(env, keys) {
 }
 
 export default {
-  async scheduled(ev, env, ctx) { ctx.waitUntil(sync(env).catch(e => log(env, 'خطأ مزامنة: ' + e.message))); },
+  async scheduled(ev, env, ctx) {
+    /* v209: وضع التوفير — الحارس (guard.yml كل ساعة) يكتب _saver حسب استهلاك اليوم من حد Cloudflare المجاني */
+    let sv = 0; try { const r = await env.DB.prepare("select v from settings where k='_saver'").first(); sv = r ? +JSON.parse(r.v) || 0 : 0; } catch { }
+    const m = new Date(ev.scheduledTime || Date.now()).getUTCMinutes();
+    if (sv >= 2 && m % 30 > 2) return;
+    if (sv >= 1 && m % 15 > 2) return;
+    ctx.waitUntil(sync(env, sv ? { imgs: 4, ai: 0 } : {}).catch(e => log(env, 'خطأ مزامنة: ' + e.message)));
+  },
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const p = url.pathname;
@@ -750,16 +757,27 @@ export default {
     try {
       if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
       if (p === '/api/ev') { if (req.method === 'POST') await track(req, env).catch(() => { }); return new Response(null, { status: 204, headers: CORS }); }
-      if (p === '/api/v') return J({ v: await getVer(env) }, 200, { 'cache-control': 'no-store' });
-      if (p === '/api/data') {
-        const D = await publicData(env);
-        return J(D, 200, { 'cache-control': 'public, max-age=30' });
-      }
-      if (p.startsWith('/api/p/')) {
-        const row = await env.DB.prepare('select * from products where id=?').bind(decodeURIComponent(p.slice(7)).split('/')[0]).first();
-        if (!row) return J({ err: 'missing' }, 404);
-        const e = eff(row); if (e.del || e.purge || e.hidden) return J({ err: 'missing' }, 404);
-        return J(e, 200, { 'cache-control': 'public, max-age=30' });
+      if (p === '/api/v') { try { return J({ v: await getVer(env) }, 200, { 'cache-control': 'no-store' }); } catch { return J({ v: 'stale' }, 200, { 'cache-control': 'no-store' }); } }
+      if (p === '/api/data' || p.startsWith('/api/p/')) {
+        /* v209: آخر نسخة سليمة تنحفظ، وإذا القاعدة وكفت (حد يومي/عطل) الموقع يعرضها بدل صفحة فاضية */
+        const lg = new Request('https://lastgood.hh/' + encodeURIComponent(p));
+        try {
+          let res;
+          if (p === '/api/data') res = J(await publicData(env), 200, { 'cache-control': 'public, max-age=30' });
+          else {
+            const row = await env.DB.prepare('select * from products where id=?').bind(decodeURIComponent(p.slice(7)).split('/')[0]).first();
+            if (!row) return J({ err: 'missing' }, 404);
+            const e = eff(row); if (e.del || e.purge || e.hidden) return J({ err: 'missing' }, 404);
+            res = J(e, 200, { 'cache-control': 'public, max-age=30' });
+          }
+          const c = res.clone(); const h = new Headers(c.headers); h.set('cache-control', 'public, max-age=2592000');
+          ctx.waitUntil(caches.default.put(lg, new Response(c.body, { status: 200, headers: h })).catch(() => { }));
+          return res;
+        } catch (err) {
+          const old = await caches.default.match(lg).catch(() => null);
+          if (old) { const h = new Headers(old.headers); h.set('cache-control', 'no-store'); h.set('x-hh-stale', '1'); return new Response(old.body, { status: 200, headers: h }); }
+          throw err;
+        }
       }
       if (p.startsWith('/img/')) {
         const k = p.slice(5).replace(/\W/g, '');

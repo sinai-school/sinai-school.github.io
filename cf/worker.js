@@ -1180,7 +1180,7 @@ async function pushNote205_(o) {
 
 /* ---------- الدخول ---------- */
 export default {
-  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { await mvblob_(6); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
+  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { const sv = +(await kvGet('SAVER') || 0), m = new Date(ev.scheduledTime || Date.now()).getUTCMinutes(); if ((sv >= 2 && m % 10) || (sv >= 1 && m % 3)) return; } catch (e) { } try { await mvblob_(6); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
     DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || '';
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });

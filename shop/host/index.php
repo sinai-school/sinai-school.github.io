@@ -139,6 +139,13 @@ if ($cacheable) {
 }
 
 $r = hh_fetch($uri, $m, $m === 'POST' ? file_get_contents('php://input') : null);
+// v209: بيانات الموقع (/api/data و /api/p/…) تنحفظ هنا، وإذا الخادم وكف تنعرض آخر نسخة سليمة بدل صفحة فاضية
+$lgable = $m === 'GET' && ($path === '/api/data' || strpos($path, '/api/p/') === 0);
+if ($lgable) {
+  $lk = $dir . '/lg_' . hh_keyof($path, []);
+  if ($r && $r['s'] == 200) { @hh_store($lk, $r); }
+  elseif (is_file($lk . '.m') && is_file($lk . '.b')) { $lm = json_decode(@file_get_contents($lk . '.m'), true); if ($lm) { $lm['c'] = 'no-store'; hh_send($lk, $lm, 'stale'); exit; } }
+}
 if (!$r) { http_response_code(502); header('content-type: application/json'); echo '{"err":"net"}'; exit; }
 hh_raw($r, 'pass');
 // HH-PROXY-END

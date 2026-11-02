@@ -1,7 +1,7 @@
 name: متجر H&H — صور مصغّرة
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
