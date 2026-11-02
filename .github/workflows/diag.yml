@@ -1,0 +1,17 @@
+name: diag
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diag.yml','ops/diag.py']
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: {node-version: '20'}
+      - env:
+          RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pip install -q cryptography; python3 ops/diag.py
