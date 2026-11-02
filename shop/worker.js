@@ -328,8 +328,10 @@ async function visionName(env, id) {
     const ask = () => env.AI.run(VIS, { messages: [{ role: 'user', content: 'What exact product is shown? Read the brand, model number and product type printed on the box or device (e.g. "hoco Z65 240W dual cigarette lighter car charger"). Answer in one short English line only.' }], image, max_tokens: 60 });
     let r;
     try { r = await ask(); } catch (e) { if (!/agree|licen/i.test(String(e && e.message || e))) throw e; await env.AI.run(VIS, { prompt: 'agree' }).catch(() => { }); r = await ask(); }
-    return String((r && r.response) || '').replace(/\s+/g, ' ').trim().slice(0, 160);
-  } catch (e) { return ''; }
+    const out = String((r && r.response) || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    await log(env, 'صورة ' + id + ': ' + out).catch(() => { });
+    return out;
+  } catch (e) { await log(env, 'صورة ' + id + ' خطأ: ' + String(e && e.message || e).slice(0, 150)).catch(() => { }); return ''; }
 }
 
 async function aiEnrich(env, n, only) {
@@ -431,7 +433,7 @@ export async function sync(env, opt = {}) {
   if (made) { const nw = ((await env.DB.prepare('select id from products order by at desc limit ?').bind(made).all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', ...nw]); }
   if (!st._indexed) { const all = ((await env.DB.prepare('select id from products').all()).results || []).map(x => '/p/' + x.id); await indexNow(env, ['/', '/c', ...all]); await setSetting(env, '_indexed', now()); }
   await syncLogo(env, html, st);
-  if (st._vis210 !== 1) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10)").run(); await setSetting(env, '_vis210', 1); }
+  if (st._vis210 !== 2) { await env.DB.prepare("update products set ai=null where src='tg' and post > 29500 and (ai like '%\"err\"%' or json_extract(auto,'$.name') like '%المذكور%' or json_extract(auto,'$.desc') like '%الفديو%' or json_extract(auto,'$.desc') like '%الفيديو%' or length(json_extract(auto,'$.name')) < 10 or post >= 30580)").run(); await setSetting(env, '_vis210', 2); }
   const imgs = await drainImgs(env, opt.imgs || 16);
   const ai = await aiEnrich(env, opt.ai || 2);
   if (ai) await bump(env);
