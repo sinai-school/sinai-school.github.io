@@ -207,7 +207,7 @@ async function getSettings(env) {
   return s;
 }
 async function setSetting(env, k, v) { await env.DB.prepare('insert into settings(k,v) values(?,?) on conflict(k) do update set v=excluded.v').bind(k, JSON.stringify(v)).run(); }
-async function log(env, msg) { try { await env.DB.prepare('insert into log(at,msg) values(?,?)').bind(now(), String(msg).slice(0, 500)).run(); await env.DB.prepare('delete from log where at < ?').bind(now() - 7 * 864e5).run(); } catch { } }
+async function log(env, msg) { try { await env.DB.prepare('insert into log(at,msg) values(?,?)').bind(now(), String(msg).slice(0, 500)).run(); if (Math.random() < 0.02) await env.DB.prepare('delete from log where at < ?').bind(now() - 7 * 864e5).run(); } catch { } }
 
 export function eff(p) {
   const a = JSON.parse(p.auto || '{}'), o = JSON.parse(p.ov || '{}'), ai = p.ai ? JSON.parse(p.ai) : null;

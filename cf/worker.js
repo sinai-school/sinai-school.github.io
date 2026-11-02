@@ -8,6 +8,8 @@ const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID().replace(/-/g, '');
 const CH = 400000;
 let DB, ENV, ORIGIN, MEMO, HDR_ORIGIN = '';
+/* v209: كاش عام قصير (يقلّل قراءات D1 — حد الخطة المجانية ٥ مليون صف/يوم) */
+const GC = {}; const gcGet = (k, ttl) => { const e = GC[k]; return e && Date.now() - e.t < ttl ? e.v : null; }; const gcSet = (k, v) => (GC[k] = { t: Date.now(), v }, v); const gcDel = (...k) => k.forEach(x => delete GC[x]);
 
 /* ---------- قاعدة البيانات ---------- */
 const all = (q, ...a) => DB.prepare(q).bind(...a).all().then(r => r.results || []);
@@ -45,15 +47,22 @@ async function blobGet(id) {
 }
 const blobDel = async id => { if (big_(id)) for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) { try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } } return run('delete from chunks where id=?', id); };
 /* نقل الصور القديمة للقاعدة الثانية شوية شوية (كل دقيقة) */
-async function mvblob_(n) {
+async function mvblob_(n, force) {
   if (!ENV || !ENV.FDB) return { ok: 0, err: 'nofdb' };
+  /* v209: الفحص القديم كان يقرأ جدول chunks كله كل دقيقة (٢ مليون صف/يوم). هسه بحث بالفهرس + يوكف إذا خلص النقل */
+  if (!force) { const d = +(await kvGet('MVDONE') || 0); if (d && Date.now() - d < 6 * 36e5) return { ok: 1, moved: 0, left: 'done' }; }
   try { await ENV.FDB.prepare('create table if not exists chunks(id text, i integer, d text, primary key(id,i))').run(); } catch (e) { }
-  const ids = await all("select distinct id from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%' limit ?", n || 8);
+  const ids = [];
+  for (const p of ['d_archpart/', 'd_qaidimg/', 'd_mailimg/', 'd_staffphoto/']) {
+    if (ids.length >= (n || 8)) break;
+    for (const r of await all("select distinct id from chunks where id >= ? and id < ? and i = 0 limit ?", p, p.slice(0, -1) + '0', (n || 8) - ids.length)) ids.push(r);
+  }
   let moved = 0;
   for (const { id } of ids) {
     const rows = await all('select i,d from chunks where id=? order by i', id);
     try { await blobPut(id, rows.map(r => r.d).join('')); moved++; } catch (e) { return { ok: 0, err: String(e).slice(0, 120), moved }; }
   }
+  if (!ids.length) await kvPut('MVDONE', String(Date.now()));
   return { ok: 1, moved, left: ids.length == (n || 8) ? 'more' : 'done' };
 }
 
@@ -186,10 +195,15 @@ async function upOne_(b) {
 }
 
 /* ---------- التبليغات ---------- */
+async function seenAll_() {
+  const c = gcGet('seen', 30000); if (c) return c;
+  return gcSet('seen', await all("select id,kind,key from seen where key not like 'tst-%'"));
+}
 async function notesAll_() {
   if (MEMO.notes) return MEMO.notes;
+  const c = gcGet('notes', 15000); if (c) return MEMO.notes = c;
   const R = await all('select * from notes order by seq');
-  return MEMO.notes = R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fu_(fl_(n.files)) }));
+  return MEMO.notes = gcSet('notes', R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fu_(fl_(n.files)) })));
 }
 async function notesFor_(kind, key, secs, pub) {
   const o = [];
@@ -203,12 +217,12 @@ async function notesFor_(kind, key, secs, pub) {
   for (const n of o.reverse()) { const k = [n.from, n.title, n.body, (n.files || []).length].join('|'); if (sn.has(k)) continue; sn.add(k); r.push(n); }
   return r.slice(0, 150);
 }
-const noteAdd_ = async o => { const r = await run('insert into notes(id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?)', o.id, o.scope, o.target, o.from, o.title, o.body, o.date, o.cat, o.files); MEMO.notes = null; try { await pushNote205_(o); } catch (e) { } return r; };
+const noteAdd_ = async o => { const r = await run('insert into notes(id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?)', o.id, o.scope, o.target, o.from, o.title, o.body, o.date, o.cat, o.files); MEMO.notes = null; gcDel('notes'); try { await pushNote205_(o); } catch (e) { } return r; };
 const noteHas_ = async id => !!id && !!(await one('select id from notes where id=?', id));
 async function sentFor_(name) {
   name = String(name || '').replace(/\s+/g, ' ').trim(); if (!name) return [];
   const P = await private_(), M = {};
-  for (const r of await all("select id,key from seen where kind='s' and key not like 'tst-%'")) (M[r.id] = M[r.id] || []).push(r.key);
+  for (const r of (await seenAll_()).filter(x => x.kind === 's')) (M[r.id] = M[r.id] || []).push(r.key);
   const cnt = {}; for (const k in (P.s || {})) { if (/^tst-/.test(k)) continue; const v = P.s[k] || {}; for (const s of (v.secs || (v.s ? [v.s] : []))) cnt[s] = (cnt[s] || 0) + 1; }
   const o = [];
   for (const n of await notesAll_()) {
@@ -403,7 +417,7 @@ async function handle(b) {
       if (b.op === 'init') return { err: 'op' };
       b.secret = await secret_();
     }
-    if (b.op === 'mvblob') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; return mvblob_(+b.n || 8); }
+    if (b.op === 'mvblob') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; return mvblob_(+b.n || 8, 1); }
     if (b.op === 'imp207open') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; const until = Date.now() + 30 * 60e3; await kvPut('IMP207', String(until)); return { ok: 1, until }; }
     return admin_(b);
   }
@@ -463,7 +477,7 @@ async function handle(b) {
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
     if (a === 'seen') {
-      const st = []; for (const id of (b.ids || []).slice(0, 200)) st.push(DB.prepare('insert or ignore into seen(id,kind,key,at) values(?,?,?,?)').bind(String(id), y.kind, y.key, now()));
+      const st = []; for (const id of (b.ids || []).slice(0, 200)) st.push(DB.prepare('insert or ignore into seen(id,kind,key,at) values(?,?,?,?)').bind(String(id), y.kind, y.key, now())); gcDel('seen');
       let n = 0; if (st.length) { const r = await DB.batch(st); n = r.reduce((s, x) => s + (x.meta && x.meta.changes || 0), 0); }
       return { ok: 1, n };
     }
@@ -481,7 +495,7 @@ async function admin_(b) {
     try { const old = await kvJ('priv', null), nw = b.data || {}; if (old && old.s && nw.s) for (const k in nw.s) { const o = old.s[k], n = nw.s[k]; if (!o || !n) continue; if (!nid_(n.nid2) && !nid_(n.pre && n.pre.nid)) { const keep = nid_(o.nid2) || nid_(o.pre && o.pre.nid); if (keep) n.nid2 = keep; } } } catch (e) { }
     await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
   if (b.op === 'pull') {
-    const seen = {}; for (const r of await all("select id,kind,key from seen where key not like 'tst-%'")) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
+    const seen = {}; for (const r of await seenAll_()) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
     return { ok: 1, sheet: '',
       acc: (await all("select * from acc where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
       prof: (await all("select kind,key,name,json,photo,updated,status from prof where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
@@ -519,7 +533,7 @@ async function admin_(b) {
   }
   if (b.op === 'psub') { await ens205_(); return psubPut205_('o', String(b.key || 'own'), b.sub); }
   if (b.op === 'pushTest') { await ens205_(); return pushTo205_(x => x.kind === String(b.kind || 'o')); }
-  if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); return { ok: 1 }; }
+  if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); MEMO.notes = null; gcDel('notes'); return { ok: 1 }; }
   if (b.op === 'osync') return osync_(b);
   if (b.op === 'snapPut') return snapPut_(b);
   if (b.op === 'bkput') return bkput_(b);
