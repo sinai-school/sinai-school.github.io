@@ -13,7 +13,11 @@
   const MEM = new Map(), PEND = new Map();
   /* v207g: النسخة تعتمد على الملف نفسه (مو على وقت تعديل المعلومات) حتى نقل الملف أو تغيير عنوانه ما يمسح النسخة المحفوظة بالجهاز */
   const ver = a => a.id + ":" + (a.size || 0) + ":" + (a.parts || 1);
-  const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1));
+  /* v209: نسخة سليمة؟ (طول الملف يطابق حجمه) — نسخ انحفظت ناقصة وقت توقف الخادم تنمسح وتنجاب من جديد */
+  const lenOk = (d, a) => { if (!d || typeof d != "string") return false; if (!a.size) return d.length > 16; const L = d.replace(/=+$/, "").length, exp = Math.ceil(a.size * 4 / 3); return Math.abs(L - exp) <= 4; };
+  const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1)) && lenOk(c.d, a);
+  const purge207 = a => { try { for (const k of [...MEM.keys()]) if (k.startsWith(a.id + ":")) MEM.delete(k); } catch (e) { } try { IDB() && IDB().del && IDB().del("ab_" + a.id); } catch (e) { } try { IDB() && IDB().put("ab_" + a.id, { k: "x", d: "", at: 0 }); } catch (e) { } try { IDB() && IDB().put("pr_" + a.id, { k: "x", b: null, at: 0 }); } catch (e) { } };
+  W.purge207 = purge207;
   async function blob207(a) {
     if (a._b) return a._b;
     const k = ver(a);
@@ -23,9 +27,10 @@
       try { const c = IDB() && await IDB().get("ab_" + a.id); if (okC(c, a)) { MEM.set(k, c.d); return c.d; } } catch (e) { }
       if (navigator.onLine === false) throw "offline";
       const n = a.parts || 1, out = new Array(n); let i = 0;
-      const worker = async () => { while (i < n) { const j = i++; let t = 0; for (; ;) { try { const d = await DB.doc("archpart/" + a.id + "_" + j).get(); if (!d.exists) throw "missing"; out[j] = (d.data() || {}).d || ""; break; } catch (e) { if (++t > 3) throw e; await new Promise(r => setTimeout(r, 600 * t)); } } } };
+      const worker = async () => { while (i < n) { const j = i++; let t = 0; for (; ;) { try { const d = await DB.doc("archpart/" + a.id + "_" + j).get(); if (!d.exists) throw "missing"; const v = (d.data() || {}).d; if (!v) throw "empty"; out[j] = v; break; } catch (e) { if (e === "missing" && t >= 1) throw e; if (++t > 3) throw e; await new Promise(r => setTimeout(r, 600 * t)); } } } };
       await Promise.all(Array.from({ length: Math.min(8, n) }, worker));
       const s = out.join("");
+      if (!lenOk(s, a)) throw "corrupt";
       MEM.set(k, s); if (MEM.size > 12) MEM.delete(MEM.keys().next().value);
       try { if (IDB()) IDB().put("ab_" + a.id, { k, d: s, at: Date.now() }); } catch (e) { }
       return s;
@@ -50,7 +55,9 @@
   /* نجهّز الصورة مفكوكة بالذاكرة حتى تطلع بلحظة */
   function decode207(a) {
     if (DEC.has(a.id)) return DEC.get(a.id);
-    const p = url207(a).then(u => new Promise((ok, no) => { const im = new Image; im.decoding = "async"; im.onload = () => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => ok(im)); im.onerror = no; im.src = u; }));
+    const one = () => url207(a).then(u => new Promise((ok, no) => { const im = new Image; im.decoding = "async"; im.onload = () => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => ok(im)); im.onerror = () => no("decode"); im.src = u; }));
+    const drop = () => { const u = URLS.get(a.id); URLS.delete(a.id); try { u && URL.revokeObjectURL(u); } catch (e) { } purge207(a); };
+    const p = one().catch(e => { if (e === "missing" || e === "offline") throw e; drop(); return one(); }).catch(e => { drop(); throw e; });
     DEC.set(a.id, p); p.catch(() => DEC.delete(a.id)); return p;
   }
   W.url207 = url207;
@@ -110,10 +117,10 @@
     msg.style.display = "none";
     let im;
     const slow = setTimeout(() => { if (V7 && V7.i == i) { msg.textContent = isImg(a) ? "جارٍ الفتح…" : "جارٍ تجهيز ملف PDF…"; msg.style.display = ""; img.style.visibility = "hidden"; } }, 120);
-    try { im = await decode207(a); } catch (e) {
+    try { im = await decode207(a); } catch (e) { if (e && e.type) e = "decode";
       clearTimeout(slow); if (!V7 || V7.i != i) return;
       img.style.visibility = "hidden"; msg.style.display = "";
-      msg.innerHTML = navigator.onLine === false ? "هذا الملف بعده ما محفوظ بالجهاز — يتحفظ وحده أول ما يرجع الإنترنت" : `تعذّر الفتح — <button class="btn sm" id="rt207">إعادة المحاولة</button>`;
+      msg.innerHTML = navigator.onLine === false ? "هذا الملف بعده ما محفوظ بالجهاز — يتحفظ وحده أول ما يرجع الإنترنت" : e === "missing" ? `<div style="text-align:center;line-height:1.9;padding:0 18px">هذا الملف رفعه ما كمل (قطعة منه ناقصة على الخادم)<br><small style="opacity:.8">لازم ينرفع من جديد من «إضافة ملف» بالأرشيف — باقي الملفات سليمة</small></div>` : `<div style="text-align:center">ما انفتح هسه (الخادم مشغول) — <button class="btn sm" id="rt207">إعادة المحاولة</button></div>`;
       const rb = w.querySelector("#rt207"); if (rb) rb.onclick = () => show(i);
       return;
     }
