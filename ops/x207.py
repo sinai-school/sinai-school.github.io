@@ -59,6 +59,10 @@ if REQ.get('qaid'):
     log['qaid'] = len(qp); log['qaid_bytes'] = save('qaid.json', docs(qp))
 if REQ.get('brdx'):
     log['brdx'] = [m['p'] for m in q("select p from docs where p like 'brdx/%' and h<>'DEL'")]
+if REQ.get('plist'):
+    log['plist'] = [[m['p'], m.get('n', 0)] for m in q("select p, length(d) n from docs where p not like 'arch%' and p not like 'brdx/%' and p not like 'mail%' and h<>'DEL' limit 3000")]
+if REQ.get('docs'):
+    log['docs_bytes'] = save('docs.json', docs([m['p'] for m in q("select p from docs where h<>'DEL'") if any(m['p'].startswith(x) for x in REQ['docs'])]))
 want = REQ.get('parts')  # قائمة معرّفات الملفات، أو "all"
 if want:
     P = [m['p'] for m in q("select p from docs where p like 'archpart/%' and h<>'DEL'")]
