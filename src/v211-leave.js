@@ -96,3 +96,23 @@
   const _lh = letterHTML;
   letterHTML = function (L) { try { if (L) window.lv211(L); } catch (e) { console.error(e); } return _lh.apply(this, arguments); };
 })();
+
+/* v211c — الأرشيف: «رفعه ما كمل» چانت تطلع لملفات سليمة على الخادم. السبب: قائمة الملفات المحفوظة بالجهاز
+   (GX.M) ما بيها قطع الملف إذا انرفعت بعد آخر سحب كامل، فالجهاز يعتبرها غير موجودة بدون ما يسأل الخادم.
+   هسه: أي قطعة أرشيف/صورة مو موجودة بقائمة الجهاز تنطلب من الخادم مباشرة. */
+(function () {
+  if (typeof gxGet != "function" || typeof gxCall != "function") return;
+  const _g = gxGet, RE = /^(archpart|qaidimg|mailimg|staffphoto)\//;
+  gxGet = async function (p) {
+    try {
+      if (RE.test(p) && typeof GX != "undefined" && GX.M) {
+        const e = GX.M.get(p);
+        if (!e || (e.d == null && !GX.pend[p])) {
+          const r = await gxCall({ op: "one", p });
+          if (r && r.ok && !r.del && r.d) GX.M.set(p, { d: JSON.parse(r.d), rev: +r.rev || 0, lazy: 1 });
+        }
+      }
+    } catch (x) { }
+    return _g.apply(this, arguments);
+  };
+})();
