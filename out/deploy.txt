@@ -1,0 +1,62 @@
+subdomain=7svyn82yzr
+  ]
+}
+db=6ff26a96-82a9-47fd-9810-897636d8be01
+    }
+  }
+]
+products before seed: 0
+  }
+]
+  }
+]
+built=0
+  }
+]
+  - DB: hhshop (6ff26a96-82a9-47fd-9810-897636d8be01)
+- AI:
+  - Name: AI
+Uploaded hh-shop (0.98 sec)
+Deployed hh-shop triggers (0.38 sec)
+  https://hh-shop.7svyn82yzr.workers.dev
+  schedule: */3 * * * *
+Current Version ID: 1963d88e-496a-431c-8ac2-6f5920e64a13
+AI=on
+url=https://hh-shop.7svyn82yzr.workers.dev
+home: 200
+data: {"s":{"name":"مجمع H&H","tagline":"إكسسوارات الهواتف والتقنية — أصلية وبضمان","wa1":"9647730001588","wa2":"9647732222773","tgUser":"h_h_mobail","tgChannel":"husseinhandh","ig":"h.and.h_mobile","tt":"hussein_handh","fb":"HandHMobile","yt":"husseinhandh","addre
+db [{'p': 167, 'm': 1696, 'i': 0, 'q': 1105, 'ai': 0}]
+log []
+--- admin password
+--- map link
+--- dump
+dump 167
+--- host upload
+reach handhst.com:2083: 200
+reach 142.132.255.23:2083: 200
+PUBKEY:LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0Y2dUR05VT1JNNjNncW5CMWtzcApIUVg1WXR6OVBzUDMySEJIN1pBY1o0dm5TUlZaZ2xRV09tdnArcVhUK043RkNrRzFhNXdJellLdkR2M0pMRlhDCnZlRlprS0FQSDdrYjIxaExDYVZGN20vd1YrUERZZldSbVVFWWJJb3l2eTNQSzduOE1mbWxxM0Z6S3pEcElFTzMKSTFnMkk3M3FCNzE2WXc2VEh3N3ZHSlQ4V3UzMEVJYWZ4bkhvV3FPOUFGQzVLdnFXNzVvM1ljL1RpYWxlNjNobwp0OFk0SDNXdnVreHZVMnFxeWJWQnVtM3FzY0Z0ZXpYQXZpZ0U4OE9uL21HVVJwbVBVeFVqL3hBL1M5OEwwVWlYCjg5VTdTckV1b1pVY0ZYUnlQdGVxVU9YQllGbW0yM3QvZzlmWjZFMTRnMGtlekgzMVAvYTFSVUNzTTBZMTAxc0UKdXdJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
+--- handhst.com check
+/ -> 200 1.082065s 44277B
+x-hh-ver: 225 content-encoding: gzip content-type: text/html; charset=utf-8 
+/p/s001 -> 200 1.075935s 43383B
+x-hh-ver: 225 content-encoding: gzip content-type: text/html; charset=utf-8 
+/c/%D8%B3%D9%85%D8%A7%D8%B9%D8%A7%D8%AA -> 200 1.079121s 44068B
+x-hh-ver: 225 content-encoding: gzip content-type: text/html; charset=utf-8 
+/contact -> 200 1.064371s 42223B
+x-hh-ver: 225 content-encoding: gzip content-type: text/html; charset=utf-8 
+/admin -> 200 0.846220s 21889B
+content-encoding: gzip content-type: text/html; charset=utf-8 
+/robots.txt -> 200 0.740723s 97B
+content-type: text/plain; charset=utf-8 
+/sitemap.xml -> 200 0.901258s 11005B
+content-encoding: gzip content-type: application/xml; charset=utf-8 
+canonical" href="https://handhst.com/
+<title>بكج شاحن 67 واط + باوربانك 20,000 + كيبل هدية بسعر 30,000 دينار — مجمع H&amp;H
+http->https: 301 https://handhst.com/
+www: 301 https://handhst.com/x
+repeat home 1.134366s
+repeat home 1.321758s
+repeat home 1.160249s
+worker data 0.069548s
+options 204
+cache dir 403
