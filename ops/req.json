@@ -1,1 +1,1 @@
-{"id":"dump215","dump":true,"noapply":true}
+{"id": "q215", "only": ["i215a.json", "i215b.json", "i215c.json", "i215d.json", "z215.json"]}
