@@ -90,4 +90,17 @@ if REQ.get('chk'):
         if any(g == 0 for g in got) or (a.get('size') and tot < int(a['size']) * 4 / 3 * 0.98):
             bad.append({'id': i, 'title': a.get('title'), 'name': a.get('name'), 'parts': n, 'miss': [k for k, g in enumerate(got) if not g], 'b64': tot, 'size': a.get('size')})
     log['chk'] = bad
+if REQ.get('chk2'):
+    rows = q("select p, h from docs where p like 'archpart/%'")
+    ok = {}
+    for r in rows:
+        if r['h'] != 'DEL': ok[r['p']] = 1
+    bad2 = []
+    for pth, raw in M.items():
+        try: a = json.loads(raw)
+        except Exception: continue
+        i = pth[5:]; n = int(a.get('parts') or 1)
+        miss = [k for k in range(n) if ('archpart/%s_%d' % (i, k)) not in ok]
+        if miss: bad2.append({'id': i, 'title': a.get('title'), 'parts': n, 'miss': miss})
+    log['chk2'] = bad2; log['partrows'] = len(rows)
 json.dump(log, open(os.path.join(OUT, 'log.json'), 'w'), ensure_ascii=False); print(json.dumps(log))
