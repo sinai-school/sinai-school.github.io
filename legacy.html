@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta name=viewport content="wi
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v213b-2026-11-05T11:10:00.000Z-v213b";
+<script>window.APP_VER = "2k7v214-2026-11-05T16:10:00.000Z-v214";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -14751,7 +14751,7 @@ const PF3T = [
 const pfDefs = () => PS.kind == "s" ? PF3S : PF3T;
 const pfDK = () => "pfd_" + PS.kind + "_" + PS.key;
 const arClean101 = (v2) => String(v2 || "").replace(/[ً-ْـ]/g, "").replace(/\s+/g, " ").trim();
-const AR101 = /^[ء-غف-ي ]+$/;
+const AR101 = /^[ء-غف-يڤگچپ ]+$/;
 function splitName101(n) {
   const w = arClean101(n).split(" ").filter(Boolean), o = [];
   for (let i = 0; i < w.length; i++) {
