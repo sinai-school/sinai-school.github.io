@@ -5,8 +5,13 @@ import sharp from 'sharp';
 const T = process.env.CLOUDFLARE_API_TOKEN, A = process.env.CLOUDFLARE_ACCOUNT_ID;
 const API = `https://api.cloudflare.com/client/v4/accounts/${A}/d1/database`;
 const H = { Authorization: 'Bearer ' + T, 'Content-Type': 'application/json' };
-const dbs = (await (await fetch(API + '?name=hhshop', { headers: H })).json()).result || [];
-const DB = (dbs.find(d => d.name === 'hhshop') || {}).uuid;
+let DB;
+for (const q of ['?name=hhshop', '?per_page=100', '']) {
+  const j = await (await fetch(API + q, { headers: H })).json().catch(e => ({ errors: [String(e)] }));
+  DB = ((j.result || []).find(d => d.name === 'hhshop') || {}).uuid;
+  if (DB) break;
+  console.log('d1 list', q, JSON.stringify(j.errors || j).slice(0, 300));
+}
 if (!DB) { console.log('no hhshop db'); process.exit(1); }
 async function q(sql, params = []) {
   const r = await fetch(`${API}/${DB}/query`, { method: 'POST', headers: H, body: JSON.stringify({ sql, params }) });
