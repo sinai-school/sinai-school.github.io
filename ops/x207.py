@@ -74,4 +74,20 @@ if want:
         if sz > 22e6: save('parts%03d.json' % n, buf); n += 1; buf = {}
     if buf: save('parts%03d.json' % n, buf); n += 1
     log['parts'] = len(P); log['files'] = n; log['fail'] = len(FAIL)
-json.dump(log, open(os.path.join(OUT, 'log.json'), 'w')); print(json.dumps(log))
+if REQ.get('chk'):
+    have = {}
+    for D in (DBS or dbs()):
+        for r in (hq("select id, sum(length(d)) n from chunks where id like 'd_archpart/%' group by id", [], D) or []):
+            have[r['id'][2:]] = have.get(r['id'][2:], 0) + r['n']
+    bad = []
+    for pth, raw in M.items():
+        try: a = json.loads(json.loads(raw).get('d') or raw) if raw.startswith('{"d"') else json.loads(raw)
+        except Exception: continue
+        if a.get('sec') == 'qyd': continue
+        i = pth[5:]; n = int(a.get('parts') or 1)
+        got = [have.get('archpart/%s_%d' % (i, k), 0) for k in range(n)]
+        tot = sum(got)
+        if any(g == 0 for g in got) or (a.get('size') and tot < int(a['size']) * 4 / 3 * 0.98):
+            bad.append({'id': i, 'title': a.get('title'), 'name': a.get('name'), 'parts': n, 'miss': [k for k, g in enumerate(got) if not g], 'b64': tot, 'size': a.get('size')})
+    log['chk'] = bad
+json.dump(log, open(os.path.join(OUT, 'log.json'), 'w'), ensure_ascii=False); print(json.dumps(log))
