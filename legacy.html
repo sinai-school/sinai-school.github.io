@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta name=viewport content="wi
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v212-2026-11-05T03:08:00.000Z-v212";
+<script>window.APP_VER = "2k7v213-2026-11-05T11:20:00.000Z-v213";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -37584,6 +37584,170 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       } catch (e) {
       }
       return _b.apply(this, arguments);
+    };
+  }
+})();
+</script>
+<script id="v213">var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp.call(b, prop))
+      __defNormalProp(a, prop, b[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+(function() {
+  "use strict";
+  const on = (fn) => {
+    try {
+      return fn();
+    } catch (e) {
+      console.warn("v213", e);
+    }
+  };
+  const ovCount = (D) => {
+    let n = 0;
+    on(() => {
+      for (const s in D.ov || {}) if (D.ov[s] && Object.keys(D.ov[s]).length) n++;
+      for (const s in D.stpos || {}) if (D.stpos[s] && Object.keys(D.stpos[s]).length) n++;
+    });
+    return n;
+  };
+  const reload = () => {
+    on(() => {
+      FXB = null;
+      FXP = null;
+    });
+    on(() => render());
+  };
+  window.fxOrig213 = () => {
+    const D = fxDoc(FX.id);
+    if (!ovCount(D)) {
+      toast("الاستمارة أصلاً على التصميم الأصلي");
+      return;
+    }
+    fxSave(FX.id, { bak213: { ov: D.ov || {}, stpos: D.stpos || {}, at: (/* @__PURE__ */ new Date()).toISOString() }, ov: {}, stpos: {} });
+    on(() => {
+      FX.ed = 0;
+    });
+    reload();
+    toast("رجعت الاستمارة للتصميم الأصلي — إذا تريد تعديلاتك اضغط «إرجاع تعديلاتي»");
+  };
+  window.fxUndo213 = () => {
+    const D = fxDoc(FX.id), b = D.bak213;
+    if (!b) return;
+    fxSave(FX.id, { ov: b.ov || {}, stpos: b.stpos || {}, bak213: 0 });
+    reload();
+    toast("رجعت تعديلاتك السابقة");
+  };
+  if (typeof V != "undefined" && V.fx) {
+    const _vfx = V.fx;
+    V.fx = function() {
+      let h = _vfx.apply(this, arguments);
+      on(() => {
+        if (typeof h != "string" || !FXR[FX.id]) return;
+        const D = fxDoc(FX.id), n = ovCount(D);
+        const b = (n ? '<button class="btn ghost sm" onclick="ask(this,fxOrig213)" title="يمسح كل التعديلات اليدوية لهذي الاستمارة (كل الطلاب والشعب) ومكان الختم">'.concat(ic("rld"), " التصميم الأصلي</button>") : "") + (D.bak213 ? '<button class="btn ghost sm" onclick="ask(this,fxUndo213)" title="يرجّع التعديلات اللي انمسحت">'.concat(ic("undo"), " إرجاع تعديلاتي</button>") : "");
+        if (!b) return;
+        const i = h.indexOf('<div class="tools fxt">');
+        if (i < 0) return;
+        const j = h.indexOf("</div>", i);
+        if (j < 0) return;
+        h = h.slice(0, j) + b + h.slice(j);
+      });
+      return h;
+    };
+  }
+  const K = "sihha_w", LS = "sihha213";
+  const RE_N = /(المرقمة:\s*\()([^)]*)(\))/, RE_A = /(ذي العدد:\s*\()([^)]*)(\))/, RE_D = /(بتاريخ:\s*\()([^)]*)(\))/;
+  const isS = (b) => /صحة صدور الوثيقة/.test(String(b || ""));
+  const real = (v) => {
+    const t = String(v == null ? "" : v).replace(/‏/g, "").trim();
+    return t && !/^[.\s…ـ]+$/.test(t) && !/«/.test(t) ? t : "";
+  };
+  const today = () => {
+    const d = /* @__PURE__ */ new Date();
+    return toAr([d.getDate(), d.getMonth() + 1, d.getFullYear()].join("/"));
+  };
+  function last213() {
+    let best = null;
+    on(() => (typeof LET != "undefined" ? LET : []).forEach((l) => {
+      if (!l || !isS(l.body)) return;
+      const b = String(l.body), n = real((b.match(RE_N) || [])[2]), a = real((b.match(RE_A) || [])[2]);
+      if (!n && !a) return;
+      const at = String(l.updated || l.date || "");
+      if (!best || at > best.at) best = { n, a, at };
+    }));
+    on(() => {
+      const c = JSON.parse(localStorage.getItem(LS) || "null");
+      if (c && (c.n || c.a) && (!best || String(c.at) > best.at)) best = c;
+    });
+    return best;
+  }
+  const put = (b, re, v) => v ? b.replace(re, (m, p, x, s) => p + v + s) : b;
+  function fill213() {
+    const L = typeof LDRAFT != "undefined" && LDRAFT;
+    if (!L || !isS(L.body)) return;
+    const z = last213();
+    let b = String(L.body);
+    if (z) {
+      b = put(b, RE_N, z.n);
+      b = put(b, RE_A, z.a);
+    }
+    b = put(b, RE_D, today());
+    L.body = b;
+  }
+  if (typeof ltUse == "function") {
+    const _lu = ltUse;
+    ltUse = function(k2) {
+      const r = _lu.apply(this, arguments);
+      if (k2 == K) {
+        on(fill213);
+        on(() => render());
+      }
+      return r;
+    };
+  }
+  if (typeof tplFill == "function") {
+    const _tf = tplFill;
+    tplFill = function(L, o) {
+      if (!(typeof LTPLK != "undefined" && LTPLK == K && o && o.s && L && isS(L.body))) return _tf.apply(this, arguments);
+      const s = o.s;
+      let by = s.by || "";
+      if (!by) on(() => {
+        const I = typeof INF != "undefined" && INF && INF[s.id];
+        const m = I && String(I.dob || (I.x || {}).dob || "").match(/(19|20)\d\d/);
+        if (m) by = m[0];
+      });
+      const r = _tf.call(this, L, __spreadProps(__spreadValues({}, o), { s: by && !s.by ? __spreadProps(__spreadValues({}, s), { by }) : s }));
+      on(() => {
+        if (r && r.body) r.body = String(r.body).replace(/تولد:\s*\(\s*\)/, "تولد: (..........)");
+      });
+      return r;
+    };
+  }
+  if (typeof lSave == "function") {
+    const _ls = lSave;
+    lSave = function() {
+      const r = _ls.apply(this, arguments);
+      on(() => {
+        const L = LDRAFT;
+        if (!L || !isS(L.body)) return;
+        const b = String(L.body), n = real((b.match(RE_N) || [])[2]), a = real((b.match(RE_A) || [])[2]);
+        if (n || a) localStorage.setItem(LS, JSON.stringify({ n, a, at: (/* @__PURE__ */ new Date()).toISOString() }));
+      });
+      return r;
     };
   }
 })();
