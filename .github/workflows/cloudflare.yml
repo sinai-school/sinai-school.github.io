@@ -56,7 +56,11 @@ jobs:
           npx -y wrangler@3 d1 create sinai_files2 >> ../$L 2>&1 || true
           FDB2ID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files2"][0])' || true)
           npx -y wrangler@3 d1 execute sinai_files2 --remote -y --command "create table if not exists chunks(id text, i integer, d text, primary key(id,i))" >> ../$L 2>&1 || true
+          for N in 3 4; do npx -y wrangler@3 d1 create sinai_files$N >> ../$L 2>&1 || true; npx -y wrangler@3 d1 execute sinai_files$N --remote -y --command "create table if not exists chunks(id text, i integer, d text, primary key(id,i))" >> ../$L 2>&1 || true; done
+          FDB3ID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files3"][0])' || true)
+          FDB4ID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files4"][0])' || true)
           printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\nworkers_dev = true\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n[[d1_databases]]\nbinding = "FDB"\ndatabase_name = "sinai_files"\ndatabase_id = "%s"\n[[d1_databases]]\nbinding = "FDB2"\ndatabase_name = "sinai_files2"\ndatabase_id = "%s"\n[triggers]\ncrons = ["* * * * *"]\n' "$DBID" "$FDBID" "$FDB2ID" > wrangler.toml
+          for X in "FDB3:sinai_files3:$FDB3ID" "FDB4:sinai_files4:$FDB4ID"; do B=${X%%:*}; R=${X#*:}; NM=${R%%:*}; ID=${R#*:}; if [ -n "$ID" ]; then printf '[[d1_databases]]\nbinding = "%s"\ndatabase_name = "%s"\ndatabase_id = "%s"\n' "$B" "$NM" "$ID" >> wrangler.toml; echo "$B=$ID" >> ../$L; fi; done
           npx -y wrangler@3 d1 execute sinai_files --remote -y --command "create table if not exists chunks(id text, i integer, d text, primary key(id,i))" >> ../$L 2>&1 || true
           [ -f schema.sql ] && npx -y wrangler@3 d1 execute sinai --remote --file schema.sql -y >> ../$L 2>&1 || true
           npx -y wrangler@3 deploy >> ../$L 2>&1 || echo "DEPLOY FAILED" >> ../$L

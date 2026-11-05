@@ -24,7 +24,7 @@ def dbs():
     rq = urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{ACC}/d1/database?per_page=50', headers={'Authorization': 'Bearer ' + TOK})
     with urllib.request.urlopen(rq, timeout=60) as r: L = json.loads(r.read().decode())['result']
     m = {d['name']: d['uuid'] for d in L}
-    return [m[n] for n in ('sinai', 'sinai_files', 'sinai_files2') if n in m]
+    return [m[n] for n in ('sinai', 'sinai_files', 'sinai_files2', 'sinai_files3', 'sinai_files4') if n in m]
 import urllib.request, concurrent.futures
 DBS = None
 def hq(sql, params, DBID):

@@ -20,18 +20,20 @@ async function kvJ(k, d) { const v = await kvGet(k); if (v == null) return d; tr
 const kvPut = (k, v) => run('insert into kv(k,v) values(?,?) on conflict(k) do update set v=excluded.v', k, typeof v === 'string' ? v : JSON.stringify(v));
 /* نص كبير مقسّم قطع */
 /* v207g: الصور والملفات الكبيرة (البوردات، صور القيد، صور الكتب والملاك) بقاعدة ثانية FDB — القاعدة الأساسية ما تتعبى */
+/* v212: قواعد الملفات بالترتيب — إذا وحدة امتلأت (٥٠٠ م.ب) يكمل بالي بعدها (المجموع ٢ غيغا) */
+const FDBS_ = () => [ENV.FDB, ENV.FDB2, ENV.FDB3, ENV.FDB4].filter(Boolean);
 const BIGID_RE = /^d_(archpart|qaidimg|mailimg|staffphoto)\//;
 const big_ = id => !!(ENV && ENV.FDB) && BIGID_RE.test(String(id));
 async function blobPut(id, s) {
   if (big_(id)) {
     s = String(s);
     /* FDB تمتلي؟ (حد ٥٠٠ م.ب) — يكمل بالقاعدة الثالثة FDB2 */
-    for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) {
+    for (const F of FDBS_()) {
       try {
         const st = [F.prepare('delete from chunks where id=?').bind(id)];
         for (let i = 0, n = 0; i < s.length || n === 0; i += CH, n++) st.push(F.prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, n, s.slice(i, i + CH)));
         for (let i = 0; i < st.length; i += 40) await F.batch(st.slice(i, i + 40));
-        for (const G of [ENV.FDB, ENV.FDB2].filter(x => x && x !== F)) { try { await G.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } }
+        for (const G of FDBS_().filter(x => x !== F)) { try { await G.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } }
         await run('delete from chunks where id=?', id); return;
       } catch (e) { if (!/maximum DB size|SQLITE_FULL/i.test(String(e))) throw e; try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (x) { } }
     }
@@ -42,10 +44,10 @@ async function blobPut(id, s) {
   for (let i = 0; i < st.length; i += 40) await DB.batch(st.slice(i, i + 40));
 }
 async function blobGet(id) {
-  if (big_(id)) for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) { try { const r = (await F.prepare('select d from chunks where id=? order by i').bind(id).all()).results || []; if (r.length) return r.map(x => x.d).join(''); } catch (e) { } }
+  if (big_(id)) for (const F of FDBS_()) { try { const r = (await F.prepare('select d from chunks where id=? order by i').bind(id).all()).results || []; if (r.length) return r.map(x => x.d).join(''); } catch (e) { } }
   const r = await all('select d from chunks where id=? order by i', id); return r.length ? r.map(x => x.d).join('') : null;
 }
-const blobDel = async id => { if (big_(id)) for (const F of [ENV.FDB, ENV.FDB2].filter(Boolean)) { try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } } return run('delete from chunks where id=?', id); };
+const blobDel = async id => { if (big_(id)) for (const F of FDBS_()) { try { await F.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } } return run('delete from chunks where id=?', id); };
 /* نقل الصور القديمة للقاعدة الثانية شوية شوية (كل دقيقة) */
 async function mvblob_(n, force) {
   if (!ENV || !ENV.FDB) return { ok: 0, err: 'nofdb' };
@@ -704,7 +706,7 @@ async function stf_(b) {
     const g8 = await guard208_(p, b, d);
     if (g8.err) return g8;
     const rr = await dput_(p, g8.d, g8.d === d ? String(b.h || '') : g8.h, 's:' + a.u, null);
-    if (PROT208_RE.test(p)) await kvPut('ds_' + p, String(b.sid || ''));
+    if (PROT208_RE.test(p) || (!BLOB_RE.test(p) && b.sid)) await kvPut('ds_' + p, String(b.sid || ''));
     if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
     return g8.d === d ? { ok: 1, rev: rr.rev } : { ok: 1, rev: rr.rev, mod: 1 };
   }
@@ -741,7 +743,15 @@ async function guard208_(p, b, d) {
     if (ch) await kvPut('QLK208', Q);
     const t = canon_({ list: L }); return { d: t, h: syH_(t) };
   }
-  if (!PROT208_RE.test(p)) return { d };
+  if (!PROT208_RE.test(p)) {
+    /* v212: كل الملفات (مو بس الجدول والقيد): جهاز رجع بعد ما كان بدون إنترنت ما يكتب فوق تعديل أحدث من جلسة ثانية —
+       الجهاز يستلم stale فيدمج تعديله ويه الأحدث ويعيد الحفظ (ما يضيع تعديل أحد) */
+    if (b.base !== undefined && b.base !== null && !BLOB_RE.test(p)) {
+      const e0 = await dmeta_(p);
+      if (e0 && e0.h !== 'DEL' && +b.base < e0.rev && (await kvGet('ds_' + p)) !== String(b.sid || '')) return { err: 'stale', rev: e0.rev };
+    }
+    return { d };
+  }
   const e = await dmeta_(p);
   if (b.base === undefined || b.base === null) { if (e && e.h !== 'DEL') return { err: 'upd' }; }
   else if (e && e.h !== 'DEL' && +b.base < e.rev && (await kvGet('ds_' + p)) !== String(b.sid || '')) return { err: 'stale', rev: e.rev };
