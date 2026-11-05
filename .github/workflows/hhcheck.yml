@@ -1,0 +1,16 @@
+name: فحص موقع H&H (قراءة فقط)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/hhcheck.yml']
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in / /p/s001 /contact /admin /robots.txt /sitemap.xml /api/data; do curl -s -m 30 -o /tmp/b -w "$u %{http_code} %{time_total}s %{size_download}B\n" https://handhst.com$u; done
+          curl -s -m 30 -D /tmp/hd -o /tmp/h.html https://handhst.com/; grep -iE "^(server|x-hh|date|last-modified|x-powered|cf-ray)" /tmp/hd
+          grep -o "<title>[^<]*" /tmp/h.html | head -1
+          echo "workers.dev refs: $(grep -c 'workers.dev' /tmp/h.html)"; grep -o '[a-z0-9.-]*workers\.dev[^"'"'"' ]*' /tmp/h.html | sort -u | head
+          echo "products in page: $(grep -o '/p/[a-z0-9]*' /tmp/h.html | sort -u | wc -l)"
+          dig +short handhst.com A
