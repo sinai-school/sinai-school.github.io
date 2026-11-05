@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta name=viewport content="wi
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v213-2026-11-05T11:20:00.000Z-v213";
+<script>window.APP_VER = "2k7v213b-2026-11-05T11:10:00.000Z-v213b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -37748,6 +37748,47 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         if (n || a) localStorage.setItem(LS, JSON.stringify({ n, a, at: (/* @__PURE__ */ new Date()).toISOString() }));
       });
       return r;
+    };
+  }
+})();
+(function() {
+  "use strict";
+  const on = (fn) => {
+    try {
+      return fn();
+    } catch (e) {
+      console.warn("v213b", e);
+    }
+  };
+  function noLaqab(n) {
+    const w = typeof FSD != "undefined" && FSD.nW ? FSD.nW(n) : String(n || "").trim().split(/\s+/);
+    let o = w.slice(0, 4);
+    if (o.length == 4 && /^ال\S+(ي|ى|يه|ية)$/.test(o[3])) o = o.slice(0, 3);
+    return o.join(" ") || String(n || "");
+  }
+  window.noLaqab213 = noLaqab;
+  if (typeof tplFill == "function") {
+    const _tf = tplFill;
+    tplFill = function(L, o) {
+      if (o && o.t && o.t.name) o = __spreadProps(__spreadValues({}, o), { t: __spreadProps(__spreadValues({}, o.t), { name: noLaqab(o.t.name) }) });
+      return _tf.call(this, L, o);
+    };
+  }
+  if (typeof lPick == "function") {
+    const _lp = lPick;
+    lPick = function(kind, v) {
+      if (kind != "t") return _lp.apply(this, arguments);
+      const f = (typeof STF != "undefined" ? STF : []).find((x) => x.id == v);
+      if (!f || !f.name) return _lp.apply(this, arguments);
+      const old = f.name, nn = noLaqab(old);
+      if (nn == old) return _lp.apply(this, arguments);
+      f.name = nn;
+      try {
+        return _lp.apply(this, arguments);
+      } finally {
+        f.name = old;
+        on(() => render());
+      }
     };
   }
 })();
