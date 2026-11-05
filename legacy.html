@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta name=viewport content="wi
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v211-2026-11-05T01:30:00.000Z-v211";
+<script>window.APP_VER = "2k7v211-2026-11-05T01:40:00.000Z-v211c";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -37264,6 +37264,23 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       console.error(e);
     }
     return _lh.apply(this, arguments);
+  };
+})();
+(function() {
+  if (typeof gxGet != "function" || typeof gxCall != "function") return;
+  const _g = gxGet, RE = /^(archpart|qaidimg|mailimg|staffphoto)\//;
+  gxGet = async function(p) {
+    try {
+      if (RE.test(p) && typeof GX != "undefined" && GX.M) {
+        const e = GX.M.get(p);
+        if (!e || e.d == null && !GX.pend[p]) {
+          const r = await gxCall({ op: "one", p });
+          if (r && r.ok && !r.del && r.d) GX.M.set(p, { d: JSON.parse(r.d), rev: +r.rev || 0, lazy: 1 });
+        }
+      }
+    } catch (x) {
+    }
+    return _g.apply(this, arguments);
   };
 })();
 </script>
