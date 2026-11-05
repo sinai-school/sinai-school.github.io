@@ -1,0 +1,21 @@
+name: إزالة بقايا المتجر من Cloudflare
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/shop-remove.yml']
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          export CLOUDFLARE_API_TOKEN=$(printf %s "$RAW_TOK" | python3 cf/tok.py)
+          export CLOUDFLARE_ACCOUNT_ID=$(printf %s "$RAW_ACC" | tr -d '[:space:]"')
+          W="npx -y wrangler@3"
+          $W delete --name hh-shop --force 2>&1 | tail -3 || true
+          $W d1 delete hhshop -y 2>&1 | tail -3 || true
+          echo "--- left:"; $W d1 list 2>&1 | grep -i hhshop || echo "no hhshop db"
+          curl -s -o /dev/null -w "worker %{http_code}\n" https://hh-shop.7svyn82yzr.workers.dev/ || true

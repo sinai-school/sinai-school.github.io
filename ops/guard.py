@@ -24,11 +24,11 @@ for x in d['workersInvocationsAdaptive']: print('  worker',x['dimensions']['scri
 def ex(db,sql):
   r=subprocess.run(['npx','-y','wrangler@3','d1','execute',db,'--remote','--command',sql],capture_output=True,text=True,timeout=240)
   print(db, 'ok' if r.returncode==0 else 'FAIL '+(r.stdout+r.stderr)[-300:])
-ex('hhshop',f"insert into settings(k,v) values('_saver','{lvl}') on conflict(k) do update set v=excluded.v")
+# المتجر انتقل لسيرفر خاص: ex('hhshop',f"insert into settings(k,v) values('_saver','{lvl}') on conflict(k) do update set v=excluded.v")
 ex('sinai',f"insert into kv(k,v) values('SAVER','{lvl}') on conflict(k) do update set v=excluded.v")
 # حجم القواعد (حد ٥٠٠ م.ب لكل قاعدة بالخطة المجانية)
 r=urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{A}/d1/database',headers={'Authorization':'Bearer '+T})
 for x in json.load(urllib.request.urlopen(r))['result']:
   mb=(x.get('file_size') or 0)/1e6; warn=' ⚠️ قريبة من الحد' if mb>420 else ''
   print(f"  size {x['name']}: {mb:.0f} MB{warn}")
-  if warn and x['name']=='hhshop': ex('hhshop',f"insert into log(at,msg) values({int(datetime.datetime.utcnow().timestamp()*1000)},'تنبيه: قاعدة بيانات المتجر {mb:.0f} م.ب من ٥٠٠')")
+  if False and x['name']=='hhshop': ex('hhshop',f"insert into log(at,msg) values({int(datetime.datetime.utcnow().timestamp()*1000)},'تنبيه: قاعدة بيانات المتجر {mb:.0f} م.ب من ٥٠٠')")
