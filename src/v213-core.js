@@ -100,3 +100,37 @@
     };
   }
 })();
+
+/* ===== v213b — الكتب الرسمية: اسم المدرس بدون اللقب (طلب المستخدم: «ما اريد اللقب») ===== */
+(function () {
+  "use strict";
+  const on = fn => { try { return fn(); } catch (e) { console.warn("v213b", e); } };
+  /* الاسم الرباعي فقط («عبد …» اسم واحد)؛ إذا الرابع نسبة مثل «الساعدي» فهو لقب وينشال */
+  function noLaqab(n) {
+    const w = (typeof FSD != "undefined" && FSD.nW) ? FSD.nW(n) : String(n || "").trim().split(/\s+/);
+    let o = w.slice(0, 4);
+    if (o.length == 4 && /^ال\S+(ي|ى|يه|ية)$/.test(o[3])) o = o.slice(0, 3);
+    return o.join(" ") || String(n || "");
+  }
+  window.noLaqab213 = noLaqab;
+  if (typeof tplFill == "function") {
+    const _tf = tplFill;
+    tplFill = function (L, o) {
+      if (o && o.t && o.t.name) o = { ...o, t: { ...o.t, name: noLaqab(o.t.name) } };
+      return _tf.call(this, L, o);
+    };
+  }
+  /* اختيار المدرس من القائمة (حتى بالكتاب الحر): الاسم ينكتب بدون لقب */
+  if (typeof lPick == "function") {
+    const _lp = lPick;
+    lPick = function (kind, v) {
+      if (kind != "t") return _lp.apply(this, arguments);
+      const f = (typeof STF != "undefined" ? STF : []).find(x => x.id == v);
+      if (!f || !f.name) return _lp.apply(this, arguments);
+      const old = f.name, nn = noLaqab(old);
+      if (nn == old) return _lp.apply(this, arguments);
+      f.name = nn;
+      try { return _lp.apply(this, arguments); } finally { f.name = old; on(() => render()); }
+    };
+  }
+})();
