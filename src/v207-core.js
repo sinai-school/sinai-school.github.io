@@ -27,11 +27,11 @@
     const ok = (d, m, y) => y > 1900 && y < 2200 && m >= 1 && m <= 12 && d >= 1 && d <= 31;
     const arab = t => /[٠-٩]/.test(t);
     /* سنة/شهر/يوم ← يوم/شهر/سنة */
-    s = s.replace(new RegExp("(?<!" + N + ")[‎‏⁦-⁩]*(" + N + "{4})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{1,2})(?!" + N + ")[⁩]?", "g"),
-      (m, y, mo, d) => ok(Dg(d), Dg(mo), Dg(y)) && (arab(m) || /[‏]/.test(m)) ? DMY(Dg(d), Dg(mo), Dg(y)) : m);
+    s = s.replace(new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{4})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{1,2})(?!" + N + ")[⁩]?", "g"),
+      (m, pre, y, mo, d) => { const mm = m.slice(pre.length); return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m; });
     /* يوم/شهر/سنة بعلامات اتجاه أو مسافات → بدونها */
-    s = s.replace(new RegExp("(?<!" + N + ")[‎‏⁦-⁩]*(" + N + "{1,2})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{4})(?!" + N + ")[⁩]?", "g"),
-      (m, d, mo, y) => ok(Dg(d), Dg(mo), Dg(y)) && (arab(m) || /[‏]/.test(m)) ? DMY(Dg(d), Dg(mo), Dg(y)) : m);
+    s = s.replace(new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{1,2})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{4})(?!" + N + ")[⁩]?", "g"),
+      (m, pre, d, mo, y) => { const mm = m.slice(pre.length); return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m; });
     return s;
   };
   W.dt207 = dt207;

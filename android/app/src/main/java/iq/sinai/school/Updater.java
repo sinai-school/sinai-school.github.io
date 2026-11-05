@@ -43,20 +43,20 @@ final class Updater {
             new AlertDialog.Builder(a)
                 .setTitle("تحديث التطبيق")
                 .setMessage("نزلت نسخة جديدة من تطبيق إعدادية سيناء (أسرع وتنفتح بدون إنترنت). حدّثه هسه؟ بياناتك ودخولك يبقون مثل ما هم.")
-                .setPositiveButton("تحديث", (d, x) -> download(a))
+                .setPositiveButton("تحديث", (d, x) -> download(a, v))
                 .setNegativeButton("بعدين", (d, x) -> a.getSharedPreferences("upd", 0).edit().putLong("at", System.currentTimeMillis()).apply())
                 .show();
         } catch (Exception e) { }
     }
 
-    private static void download(Activity a) {
+    private static void download(Activity a, int remote) {
         Toast.makeText(a, "جارٍ تنزيل التحديث…", Toast.LENGTH_LONG).show();
         new Thread(() -> {
             try {
                 File dir = new File(a.getCacheDir(), "apk");
                 dir.mkdirs();
                 File f = new File(dir, "sinai-school.apk");
-                byte[] b = get(REL + "sinai-school.apk", 180000);
+                byte[] b; try { b = get("https://sinai.7svyn82yzr.workers.dev/sinai-school.apk?v=" + remote, 180000); } catch (Exception e0) { b = get(REL + "sinai-school.apk", 180000); }
                 if (b.length < 100000) throw new Exception("small");
                 try (FileOutputStream o = new FileOutputStream(f)) { o.write(b); }
                 Uri u = FileProvider.getUriForFile(a, "iq.sinai.school.files", f);
@@ -71,7 +71,7 @@ final class Updater {
     }
 
     private static void openBrowser(Activity a) {
-        try { a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(REL + "sinai-school.apk"))); } catch (Exception e) { }
+        try { a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://sinai.7svyn82yzr.workers.dev/sinai-school.apk"))); } catch (Exception e) { }
     }
 
     private static byte[] get(String url, int t) throws Exception {

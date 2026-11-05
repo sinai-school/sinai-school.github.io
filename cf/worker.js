@@ -1187,6 +1187,19 @@ export default {
     try {
       if (req.method === 'GET') {
         if (u.pathname === '/pk') return out({ ok: 1, pub: (await pk_()).pub });
+        /* v211: تنزيل تطبيق أندرويد من خادم المدرسة (بعض شبكات الإنترنت تحجب ملفات GitHub فالتطبيق ما ينزل) */
+        if (u.pathname === '/apk' || u.pathname === '/sinai-school.apk') {
+          const cache = caches.default, ck = new Request(ORIGIN + '/apk-cache?v=' + encodeURIComponent(u.searchParams.get('v') || Math.floor(Date.now() / 6e5)));
+          let r = await cache.match(ck);
+          if (!r) {
+            const g = await fetch('https://github.com/sinai-school/sinai-school.github.io/releases/latest/download/sinai-school.apk', { redirect: 'follow', headers: { 'User-Agent': 'sinai-school' } });
+            if (!g.ok) return new Response('تعذّر تنزيل التطبيق، حاول بعد قليل', { status: 502, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+            const b = await g.arrayBuffer();
+            r = new Response(b, { headers: { 'Content-Type': 'application/vnd.android.package-archive', 'Content-Disposition': 'attachment; filename="sinai-school.apk"', 'Cache-Control': 'public, max-age=1800', 'Access-Control-Allow-Origin': '*' } });
+            try { await cache.put(ck, r.clone()); } catch (x) { }
+          }
+          return r;
+        }
         let m = u.pathname.match(/^\/f\/([A-Za-z0-9_-]+)$/);
         if (m) { const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); return new Response(unb64(d), { headers: { 'Content-Type': f.m || 'application/octet-stream', 'Content-Disposition': 'inline; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*' } }); }
         m = u.pathname.match(/^\/bk\/([A-Za-z0-9_-]+)$/);

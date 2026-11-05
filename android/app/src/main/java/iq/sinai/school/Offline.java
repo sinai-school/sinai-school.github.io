@@ -29,7 +29,7 @@ final class Offline {
     static final String BASE = "https://" + HOST + "/";
     /* المسار على الموقع ← اسم الملف داخل التطبيق */
     static final String[] FILES = {
-        "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
+        "index.html", "legacy.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
         "img/logo_s.png", "img/logo_ui.png", "img/logo_m.png", "img/logo_cal.png",
         "img/img_cal2.png", "img/j2eagle.png", "img/j2seal.png"
     };
