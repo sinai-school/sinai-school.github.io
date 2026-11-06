@@ -11,7 +11,7 @@ def q(sql):
         if not r.returncode: return json.loads(r.stdout)[0]['results']
         time.sleep(5)
     print('sql-fail', sql[:60]); return []
-pub = serialization.load_pem_public_key(open('ops/x207.pub', 'rb').read())
+pub = serialization.load_pem_public_key(open(json.load(open('ops/x207.json')).get('pub', 'ops/x207.pub'), 'rb').read())
 oaep = padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
 os.makedirs(OUT, exist_ok=True)
 def save(name, obj):
