@@ -270,6 +270,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean isApp() { return true; }
 
+        /* v214q: الصفحة لقت نسخة جديدة — ننزّلها ونخزنها هسه (بدون انتظار الرجوع للتطبيق) */
+        @JavascriptInterface
+        public void siteUpdate() { runOnUiThread(() -> refreshSite(true)); }
+
         /* إشعارات التبليغات بصوت */
         @JavascriptInterface
         public void notify(String title, String body) { Notifier.show(MainActivity.this, title, body, (int) (System.currentTimeMillis() % 1000000)); }
@@ -357,7 +361,7 @@ public class MainActivity extends Activity {
 
     private void refreshSite(boolean force) {
         Offline.refresh(this, force, nv -> runOnUiThread(() -> {
-            if (web != null) web.evaluateJavascript("(function(){var v=" + q(nv) + ";if(window.APP_VER&&window.APP_VER!==v&&v.indexOf(window.APP_VER+'-')!==0){try{localStorage.removeItem('rl86v')}catch(e){}window.__chkUpd&&window.__chkUpd()}})()", null);
+            if (web != null) web.evaluateJavascript("(function(){var v=" + q(nv) + ";if(window.APP_VER&&window.APP_VER!==v&&v.indexOf(window.APP_VER+'-')!==0){try{localStorage.removeItem('rl86v')}catch(e){}if(window.__siteReady)window.__siteReady(v);else if(window.__chkUpd)window.__chkUpd()}})()", null);
         }));
     }
 
