@@ -150,7 +150,7 @@
     lgSubmit = function (e) {
       try {
         const r = typeof LGR != "undefined" ? LGR : "", u = (D.getElementById("lgu") || {}).value || "", p = (D.getElementById("lgp") || {}).value || "";
-        if ((r == "s" || r == "t") && u.trim().toLowerCase() == "test" && p.trim() == "1234" && typeof SNAP != "undefined" && SNAP) {
+        if (0 && (r == "s" || r == "t") && u.trim().toLowerCase() == "test" && p.trim() == "1234" && typeof SNAP != "undefined" && SNAP) { /* v215: الحسابات التجريبية انحذفت */
           if (e) e.preventDefault();
           ROLE = r; try { sess(r); } catch (x) { } showPortal(); tstOpen(r); return false;
         }
@@ -168,7 +168,7 @@
     const _pv = psView;
     psView = function () {
       let h = _pv.apply(this, arguments);
-      try { if (PS && /^tst-/.test(PS.key || "")) h = `<div class="banner" style="border-color:#b8860b;background:#fff8e6">${typeof ic == "function" ? ic("alert") : ""} <span><b>حساب تجريبي</b> — للتجربة فقط، ما يأثر على الطلاب والمدرسين. التبليغات اللي ترسلها الإدارة «للكل» أو لـ«الحساب التجريبي» توصل هنا.</span> <button class="btn ghost sm" onclick="localStorage.removeItem('tst205');psOut();PS.key=null;prender()">خروج</button></div>` + h; } catch (e) { }
+      try { if (0 && PS && /^tst-/.test(PS.key || "")) h = `<div class="banner" style="border-color:#b8860b;background:#fff8e6">${typeof ic == "function" ? ic("alert") : ""} <span><b>حساب تجريبي</b> — للتجربة فقط، ما يأثر على الطلاب والمدرسين. التبليغات اللي ترسلها الإدارة «للكل» أو لـ«الحساب التجريبي» توصل هنا.</span> <button class="btn ghost sm" onclick="localStorage.removeItem('tst205');psOut();PS.key=null;prender()">خروج</button></div>` + h; } catch (e) { }
       return h;
     };
   }

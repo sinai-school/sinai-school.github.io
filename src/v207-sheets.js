@@ -22,9 +22,15 @@
      - كل قاعة تاخذ أعداد متساوية من كل صف وفرع
      - ما يكعد طالب جنب أو ورا طالب من نفس الصف (فبالتالي ولا من نفس الشعبة)
      ===================================================================== */
-  const ST7 = { t: "m", halls: 16, cap: 28, cols: 4, seed: 1, hall: 0 };
+  const ST7 = { t: "m", halls: 16, cap: 28, cols: 3, seed: 1, hall: 0, door: "fr", doors: {} };
   Object.assign(ST7, LG("seat207", {}));
-  const save7 = () => LS("seat207", { t: ST7.t, halls: ST7.halls, cap: ST7.cap, cols: ST7.cols, seed: ST7.seed });
+  /* v215: القاعات بيها ٣ سروات رحلات (يمين، وسط، يسار) */
+  if (!ST7.v215) { ST7.cols = 3; ST7.v215 = 1; }
+  const T = (m, k) => { try { toast(m, k); } catch (e) { } };
+  const save7 = () => LS("seat207", { t: ST7.t, halls: ST7.halls, cap: ST7.cap, cols: ST7.cols, seed: ST7.seed, door: ST7.door, doors: ST7.doors, v215: 1 });
+  const DOORS = [["fr", "أمام يمين"], ["fl", "أمام يسار"], ["br", "خلف يمين"], ["bl", "خلف يسار"]];
+  const doorOf = hi => (ST7.doors && ST7.doors[hi]) || ST7.door || "fr";
+  const colName = (c, cols) => cols == 3 ? ["السرة اليمنى", "السرة الوسطى", "السرة اليسرى"][c] : cols == 2 ? ["السرة اليمنى", "السرة اليسرى"][c] : "السرة " + AD(c + 1);
   const gradeOf = s => String(s.s || "").split(" ")[0];
   const grpOf = s => String(s.s || "").split(" ").slice(0, -1).join(" ") || s.s;
   const short = s => { const p = String(s.s || "").split(" "); return (p[0] || "").replace("الرابع", "الرابع").replace("الخامس", "الخامس") + " " + (p[1] || "").replace("العلمي", "ع").replace("الأدبي", "أ").replace("الادبي", "أ") + " " + (p[2] || ""); };
@@ -34,7 +40,7 @@
     return L;
   }
   function plan7() {
-    const L = students7(), H = Math.max(1, +ST7.halls || 16), cap = Math.max(10, +ST7.cap || 28), cols = Math.max(2, +ST7.cols || 4);
+    const L = students7(), H = Math.max(1, +ST7.halls || 16), cap = Math.max(10, +ST7.cap || 28), cols = Math.max(2, +ST7.cols || 3);
     const rows = Math.ceil(cap / cols), seats = rows * cols;
     const R = rng(ST7.seed * 7919 + (ST7.t == "f" ? 3 : 1));
     /* التوزيع على القاعات: كل صف وفرع بالتساوي */
@@ -61,11 +67,27 @@
     const G = Object.keys(by), cnt = {}; G.forEach(g => { cnt[g] = by[g].length; by[g] = shuf(by[g], R); });
     let empty = n - list.length; if (empty < 0) return null;
     const grid = new Array(n).fill(null);
+    /* v215: القاعة اللي طلابها قليلين: الطلاب يتوزعون على كل القاعة وبين رحلة ورحلة فراغ (نمط الشطرنج) */
+    const ALLOW = new Array(n).fill(true);
+    {
+      const chk = []; for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; if ((r + c) % 2 == 0) chk.push(i); }
+      const k = list.length;
+      if (k <= chk.length) {
+        ALLOW.fill(false);
+        for (let j = 0; j < k; j++) ALLOW[chk[Math.floor(j * chk.length / k)]] = true;
+      } else if (k < n) {
+        /* أكثر من نص المقاعد: الشطرنج كامل + الباقي موزّع بالتساوي (الفراغات تتوزع على القاعة كلها مو بالآخر) */
+        ALLOW.fill(false); chk.forEach(i => ALLOW[i] = true);
+        const oth = []; for (let i = 0; i < n; i++) if (!ALLOW[i]) oth.push(i);
+        const need = k - chk.length; for (let j = 0; j < need; j++) ALLOW[oth[Math.floor(j * oth.length / need)]] = true;
+      }
+    }
     let steps = 0;
     const okAt = (i, g) => { const r = Math.floor(i / cols), c = i % cols; if (c > 0 && grid[i - 1] === g) return false; if (r > 0 && grid[i - cols] === g) return false; return true; };
     const dfs = i => {
       if (++steps > 200000) return false;
       if (i == n) return true;
+      if (!ALLOW[i]) { if (empty <= 0) return false; empty--; grid[i] = ""; if (dfs(i + 1)) return true; empty++; grid[i] = null; return false; }
       const left = n - i, need = G.reduce((a, g) => a + cnt[g], 0);
       if (need > left) return false;
       const opts = shuf(G.filter(g => cnt[g] > 0), R).sort((a, b) => cnt[b] - cnt[a]);
@@ -79,12 +101,43 @@
     return out;
   }
   W.seat207Plan = plan7;
+  W.seat215Door = (hi, k) => { if (hi < 0) { ST7.door = k; ST7.doors = {}; } else { ST7.doors = ST7.doors || {}; ST7.doors[hi] = k; } save7(); rr(); };
+  /* أوراق أرقام القاعات: A4 بالعرض، الشعار + «قاعة رقم -n-» بخط كبير */
+  W.seat215Signs = async how => {
+    const dg = v => parseInt(String(v || "").replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632)) || 0;
+    const H = Math.max(1, +ST7.halls || 16), a = Math.max(1, dg((D.getElementById("sg215a") || {}).value) || 1), b = Math.min(H, dg((D.getElementById("sg215b") || {}).value) || H);
+    if (a > b) return T("الأرقام غلط", "err");
+    T("جارٍ تجهيز الأوراق…");
+    let logo = (W.LOGO215 && W.LOGO215.s) || "img/logo_s.png";
+    if (!/^data:/.test(logo)) { try { const bl = await (await fetch(logo)).blob(); logo = await new Promise(ok => { const r = new FileReader; r.onload = () => ok(r.result); r.readAsDataURL(bl); }); } catch (e) { } }
+    const F = "'Noto Naskh Arabic','Amiri',serif";
+    const pg = n => `<div style="width:1123px;height:794px;box-sizing:border-box;padding:30px;background:#fff;font-family:${F};direction:rtl"><div style="width:100%;height:100%;box-sizing:border-box;border:8px double #0f4d3c;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:26px 30px 22px">
+<div style="display:flex;align-items:center;gap:24px"><img src="${logo}" style="width:150px;height:150px"><div style="text-align:right"><div style="font:700 46px/1.3 ${F};color:#0f4d3c">إعدادية سيناء للبنين</div><div style="font:600 24px/1.5 ${F};color:#7a6420">${exName()} ${yrTxt()}</div></div></div>
+<div style="text-align:center;line-height:1"><div style="font:700 120px/1.15 ${F};color:#111;white-space:nowrap">قاعة رقم</div><div style="font:700 250px/1 ${F};color:#0f4d3c;white-space:nowrap;direction:ltr">-${AD(n)}-</div></div>
+<div style="font:600 21px/1.4 ${F};color:#555">المديرية العامة لتربية بغداد الرصافة الأولى</div></div></div>`;
+    const wrap = D.createElement("div"); wrap.style.cssText = "position:fixed;left:-40000px;top:0"; D.body.appendChild(wrap);
+    try {
+      const pages = [];
+      for (let n = a; n <= b; n++) {
+        wrap.innerHTML = pg(n); const el = wrap.firstElementChild;
+        await Promise.all([...el.querySelectorAll("img")].map(im => im.complete ? 0 : new Promise(ok => { im.onload = im.onerror = ok; setTimeout(ok, 4000); })));
+        try { await D.fonts.ready; } catch (e) { }
+        pages.push(await dxRaster(el, "", 1.6));
+      }
+      const blob = pdfJpegs(pages, 841.89, 595.28), nm = "أرقام القاعات " + AD(a) + "-" + AD(b);
+      W.__sg215 = blob;
+      if (how == "print" && typeof lPrintPdf70 == "function") lPrintPdf70(blob, nm); else await saveFile(nm + ".pdf", blob, { print: () => lPrintPdf70(blob, nm) });
+    } catch (e) { console.warn(e); T("تعذّر تجهيز الأوراق", "err"); } finally { wrap.remove(); }
+  };
   W.seat207Set = (k, v) => { if (k == "t") ST7.t = v; else if (k == "new") ST7.seed = (ST7.seed || 1) + 1; else if (k == "hall") ST7.hall = +v; else ST7[k] = Math.max(1, parseInt(String(v).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632)) || ST7[k]); save7(); rr(); };
   const exName = () => ST7.t == "f" ? "امتحانات نهاية السنة" : "امتحانات نصف السنة";
   function hallModel(P, hi) {
     const grid = P.placed[hi]; const cols = P.cols, rows = P.rows;
     let base = 0; for (let k = 0; k < hi; k++) base += P.halls[k].length;
-    const head = [[{ v: "السبورة (مقدمة القاعة)", h: 1, cs: cols }]];
+    const dr = doorOf(hi), DR = "🚪 الباب";
+    const isD = c => (c == 0 && dr == "fr") || (c == cols - 1 && dr == "fl");
+    const head = [[...(isD(0) ? [{ v: DR, h: 1, bg: "#fde9b8" }] : []), { v: "السبورة — مقدمة القاعة", h: 1, cs: cols - ((dr == "fr" || dr == "fl") ? 1 : 0) }, ...(dr == "fl" ? [{ v: DR, h: 1, bg: "#fde9b8" }] : [])],
+      Array.from({ length: cols }, (_, c) => ({ v: colName(c, cols), h: 1, fz: .9 }))];
     const R = []; let no = 0;
     const seatNo = {}; if (grid) grid.forEach((s, i) => { if (s) seatNo[i] = ++no; });
     for (let r = 0; r < rows; r++) {
@@ -95,12 +148,16 @@
       }
       R.push(row);
     }
+    if (dr == "br" || dr == "bl") R.push(Array.from({ length: cols }, (_, c) => (c == 0 && dr == "br") || (c == cols - 1 && dr == "bl") ? { v: DR, h: 1, bg: "#fde9b8" } : { v: "", nb: 1 }));
     const cnt = {}; P.halls[hi].forEach(s => { const g = grpOf(s); cnt[g] = (cnt[g] || 0) + 1; });
+    /* إحصائية القاعة */
+    const stat = [{ v: "إحصائية القاعة (" + AD(hi + 1) + ")", h: 1, cs: cols }];
+    const sRows = [[{ v: "عدد الطلبة الكلي: " + AD(P.halls[hi].length) + " طالب", b: 1, cs: cols, fz: 1.1 }], ...(() => { const G = P.gk.filter(g => cnt[g]).map(g => ({ v: g + "\n" + AD(cnt[g]) + " طالب", b: 1 })), out = []; for (let i = 0; i < G.length; i += cols) { const r = G.slice(i, i + cols); while (r.length < cols) r.push({ v: "", nb: 1 }); out.push(r); } return out; })()];
     return {
-      title: "خارطة جلوس الطلبة — " + exName() + " " + yrTxt(), sub: "القاعة (" + AD(hi + 1) + ") — عدد الطلبة " + AD(P.halls[hi].length) + " — " + P.gk.filter(g => cnt[g]).map(g => g + " " + AD(cnt[g])).join("، "),
+      title: "خارطة جلوس الطلبة — " + exName() + " " + yrTxt(), sub: "القاعة رقم (" + AD(hi + 1) + ") — جهة الباب: " + (DOORS.find(x => x[0] == dr) || DOORS[0])[1],
       sheet: ("قاعة " + (hi + 1)).slice(0, 31), orient: "portrait", paper: "A4", fs: 10, hr: 1, drh: 44,
-      rows: [...head, ...R], ww: new Array(cols).fill(1), xw: new Array(cols).fill(30),
-      foot: ["مسؤول القاعة: ....................", "المدير\nفراس حسن كاظم"]
+      rows: [...head, ...R, [{ v: "", nb: 1, cs: cols }], stat, ...sRows], ww: new Array(cols).fill(1), xw: new Array(cols).fill(30),
+      foot: ["", "المدير\nفراس حسن كاظم"]
     };
   }
   function sumModel(P) {
@@ -120,16 +177,19 @@
     const P = plan7();
     const ok = P.placed.every((g, i) => g || !P.halls[i].length);
     const hi = Math.min(ST7.hall || 0, P.H - 1);
-    CURX = P.L.length && ok ? { name: "خارطة جلوس الطلبة — " + exName(), sheets: () => [sumModel(P), ...P.halls.flatMap((h, i) => h.length ? [hallModel(P, i), listModel(P, i)] : [])] } : null;
+    CURX = P.L.length && ok ? { name: "خارطة جلوس الطلبة — " + exName(), sheets: () => [sumModel(P), ...P.halls.flatMap((h, i) => h.length ? [hallModel(P, i)] : [])] } : null;
     const inp = (k, l, w) => `<label class="sub">${l} <input value="${AD(ST7[k])}" inputmode="numeric" style="width:${w || 60}px" onchange="seat207Set('${k}',this.value)"></label>`;
     const prev = P.placed[hi] ? (typeof modelHTML == "function" ? modelHTML(hallModel(P, hi)) : "") : "";
     return `<div class="vh"><h2>خارطة جلوس الطلبة</h2><span class="sub">توزيع آلي على القاعات — أعداد متساوية من كل صف، وما يكعد طالب جنب أو ورا طالب من نفس صفه أو شعبته</span></div>
 <div class="tools">${segB(ST7.t, [["m", "امتحانات نصف السنة"], ["f", "امتحانات نهاية السنة (بدون السادس)"]], "seat207Set.bind(0,'t')")}</div>
-<div class="tools">${inp("halls", "عدد القاعات")}${inp("cap", "سعة القاعة")}${inp("cols", "أعمدة المقاعد", 50)}<button class="btn ghost sm" onclick="seat207Set('new')">${I("refresh")} توزيع جديد</button></div>
+<div class="tools">${inp("halls", "عدد القاعات")}${inp("cap", "سعة القاعة")}${inp("cols", "عدد السروات", 50)}<button class="btn ghost sm" onclick="seat207Set('new')">${I("refresh")} توزيع جديد</button></div>
 ${P.over ? `<div class="banner err">${I("alert")} عدد الطلبة (${AD(P.L.length)}) أكثر من سعة ${AD(P.H)} قاعة × ${AD(P.seats)} مقعد. زيد عدد القاعات أو السعة.</div>` : ""}
 ${!ok && !P.over ? `<div class="banner err">${I("alert")} ما ينجح ترتيب بدون تجاور نفس الصف بهذي السعة — زيد أعمدة المقاعد أو السعة.</div>` : ""}
 <div class="box"><h3>التوزيع على القاعات (${AD(P.L.length)} طالب)</h3><div class="tw">${typeof modelHTML == "function" ? modelHTML(sumModel(P)) : ""}</div></div>
-<div class="box"><h3>القاعة</h3><div class="tools" style="flex-wrap:wrap">${P.halls.map((h, i) => `<button class="btn ${i == hi ? "" : "ghost"} sm" onclick="seat207Set('hall',${i})">${AD(i + 1)}</button>`).join("")}</div><div class="tw seat207">${prev}</div></div>
+<div class="box"><h3>القاعة</h3><div class="tools" style="flex-wrap:wrap">${P.halls.map((h, i) => `<button class="btn ${i == hi ? "" : "ghost"} sm" onclick="seat207Set('hall',${i})">${AD(i + 1)}</button>`).join("")}</div>
+<div class="tools"><span class="sub">جهة باب القاعة (${AD(hi + 1)}):</span>${DOORS.map(([k, t]) => `<button class="btn ${doorOf(hi) == k ? "" : "ghost"} sm" onclick="seat215Door(${hi},'${k}')">${t}</button>`).join("")}<button class="btn ghost sm" onclick="seat215Door(-1,'${doorOf(hi)}')">نفس الجهة لكل القاعات</button></div>
+<div class="tw seat207">${prev}</div></div>
+<div class="box"><h3>${I("doc")} أوراق أرقام القاعات</h3><p class="muted" style="margin:0 0 8px">ورقة بالعرض لكل قاعة: شعار المدرسة و«قاعة رقم -١-» بخط كبير — تنلصق على باب القاعة.</p><div class="tools"><label class="sub">من <input id="sg215a" value="١" inputmode="numeric" style="width:46px"></label><label class="sub">إلى <input id="sg215b" value="${AD(P.H)}" inputmode="numeric" style="width:46px"></label><button class="btn sm" onclick="seat215Signs('pdf')">${I("doc")} PDF</button><button class="btn ghost sm" onclick="seat215Signs('print')">${I("print")} طباعة</button></div></div>
 ${expBar()}`;
   }
 

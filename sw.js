@@ -40,7 +40,7 @@ self.addEventListener('fetch',e=>{const r=e.request;if(r.method!='GET')return;co
  if(same){e.respondWith(caches.match(r).then(m=>{const n=fetch(r).then(res=>put(V,r,res)).catch(()=>m);if(m){e.waitUntil(n.catch(()=>{}));return m}return n}));return}
  /* ملفات المرفقات (/f/…) والخطوط والمكتبات: من الذاكرة الدائمية أولاً */
  e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>put(EXT,r,res)).catch(()=>caches.match(r,{ignoreSearch:true}).then(x=>x||Response.error()))))});
-self.addEventListener('message',e=>{const d=e.data||{};if(d.t=='keep204'&&Array.isArray(d.u)){e.waitUntil(caches.open(EXT).then(async c=>{for(const u of d.u.slice(0,60)){try{if(await c.match(u))continue;const r=await fetch(u);if(r&&r.ok)await c.put(u,r)}catch(x){}}}))}if(d.t=='fresh204')e.waitUntil(fresh())});
+self.addEventListener('message',e=>{const d=e.data||{};if(d.t=='keep204'&&Array.isArray(d.u)){e.waitUntil(caches.open(EXT).then(async c=>{for(const u of d.u.slice(0,200)){try{if(await c.match(u))continue;const r=await fetch(u);if(r&&r.ok)await c.put(u,r)}catch(x){}}}))}if(d.t=='fresh204')e.waitUntil(fresh())});
 /* إشعارات التبليغات بصوت: الخادم يبعث تنبيه، وهنا نجيب عنوان آخر تبليغ ونعرضه */
 const PCH='sinai-push';
 async function pushShow(){

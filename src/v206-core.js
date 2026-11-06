@@ -64,7 +64,7 @@
     lgSubmit = function (e) {
       try {
         const r = typeof LGR != "undefined" ? LGR : "", u = ((D.getElementById("lgu") || {}).value || "").trim().toLowerCase(), p = ((D.getElementById("lgp") || {}).value || "").trim();
-        if ((r == "s" || r == "t") && u == "test" && p == "1234") { if (e && e.preventDefault) e.preventDefault(); tstOpen(r, 1); return false; }
+        if (0 && (r == "s" || r == "t") && u == "test" && p == "1234") { /* v215: انحذفت */ if (e && e.preventDefault) e.preventDefault(); tstOpen(r, 1); return false; }
       } catch (x) { console.warn(x); }
       return _lg.apply(this, arguments);
     };
@@ -75,14 +75,14 @@
     prender = function () {
       try {
         const k = LG("tst205");
-        if (k && TST[k] && hasPS() && !PS.key && typeof ROLE != "undefined" && ROLE == k) { tstFill(k); setTimeout(() => tstRefresh(k, 1), 50); }
+        if (0 && k && TST[k] && hasPS() && !PS.key && typeof ROLE != "undefined" && ROLE == k) { tstFill(k); setTimeout(() => tstRefresh(k, 1), 50); }
       } catch (e) { }
       return _pr.apply(this, arguments);
     };
   }
-  on(() => { const k = LG("tst205"); if (k && TST[k] && hasPS() && !PS.key && typeof ROLE != "undefined" && ROLE == k && portalOn()) tstOpen(k, 0); });
+  on(() => { const k = LG("tst205"); if (0 && k && TST[k] && hasPS() && !PS.key && typeof ROLE != "undefined" && ROLE == k && portalOn()) tstOpen(k, 0); });
   /* رابط مباشر من الإدارة: ?tst=s أو ?tst=t */
-  on(() => { const m = /[?&]tst=([st])\b/.exec(location.search); if (m && typeof SNAP != "undefined" && SNAP) { setTimeout(() => tstOpen(m[1], 1), 30); try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) { } } });
+  on(() => { const m = /[?&]tst=([st])\b/.exec(location.search); if (0 && m && typeof SNAP != "undefined" && SNAP) { setTimeout(() => tstOpen(m[1], 1), 30); try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) { } } });
   /* الخروج من الحساب التجريبي */
   W.tst206Out = () => { LS("tst205", null); try { psOut(1); } catch (e) { } if (hasPS()) { PS.key = null; PS.b = null; } try { logout(); } catch (e) { prender(); } };
   /* تغيير صف وشعبة الطالب التجريبي / جدول المدرس اللي يعرضه المدرس التجريبي */

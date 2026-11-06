@@ -1,7 +1,7 @@
 /* خادم بوابة إعدادية سيناء للبنين على Cloudflare (D1)
  * نفس أوامر خادم Google Apps Script بالضبط، حتى التطبيق والنظام يشتغلون عليه بدون أي تغيير.
  * البيانات بقاعدة D1، والملفات الكبيرة مقسّمة قطع بجدول chunks. */
-const J = { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' };
+const J = { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains', 'Cache-Control': 'no-store' };
 const out = o => new Response(JSON.stringify(o), { headers: J });
 const enc = new TextEncoder(), dec = new TextDecoder();
 const now = () => new Date().toISOString();
@@ -21,7 +21,7 @@ const kvPut = (k, v) => run('insert into kv(k,v) values(?,?) on conflict(k) do u
 /* نص كبير مقسّم قطع */
 /* v207g: الصور والملفات الكبيرة (البوردات، صور القيد، صور الكتب والملاك) بقاعدة ثانية FDB — القاعدة الأساسية ما تتعبى */
 /* v212: قواعد الملفات بالترتيب — إذا وحدة امتلأت (٥٠٠ م.ب) يكمل بالي بعدها (المجموع ٢ غيغا) */
-const FDBS_ = () => [ENV.FDB, ENV.FDB2, ENV.FDB3, ENV.FDB4].filter(Boolean);
+const FDBS_ = () => [ENV.FDB, ENV.FDB2, ENV.FDB3, ENV.FDB4, ENV.FDB5, ENV.FDB6].filter(Boolean); /* v215: ٦ قواعد ملفات (٣ غيغا) */
 const BIGID_RE = /^d_(archpart|qaidimg|mailimg|staffphoto)\//;
 const big_ = id => !!(ENV && ENV.FDB) && BIGID_RE.test(String(id));
 async function blobPut(id, s) {
@@ -96,7 +96,7 @@ async function private_() {
 async function private0_() {
   const P = await kvJ('priv', null) || { s: {}, t: {} }, X = await kvJ('privx', {});
   for (const k of ['s', 't']) { P[k] = P[k] || {}; for (const id in (X[k] || {})) if (!P[k][id]) P[k][id] = X[k][id]; }
-  try { P.s[TST_S] = await tstPS206_(); P.t[TST_T] = await tstPT206_(); } catch (e) { P.s[TST_S] = TST_PS; P.t[TST_T] = TST_PT; }
+  /* v215: الحسابات التجريبية انحذفت */
   return MEMO.priv = P;
 }
 const privBump_ = () => kvPut('PRIVV', uid().slice(0, 10)).then(() => { G_PRIV = null; MEMO.priv = null; });
@@ -397,7 +397,9 @@ async function extra204_(o, x) {
 /* ---------- الأوامر ---------- */
 async function handle(b) {
   const a = String(b.a || '');
-  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { }
+  /* v215: حماية — حد للطلبات من نفس الجهاز (يحمي الخادم من الإغراق) */
+  if (RL215_(b)) return { err: 'many' };
+  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { }
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -440,7 +442,8 @@ async function handle(b) {
     await run('insert into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', kind, key, acc.name, ph, t, t, gn);
     return bundle_({ a: acc, kind, key }, b);
   }
-  if (a === 'tstSet') { const y = await auth_(b); if (y.err) return y; if (!/^tst-/.test(y.key)) return { err: 'role' }; return tstSelf206_(y, b); }
+  if (a === 'tstSet') return { err: 'op' };
+  if (a === 'tstSet_old') { const y = await auth_(b); if (y.err) return y; if (!/^tst-/.test(y.key)) return { err: 'role' }; return tstSelf206_(y, b); }
   if (['save', 'photo', 'report', 'notify', 'seen', 'inbox', 'repReply', 'tgrade', 'tgrades'].includes(a)) {
     const y = await auth_(b); if (y.err) return y;
     if (y.bind) await accNid_(y.kind, y.key, y.bind);
@@ -550,7 +553,7 @@ async function admin_(b) {
   if (b.op === 'exPub') return exPub204_(b);
   if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
   if (b.op === 'tstGet') return { ok: 1, x: await kvJ('TST206', {}), ps: await tstPS206_(), pt: await tstPT206_() };
-  if (b.op === 'tstSet') return tstAdm206_(b);
+  if (b.op === 'tstSet') return { err: 'op' };
   return { err: 'op' };
 }
 
@@ -693,6 +696,7 @@ async function stf_(b) {
     if (!e || e.h === 'DEL') return { ok: 1, rev: e ? e.rev : 0, del: 1 };
     return { ok: 1, rev: e.rev, d: await dget_(e) };
   }
+  if (op === 'absN215') return absN215_(b, a);
   if (op === 'put') {
     if (a.ro) return { err: 'ro' };
     const p = String(b.p || ''); if (!reOf(a).test(p)) return { err: 'path' };
@@ -1112,11 +1116,11 @@ async function ens205_() {
     'create index if not exists psub_k on psub(kind,key)',
     'create table if not exists pushq(id integer primary key autoincrement, sid text, at text)']) { try { await run(q); } catch (e) { } }
   const t = now();
-  for (const [k, key, n, ph, nid] of [['s', TST_S, 'طالب تجريبي', '07000000001', '200900000001'], ['t', TST_T, 'مدرس تجريبي', '07000000002', '199000000002']])
+  for (const [k, key, n, ph, nid] of [])
     try { await run('insert or ignore into acc(kind,key,name,phone,created,updated,nid) values(?,?,?,?,?,?,?)', k, key, n, ph, t, t, nid); } catch (e) { }
   try {
     await blobPut('ph_tstph', TST_PH);
-    for (const [k, key, n, j] of [['s', TST_S, 'طالب تجريبي', TST_PJS], ['t', TST_T, 'مدرس تجريبي', TST_PJT]])
+    for (const [k, key, n, j] of [])
       await run("insert or ignore into prof(kind,key,name,json,photo,updated,status) values(?,?,?,?,?,?,?)", k, key, n, JSON.stringify(j), 'tstph', t, 'ok');
   } catch (e) { }
   await kvPut('E205', '3');
@@ -1192,7 +1196,7 @@ async function pushNote205_(o) {
 export default {
   async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { const sv = +(await kvGet('SAVER') || 0), m = new Date(ev.scheduledTime || Date.now()).getUTCMinutes(); if ((sv >= 2 && m % 10) || (sv >= 1 && m % 3)) return; } catch (e) { } try { await mvblob_(6); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
-    DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || '';
+    DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || ''; RL215IP = req.headers.get('CF-Connecting-IP') || '';
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
     try {
       if (req.method === 'GET') {
@@ -1310,4 +1314,51 @@ async function imp207_(b) {
   const o = { at: String(m.at || now()), at2: Date.now() + '_' + id.slice(0, 8), cls: String(m.cls || '').slice(0, 80), idx: String(m.idx || '').slice(0, 200000), name: String(m.name || '').slice(0, 200), notes: String(m.notes || '').slice(0, 300), parts: +m.parts || 1, sec: m.sec === 'rec' ? 'rec' : 'brd', size: +m.size || 0, src: 'db', title: String(m.title || '').slice(0, 200), type: /^(image\/(jpeg|png)|application\/pdf)$/.test(m.type) ? m.type : 'image/jpeg', yr: String(m.yr || '').slice(0, 20) };
   const t = canon_(o); const r = await dput_('arch/' + id, t, syH_(t), 'o:imp207', null);
   return { ok: 1, rev: r.rev };
+}
+
+/* ---------- v215 ---------- */
+/* حد الطلبات: لكل جهاز (IP) بالذاكرة — ٢٤٠ طلب بالدقيقة، والدخول ٢٠ محاولة بالدقيقة (فوق حد المحاولات الخاطئة الموجود) */
+const RL215 = new Map(); let RL215IP = '';
+function RL215_(b) {
+  try {
+    const ip = RL215IP || ''; if (!ip) return false;
+    const t = Math.floor(Date.now() / 60e3), lg = /^(login|reg)$/.test(String(b && b.a || '')) || (b && b.a === 'stf' && b.op === 'login');
+    const k = ip + '|' + t + (lg ? '|l' : ''), n = (RL215.get(k) || 0) + 1; RL215.set(k, n);
+    if (RL215.size > 5000) { for (const x of RL215.keys()) { if (!x.includes('|' + t)) RL215.delete(x); } }
+    return lg ? n > 20 : n > 240;
+  } catch (e) { return false; }
+}
+/* حذف الحسابات التجريبية من الخادم (مرة وحدة) */
+let E215 = 0;
+async function ens215_() {
+  if (E215) return; E215 = 1;
+  if ((await kvGet('E215')) === '1') return;
+  for (const q of ["delete from acc where key in ('tst-s','tst-t')", "delete from prof where key in ('tst-s','tst-t')", "delete from notes where target in ('s:tst-s','t:tst-t')", "delete from kv where k='TST206'"]) { try { await run(q); } catch (e) { } }
+  try { await run("delete from psub where key in ('tst-s','tst-t')"); } catch (e) { }
+  try { await run("delete from seen where key in ('tst-s','tst-t')"); } catch (e) { }
+  MEMO.priv = null; MEMO.notes = null; try { gcDel('notes'); } catch (e) { }
+  await kvPut('E215', '1');
+}
+/* تبليغ الطالب فوراً بغيابه: الجهاز اللي يسجل الغياب يرسل [معرّف الطالب، مجموع غياباته، 1 غائب / 0 انشال الغياب] */
+async function absN215_(b, a) {
+  const d = String(b.d || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return { err: 'data' };
+  if (a.ro || !reOf(a).test('attendance/' + d)) return { err: 'role' };
+  const L = Array.isArray(b.L) ? b.L.slice(0, 300) : [];
+  const [y, m, dd] = d.split('-'), dt = [+dd, +m, +y].join('/').replace(/[0-9]/g, k => '٠١٢٣٤٥٦٧٨٩'[k]);
+  const ar = n => String(n).replace(/[0-9]/g, k => '٠١٢٣٤٥٦٧٨٩'[k]);
+  let sent = 0, del = 0;
+  for (const x of L) {
+    if (!Array.isArray(x)) continue;
+    const id = String(x[0] || '').slice(0, 60); if (!/^[A-Za-z0-9_\-]+$/.test(id)) continue;
+    const nid = ('ab' + d.replace(/-/g, '') + id).slice(0, 80);
+    if (+x[2] === 1) {
+      if (await noteHas_(nid)) continue;
+      const n = Math.max(0, +x[1] || 0);
+      await noteAdd_({ id: nid, scope: 'one', target: 's:' + id, from: 'إدارة المدرسة', title: 'تم تسجيل غيابك — ' + dt, body: 'تم تسجيل غيابك يوم ' + dt + '.\nمجموع أيام غيابك لحد الآن: ' + ar(n) + ' يوم.\nإذا عندك عذر راجع إدارة المدرسة.', date: now(), cat: 'abs', files: '' });
+      sent++;
+    } else { try { await run('delete from notes where id=?', nid); del++; } catch (e) { } }
+  }
+  if (del) { MEMO.notes = null; try { gcDel('notes'); } catch (e) { } }
+  return { ok: 1, sent, del };
 }
