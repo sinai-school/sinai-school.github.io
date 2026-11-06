@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v215b-2026-11-06T05:45:00.000Z-v215b";
+<script>window.APP_VER = "2k7v216-2026-11-07T00:00:00.000Z-v216";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -29774,7 +29774,9 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const by = {};
       us.forEach((x) => (by[x.s] = by[x.s] || []).push(x));
       const SO = GV("SN") || [];
-      sh = Object.keys(by).sort((a, b) => SO.indexOf(a) - SO.indexOf(b)).map((s) => sheet137("الطلاب غير المسجلين بالبوابة — " + s, ["ت", "اسم الطالب", "ملاحظات"], by[s].map((x, i) => [A(i + 1), { v: x.n, l: 1 }, ""]), [0.8, 7, 2], [6, 52, 18]));
+      const all216 = [];
+      Object.keys(by).sort((a, b) => SO.indexOf(a) - SO.indexOf(b)).forEach((s) => by[s].forEach((x) => all216.push(x)));
+      sh = all216.length ? [sheet137("الطلاب غير المسجلين بالبوابة", ["ت", "اسم الطالب", "الصف والشعبة", "ملاحظات"], all216.map((x, i) => [A(i + 1), { v: x.n, l: 1 }, x.s || "", ""]), [0.8, 6, 3, 1.6], [6, 44, 24, 14])] : [];
       if (!sh.length) return T0("كل الطلاب مسجلين ✓");
     } else {
       if (!ut.length) return T0("كل الملاك مسجلين ✓");
@@ -39004,6 +39006,71 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   if (D.readyState == "loading") D.addEventListener("DOMContentLoaded", go);
   else go();
+})();
+</script>
+<script id="v216">(function() {
+  "use strict";
+  const W = window, D = document;
+  const editing = () => {
+    const a = D.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+  };
+  let WAIT = null;
+  const apply = (r) => {
+    if (typeof PS == "undefined" || !PS.b) return;
+    if (editing()) {
+      WAIT = r;
+      return;
+    }
+    WAIT = null;
+    let p = Object.assign({}, PS.b.profile || {}, r.profile || {});
+    try {
+      if (typeof pq130Mine == "function") pq130Mine().forEach((x) => {
+        if (x.b && x.b.a == "save") p = Object.assign(p, x.b.info || {});
+      });
+    } catch (e) {
+    }
+    PS.b.profile = p;
+    PS.b.pu = r.pu;
+    try {
+      if (typeof psKeep == "function") psKeep();
+    } catch (e) {
+    }
+    try {
+      if (typeof prender == "function") prender();
+    } catch (e) {
+    }
+  };
+  D.addEventListener("focusout", () => setTimeout(() => {
+    if (WAIT && !editing()) apply(WAIT);
+  }, 300));
+  const hook = () => {
+    if (typeof api71 != "function" || api71.__v216) return !!(typeof api71 == "function");
+    const _a = api71;
+    const f = async function(b, ms) {
+      try {
+        if (b && b.a == "inbox" && typeof PS != "undefined" && PS.b && PS.b.pu) b = Object.assign({}, b, { pu: PS.b.pu });
+      } catch (e) {
+      }
+      const r = await _a.call(this, b, ms);
+      try {
+        if (r && r.ok && b && typeof PS != "undefined" && PS.b && b.key == PS.key) {
+          if (b.a == "inbox" && r.profile && r.pu && r.pu != PS.b.pu) apply(r);
+          else if ((b.a == "login" || b.a == "reg") && r.pu) PS.b.pu = r.pu;
+        }
+      } catch (e) {
+      }
+      return r;
+    };
+    f.__v216 = 1;
+    api71 = f;
+    return true;
+  };
+  if (!hook()) {
+    const t = setInterval(() => {
+      if (hook()) clearInterval(t);
+    }, 500);
+  }
 })();
 </script>
 </body></html>
