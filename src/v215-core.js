@@ -202,12 +202,13 @@
      ===================================================================== */
   const norm = s => String(s || "").replace(/[أإآا]/g, "ا").replace(/[ىي]/g, "ي").replace(/ة/g, "ه").replace(/[ًٌٍَُِّْـ]/g, "").replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632).toLowerCase();
   const SRCH = {};
+  /* البحث يفلتر صفوف كل الجداول بالقسم المفتوح — مربع البحث ينحط فوق القسم بدون ما يغيّر ترتيب المحتوى */
   W.srch215 = (inp, k) => {
     SRCH[k] = inp.value; const v = norm(inp.value).trim().split(/\s+/).filter(Boolean);
-    const box = inp.closest(".srch215w"); if (!box) return;
+    const root = inp.closest("main,#view,.view,#app") || D.body;
     let n = 0;
-    box.querySelectorAll("table tr").forEach((tr, i) => { if (!tr.querySelector("td")) return; const t = norm(tr.textContent); const ok = v.every(w => t.includes(w)); tr.style.display = ok ? "" : "none"; if (ok) n++; });
-    const c = box.querySelector(".srch215n"); if (c) c.textContent = v.length ? AD(n) + " نتيجة" : "";
+    root.querySelectorAll("table tr").forEach(tr => { if (!tr.querySelector("td") || tr.closest(".srch215")) return; const ok = !v.length || v.every(w => norm(tr.textContent).includes(w)); tr.style.display = ok ? "" : "none"; if (ok) n++; });
+    const c = inp.parentNode.querySelector(".srch215n"); if (c) c.textContent = v.length ? AD(n) + " نتيجة" : "";
   };
   const srchBox = (k, ph) => `<div class="srch215"><span>${I("search")}</span><input type="search" placeholder="${ph}" value="${E(SRCH[k] || "")}" oninput="srch215(this,'${k}')" autocomplete="off"><em class="srch215n"></em></div>`;
   function wrapSearch(name, k, ph, test) {
@@ -217,10 +218,11 @@
       V[name] = function () {
         let h = _v.apply(this, arguments);
         on(() => {
-          if (typeof h != "string" || (test && !test())) return;
-          const i = h.indexOf('<div class="tw">'); if (i < 0) return;
-          h = h.slice(0, i) + `<div class="srch215w">` + srchBox(k, ph) + h.slice(i) + `</div>`;
-          if (SRCH[k]) setTimeout(() => { const x = D.querySelector(".srch215w input"); if (x) W.srch215(x, k); }, 0);
+          if (typeof h != "string" || (test && !test()) || !/<table/.test(h)) return;
+          /* بعد العنوان مباشرة (أول </div> بعد class="vh") وإلا بالبداية */
+          const a = h.indexOf('class="vh"'), b = a >= 0 ? h.indexOf("</div>", a) : -1;
+          h = b >= 0 ? h.slice(0, b + 6) + srchBox(k, ph) + h.slice(b + 6) : srchBox(k, ph) + h;
+          if (SRCH[k]) setTimeout(() => { const x = D.querySelector(".srch215 input"); if (x) W.srch215(x, k); }, 0);
         });
         return h;
       };
@@ -288,7 +290,13 @@
 .hub215t small{font:600 11.5px/1 var(--f-body,inherit);color:var(--muted);background:#eef5f1;border-radius:99px;padding:3px 8px}
 .hubg{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important;gap:10px!important}
 .hubc{min-width:0!important}
-.hubc b,.hubc span,.nv,.nv span,.mbar button,.mbar button span,.tools .btn,.btn,.chip,.vh h2,.hubhd h2,.lgp-c b,.ix span,.lnk span,th,td{overflow-wrap:anywhere;word-break:normal;hyphens:none}
+.hubc b,.hubc span,.nv,.nv span,.mbar button,.mbar button span,.tools .btn,.btn,.chip,.vh h2,.hubhd h2,.lgp-c b,.ix span,.lnk span{overflow-wrap:break-word;word-break:normal;hyphens:none}
+.tw th,.tw td{overflow-wrap:normal!important;word-break:keep-all}
+.tw th{white-space:nowrap}
+.tw table:not(.grid):not(.mt) th{background:#1f5c4b!important;color:#fff!important;font-weight:700!important}
+table.mt th:not([style*="background"]){background:#1f5c4b!important;color:#fff!important}
+.tw td{color:#16241f}
+.tw .muted,.tw .sub{color:#5b6b65!important}
 .hubc b{white-space:normal!important;text-overflow:clip!important;overflow:visible!important;line-height:1.4!important}
 .hubc span:not(.hubi){display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .btn{white-space:normal!important;height:auto!important;min-height:36px;line-height:1.35}
@@ -297,6 +305,7 @@ input,select,textarea{max-width:100%;min-width:0}
 .vh{flex-wrap:wrap;row-gap:4px}.vh h2{min-width:0}
 .tools{flex-wrap:wrap}
 @media (max-width:380px){.hubg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.hubc{padding:12px 8px!important}.hubc b{font-size:13.5px!important}}
+@media (max-width:640px){#sync>span{display:none!important}#sync{padding:6px!important;min-width:0}#ptitle{font-size:clamp(15px,4.6vw,19px)!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.25!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}#pdate{white-space:nowrap}}
 .srch215{display:flex;align-items:center;gap:8px;margin:6px 0 10px;padding:4px 12px;border:1.5px solid var(--line,#dfe6e2);border-radius:14px;background:#fff;box-shadow:0 1px 6px rgba(23,74,61,.05)}
 .srch215:focus-within{border-color:#1f6b58;box-shadow:0 0 0 3px rgba(31,107,88,.12)}
 .srch215 span{display:grid;color:#1f6b58}.srch215 .ic{width:18px;height:18px}
@@ -367,5 +376,69 @@ input,select,textarea{max-width:100%;min-width:0}
   const st = D.createElement("style");
   st.textContent = `.pf215k{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:6px 12px;margin:0}.pf215k dt{color:var(--muted);font-size:13px}.pf215k dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 .pf215i{margin:12px 0 0;display:grid;gap:6px}.pf215i img{width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fafafa;cursor:zoom-in}.pf215i figcaption{font-size:12.5px;color:var(--muted)}`;
+  (D.head || D.documentElement).appendChild(st);
+})();
+/* ===== v215b: «درجات المدرسين» — تفاصيل كل إرسال (اسم الطالب ودرجته) + تبليغات المدرسين للطلاب ومرفقاتها ===== */
+(function () {
+  "use strict";
+  const W = window, D = document;
+  const on = fn => { try { return fn(); } catch (e) { console.warn("v215b", e); } };
+  const E = s => typeof esc == "function" ? esc(s) : String(s == null ? "" : s);
+  const AD = x => String(x == null ? "" : x).replace(/[0-9]/g, k => "٠١٢٣٤٥٦٧٨٩"[k]);
+  const I = n => typeof ic == "function" ? ic(n) : "";
+  const DET = {}, OPEN = {};
+  const FD = v => { const t = Date.parse(v || ""); if (!t) return ""; const d = new Date(t); return typeof dmy207 == "function" ? dmy207(d.getDate(), d.getMonth() + 1, d.getFullYear()) : AD(d.toLocaleDateString()); };
+  const sName = k => { let n = ""; on(() => { const s = (typeof ST != "undefined" ? ST : []).find(x => x.id == k); if (s) n = s.n + " — " + s.s; }); return n || k; };
+  const tName = k => { let n = ""; on(() => { const f = (typeof STF != "undefined" ? STF : []).find(x => x.id == k); if (f) n = f.name; }); return n; };
+  const kOf = r => [r.tkey, r.subj, r.label].join("|");
+  const redraw = () => on(() => { const y = scrollY; render(); scrollTo(0, y); });
+  W.tg215 = async i => {
+    const D0 = (typeof APID != "undefined" && APID) || {}; const r = (D0.tgc || [])[i]; if (!r) return;
+    const k = kOf(r); OPEN[k] = !OPEN[k];
+    if (OPEN[k] && !DET[k] && r.tkey) {
+      DET[k] = "…"; redraw();
+      try { const x = await api({ a: "admin", secret: APIK.secret, op: "tgrDet", tkey: r.tkey, subj: r.subj, label: r.label }, APIK.url); DET[k] = x && x.ok ? x.rows : "err"; } catch (e) { DET[k] = "err"; }
+    }
+    redraw();
+  };
+  function grBox(D0) {
+    const L = D0.tgc || [];
+    if (!L.length) return "";
+    return `<div class="box tg215"><h3>${I("pen")} تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال حتى تشوف أسماء الطلاب ودرجاتهم.</p>${L.map((r, i) => {
+      const k = kOf(r), op = OPEN[k], d = DET[k];
+      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة حتى تنفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>'
+        : `<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>${(d || []).map((x, j) => `<tr><td>${AD(j + 1)}</td><td class="l">${E(sName(x.skey))}</td><td><b>${E(AD(x.val))}</b></td><td class="l">${E(x.note || "")}</td><td>${E(FD(x.date))}</td></tr>`).join("")}</table></div>`;
+      return `<div class="tg215r"><button type="button" class="tg215h" onclick="tg215(${i})"><span><b>${E(r.tname || tName(r.tkey))}</b><small>${E(r.subj)} — ${E(r.label)}</small></span><span class="chip">${AD(r.n)} طالب</span><span class="chip">${E(FD(r.d))}</span><span class="tg215c">${op ? "▲" : "▼"}</span></button>${body}</div>`;
+    }).join("")}</div>`;
+  }
+  function attHTML(files) {
+    let F = []; try { F = typeof files == "string" ? JSON.parse(files || "[]") : (files || []); } catch (e) { F = []; }
+    if (!F.length) return "";
+    const base = () => { try { return String((APIK && APIK.url) || "https://sinai.7svyn82yzr.workers.dev").replace(/\/$/, ""); } catch (e) { return "https://sinai.7svyn82yzr.workers.dev"; } };
+    return `<div class="tg215f">${F.map(f => { const u = f.id ? base() + "/f/" + f.id : (f.u || ""); const img = /^image\//.test(f.m || "") || /\.(jpe?g|png|webp|gif)$/i.test(f.n || ""); return img ? `<a href="${E(u)}" target="_blank" rel="noopener" class="tg215im"><img src="${E(u)}" alt="${E(f.n || "صورة")}" loading="lazy"></a>` : `<a class="btn ghost sm" href="${E(u)}" target="_blank" rel="noopener">${I("doc")} ${E(f.n || "ملف")}</a>`; }).join("")}</div>`;
+  }
+  function ntBox(D0) {
+    const N = (D0.notes || []).filter(n => n.cat == "tch").slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    if (!N.length) return `<div class="box"><h3>${I("mail")} تبليغات المدرسين للطلاب ومرفقاتها</h3><p class="muted" style="margin:0">ما أرسل أي مدرس تبليغ بعد.</p></div>`;
+    const seen = D0.seen || {};
+    const to = n => n.scope == "sec" ? "شعبة " + n.target : n.scope == "one" ? sName(String(n.target || "").replace(/^s:/, "")) : n.scope == "allS" ? "كل الطلاب" : n.scope == "all" ? "الكل" : (n.target || "");
+    return `<div class="box"><h3>${I("mail")} تبليغات المدرسين للطلاب ومرفقاتها (${AD(N.length)})</h3>${N.slice(0, 150).map(n => `<div class="tg215n"><div class="tg215nh"><b>${E(n.title)}</b><span class="chip">${E(n.from || "")}</span></div><p class="sub" style="margin:2px 0">إلى: ${E(to(n))} — ${E(FD(n.date))} — شافه ${AD((seen[n.id] || []).length)}</p>${n.body ? `<p style="margin:4px 0;white-space:pre-line">${E(n.body)}</p>` : ""}${attHTML(n.files)}</div>`).join("")}</div>`;
+  }
+  on(() => {
+    if (typeof ppBody != "function") return;
+    const _pb = ppBody;
+    ppBody = function (D0) {
+      let h = _pb.apply(this, arguments);
+      on(() => { if (typeof APIT != "undefined" && APIT == "tg" && D0 && D0.acc && typeof h == "string") h += grBox(D0) + ntBox(D0); });
+      return h;
+    };
+  });
+  const st = D.createElement("style");
+  st.textContent = `.tg215r{border:1px solid var(--line);border-radius:14px;margin:0 0 8px;overflow:hidden;background:#fff}
+.tg215h{all:unset;box-sizing:border-box;width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:10px 12px;cursor:pointer}
+.tg215h>span:first-child{flex:1 1 180px;display:grid;gap:2px}.tg215h small{color:var(--muted);font-size:12.5px}.tg215c{color:var(--muted);font-size:12px}
+.tg215r .tw{margin:0 10px 10px}
+.tg215n{border-top:1px solid var(--line);padding:10px 0}.tg215n:first-of-type{border-top:0}.tg215nh{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tg215f{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.tg215im img{width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}`;
   (D.head || D.documentElement).appendChild(st);
 })();

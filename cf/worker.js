@@ -508,7 +508,7 @@ async function admin_(b) {
       seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
       unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s' and key not like 'tst-%'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
       nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
-      rel: await kvJ('REL', { c: [] }), tgc: (await all('select label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
+      rel: await kvJ('REL', { c: [] }), tgc: (await all('select tkey,label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
   }
   if (b.op === 'photo') { const q = await profGet_(String(b.kind), String(b.key)); return { ok: 1, photo: q ? await photo_(q.photo) : '' }; }
   if (b.op === 'setPhone') {
@@ -551,6 +551,8 @@ async function admin_(b) {
   if (b.op === 'rel') { const c = (b.c || []).map(Number).filter(n => n >= 1 && n <= 6); await kvPut('REL', { c, at: now() }); return { ok: 1, c }; }
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
   if (b.op === 'exPub') return exPub204_(b);
+  /* v215b: تفاصيل الدرجات اللي أرسلها المدرس (لكل طالب) */
+  if (b.op === 'tgrDet') return { ok: 1, rows: await all('select skey,val,note,date from tgr where tkey=? and subj=? and label=? order by date desc limit 400', String(b.tkey || ''), String(b.subj || ''), String(b.label || '')) };
   if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
   if (b.op === 'tstGet') return { ok: 1, x: await kvJ('TST206', {}), ps: await tstPS206_(), pt: await tstPT206_() };
   if (b.op === 'tstSet') return { err: 'op' };
