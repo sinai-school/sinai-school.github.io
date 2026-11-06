@@ -249,7 +249,7 @@ async function gate_(o, x) {
 async function bundle_(x, b) {
   const P = await private_(), pv = (P[x.kind] || {})[x.key] || {}, pr = await profGet_(x.kind, x.key);
   const secs = pv.secs || (pv.s ? [pv.s] : []), pid = pr ? pr.photo : '', same = !!(pid && b && b.pid && String(b.pid) === pid);
-  const o = { ok: 1, phone: x.a.phone, private: pv, profile: pr ? JSON.parse(pr.json || '{}') : {}, status: pr ? pr.status : '', photo: same ? '' : (pr ? await photo_(pid) : ''), pid, notes: await notesFor_(x.kind, x.key, secs), at: now() };
+  const o = { ok: 1, phone: x.a.phone, private: pv, profile: pr ? JSON.parse(pr.json || '{}') : {}, status: pr ? pr.status : '', pu: pr ? String(pr.updated || '') : '', photo: same ? '' : (pr ? await photo_(pid) : ''), pid, notes: await notesFor_(x.kind, x.key, secs), at: now() };
   if (same) o.ph1 = 1;
   if (x.kind === 't') { try { o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { o.sent = []; } }
   try { await extra202_(o, x); } catch (e) { }
@@ -477,7 +477,7 @@ async function handle(b) {
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
-    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; try { const pr = await profGet_(y.kind, y.key); if (pr) { o.pu = String(pr.updated || ''); if (String(b.pu || '') !== o.pu) o.profile = JSON.parse(pr.json || '{}'); } } catch (e) { } await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
@@ -711,12 +711,103 @@ async function stf_(b) {
     /* v208: ما ينكتب فوق ملف أحدث من نسخة الجهاز (جهاز بنسخة قديمة چان يرجّع الجدول والقيد للقديم) */
     const g8 = await guard208_(p, b, d);
     if (g8.err) return g8;
+    const old216 = REV216_RE.test(p) ? await docJ_(p) : null;
     const rr = await dput_(p, g8.d, g8.d === d ? String(b.h || '') : g8.h, 's:' + a.u, null);
     if (PROT208_RE.test(p) || (!BLOB_RE.test(p) && b.sid)) await kvPut('ds_' + p, String(b.sid || ''));
     if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
+    if (old216) { try { await rev216_(p, old216, JSON.parse(g8.d)); } catch (e) { } }
     return g8.d === d ? { ok: 1, rev: rr.rev } : { ok: 1, rev: rr.rev, mod: 1 };
   }
   return { err: 'op' };
+}
+
+/* ---------- v216: تعديل النظام ← البوابة ----------
+   أي تعديل بملف الطالب (school/students، stuinfo/g4..g6) أو ملف الموظف (staff/<id>) من النظام ينكتب بمعلومات البوابة (prof)
+   للحقول اللي تغيّرت فعلاً بس (مقارنة النسخة القديمة بالجديدة) — حتى الطالب/المدرس يشوف التصحيح بملفه بالبوابة،
+   وإذا رجع حفظ ملفه بالبوابة ما يرجّع المعلومة الغلط. (البوابة ← النظام موجود: applyAll_) */
+const REV216_RE = /^(school\/students|stuinfo\/g[456]|staff\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
+function nmSplit216_(v) {
+  const T = String(v || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean), R = [];
+  for (let i = 0; i < T.length; i++) { if ((T[i] === 'عبد' || T[i] === 'ابو' || T[i] === 'أبو') && T[i + 1]) { R.push(T[i] + ' ' + T[i + 1]); i++; } else R.push(T[i]); }
+  return R;
+}
+function date216_(v) {
+  const t = dig_(v).trim(); let m = /^(\d{4})\D(\d{1,2})\D(\d{1,2})$/.exec(t), y, mo, d;
+  if (m) { y = m[1]; mo = m[2]; d = m[3]; } else { m = /^(\d{1,2})\D(\d{1,2})\D(\d{4})$/.exec(t); if (!m) return ''; d = m[1]; mo = m[2]; y = m[3]; }
+  const r = y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0'); return dOk_(r) ? r : '';
+}
+function adr216_(v) {
+  const o = {}, pre = [], post = []; let seen = 0;
+  for (const x0 of String(v || '').split(/\s*[\/—]\s*/)) {
+    const x = x0.trim(); if (!x) continue;
+    let m;
+    if ((m = /^محلة\s*(.*)$/.exec(x))) { o.mahalla = dig_(m[1]).trim(); seen = 1; }
+    else if ((m = /^زقاق\s*(.*)$/.exec(x))) { o.zuqaq = dig_(m[1]).trim(); seen = 1; }
+    else if ((m = /^دار\s*(.*)$/.exec(x))) { o.dar = dig_(m[1]).trim(); seen = 1; }
+    else (seen ? post : pre).push(x);
+  }
+  if (pre[0]) o.city = pre[0]; if (pre[1]) o.hay = pre.slice(1).join(' - '); if (post.length) o.near = post.join(' - ');
+  return o;
+}
+function names216_(c, v, k3) {
+  const P = nmSplit216_(v); if (!P.length) return;
+  if (k3) { for (let i = 0; i < 3 && i < P.length; i++) c['m' + (i + 1)] = i === 2 ? P.slice(2).join(' ') : P[i]; return; }
+  for (let i = 0; i < 4 && i < P.length; i++) c['n' + (i + 1)] = P[i];
+  if (P.length > 4) c.laqab = P.slice(4).join(' ');
+}
+async function profMerge216_(kind, key, ch) {
+  if (!Object.keys(ch).length) return 0;
+  const p = await one('select * from prof where kind=? and key=?', kind, key); if (!p) return 0;
+  let cur = {}; try { cur = JSON.parse(p.json || '{}'); } catch (e) { cur = {}; }
+  let n = 0; for (const k in ch) { const v = String(ch[k] == null ? '' : ch[k]).trim(); if (!v || cur[k] === v) continue; cur[k] = v; n++; }
+  if (!n) return 0;
+  await run('update prof set json=?,updated=? where kind=? and key=?', JSON.stringify(cur), now(), kind, key);
+  return n;
+}
+async function rev216_(p, o, nw) {
+  const j = x => { try { return x && typeof x.json === 'string' ? JSON.parse(x.json) : {}; } catch (e) { return {}; } };
+  if (p === 'school/students') {
+    const A = new Map((Array.isArray(o.list) ? o.list : []).map(x => [x.id, x]));
+    for (const s of (Array.isArray(nw.list) ? nw.list : [])) {
+      const a = A.get(s.id); if (!a) continue; const ch = {};
+      if (String(a.n || '') !== String(s.n || '')) names216_(ch, s.n);
+      if (String(a.p || '') !== String(s.p || '')) { const q = phN_(s.p); if (q) ch.gphone = '0' + q; }
+      await profMerge216_('s', s.id, ch);
+    }
+    return;
+  }
+  if (/^stuinfo\//.test(p)) {
+    const A = j(o), B = j(nw);
+    for (const id in B) {
+      const a = A[id] || {}, b = B[id] || {}; if (JSON.stringify(a) === JSON.stringify(b)) continue; const ch = {};
+      if (a.m !== b.m && b.m) names216_(ch, b.m, 1);
+      if (a.dob !== b.dob && b.dob) { const d = date216_(b.dob); if (d) ch.dob = d; }
+      if (a.nid !== b.nid && b.nid) { const q = dig_(b.nid).replace(/\D/g, ''); if (q.length === 12) ch.nid = q; }
+      if (a.ad !== b.ad && b.ad) Object.assign(ch, adr216_(b.ad));
+      if (a.ar !== b.ar && b.ar) { const P = String(b.ar).split(/\s*—\s*/).filter(Boolean); if (P[0]) ch.city = P[0]; if (P.length >= 3) { ch.hay = P[1]; ch.near = P.slice(2).join(' - '); } else if (P[1]) ch.near = P[1]; }
+      const ax = a.x || {}, bx = b.x || {};
+      for (const k of ['n1', 'n2', 'n3', 'n4', 'laqab', 'm1', 'm2', 'm3', 'nid', 'gphone', 'gr', 'city', 'hay', 'mahalla', 'zuqaq', 'dar', 'near', 'email']) if (bx[k] != null && String(ax[k] ?? '') !== String(bx[k])) ch[k] = bx[k];
+      if (bx.dob && ax.dob !== bx.dob) { const d = date216_(bx.dob); if (d) ch.dob = d; }
+      await profMerge216_('s', id, ch);
+    }
+    return;
+  }
+  if (/^staff\//.test(p)) {
+    const key = p.slice(6), a = o || {}, b = nw || {}, ch = {};
+    if (a.fname !== b.fname && b.fname) names216_(ch, b.fname); else if (a.name !== b.name && b.name) names216_(ch, b.name);
+    if (a.mother !== b.mother && b.mother) names216_(ch, b.mother, 1);
+    for (const k of TMAP_) if (b[k] != null && b[k] !== '' && String(a[k] ?? '') !== String(b[k])) {
+      const f = FDEFS.t.find(x => x.k === k); let v = String(b[k]);
+      if (f && f.t === 'date') { v = date216_(v); if (!v) continue; } else if (f && f.t === 'digits') v = dig_(v).replace(/\D/g, '');
+      ch[k] = v;
+    }
+    if (a.address !== b.address && b.address) Object.assign(ch, adr216_(b.address));
+    if (a.phone !== b.phone && b.phone) {
+      const acc = await accGet_('t', key), mine = acc ? phN_(acc.phone) : '';
+      const other = String(b.phone).split(/[\s,،/]+/).map(phN_).find(q => q && q !== mine); if (other) ch.phone2 = '0' + other;
+    }
+    await profMerge216_('t', key, ch);
+  }
 }
 /* ---------- v208: حماية الجدول والقيد العام من النسخ القديمة ----------
    (١) ملفات PROT208: الجهاز يرسل base (رقم نسخة الملف اللي عنده) و sid (جلسته). إذا الملف بالخادم انحفظ بعدها من جلسة ثانية → يرفض (stale)
