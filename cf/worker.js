@@ -387,10 +387,10 @@ async function extra204_(o, x) {
       const gi = t.g.indexOf(g);
       if (t.f2) { if (!t.f2[x.key]) continue; }
       if (gi < 0) continue;
-      L.push({ k, t: t.t, at: t.at, g: [g], rows: t.rows.map(r => ({ d: r.d, c: [r.c[gi] || ''] })), notes: t.notes, mine: t.f2 ? t.f2[x.key] : null });
+      L.push({ k, t: t.t, at: t.at, g: [g], rows: t.rows.map(r => ({ d: r.d, c: [String(r.c[gi] || '').trim()] })).filter(r => r.c[0] && r.c[0] !== 'بلا امتحان'), notes: t.notes, mine: t.f2 ? t.f2[x.key] : null });
     } else L.push({ k, t: t.t, at: t.at, g: t.g, rows: t.rows, notes: t.notes, n2: t.f2 ? Object.keys(t.f2).length : 0 });
   }
-  o.ex = L; o.exh = exHash_(L.map(t => [t.k, t.at]));
+  o.ex = L; o.exh = exHash_(['v217', L.map(t => [t.k, t.at, t.rows.length])]);
   if (x.kind === 't' && !o.sent) { try { const pv = ((await private_()).t || {})[x.key] || {}; o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { } }
 }
 
@@ -491,6 +491,38 @@ async function handle(b) {
 }
 
 /* ---------- أوامر الإدارة (بالرمز السري) ---------- */
+async function pullFull_() {
+  const c0 = gcGet('pull217', 8000); if (c0) return c0;
+    const seen = {}; for (const r of await seenAll_()) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
+    return gcSet('pull217', { ok: 1, sheet: '',
+      acc: (await all("select * from acc where key not like 'tst-%' order by kind,key")).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
+      prof: (await all("select kind,key,name,json,photo,updated,status from prof where key not like 'tst-%' order by kind,key")).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
+      notes: (await notesAll_()).map(n => ({ id: n.id, scope: n.scope, target: n.target, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files })),
+      seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
+      unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s' and key not like 'tst-%'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
+      nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
+      rel: await kvJ('REL', { c: [] }), tgc: gcGet('tgc217', 60000) || gcSet('tgc217', await all('select tkey,label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) });
+}
+
+/* ---------- v217: سحب لوحة البوابة بالفرق فقط (الجهاز يرسل بصمات اللي عنده، والخادم يرجع بس اللي تغيّر) ---------- */
+const h217_ = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const B217 = 16;
+async function pull217_(hs, full) {
+  const F = await full(); if (!F || !F.ok) return F;
+  const o = { ok: 1, sheet: '', v217: 1, h: {}, bk: {} };
+  for (const k of ['acc', 'prof', 'notes']) {
+    const B = Array.from({ length: B217 }, () => []);
+    for (const r of F[k] || []) B[h217_(k === 'notes' ? String(r.id) : r.kind + ':' + r.key) % B217].push(r);
+    const H = B.map(x => h217_(JSON.stringify(x)).toString(36)), mine = Array.isArray(hs[k]) ? hs[k] : [];
+    o.h[k] = H; o.bk[k] = {}; H.forEach((x, i) => { if (mine[i] !== x) o.bk[k][i] = B[i]; });
+  }
+  { const B = Array.from({ length: B217 }, () => ({})); for (const id in F.seen || {}) B[h217_(String(id)) % B217][id] = F.seen[id];
+    const H = B.map(x => h217_(JSON.stringify(x)).toString(36)), mine = Array.isArray(hs.seen) ? hs.seen : [];
+    o.h.seen = H; o.bk.seen = {}; H.forEach((x, i) => { if (mine[i] !== x) o.bk.seen[i] = B[i]; }); }
+  for (const k of ['reports', 'unv', 'nids', 'rel', 'tgc']) { const x = h217_(JSON.stringify(F[k] ?? null)).toString(36); o.h[k] = x; if (hs[k] !== x) o[k] = F[k]; }
+  return o;
+}
+
 async function admin_(b) {
   const sec = await secret_();
   if (b.op === 'init') { if (sec && sec !== b.secret) return { err: 'claimed' }; if (!sec) { await kvPut('SECRET', String(b.secret)); MEMO.sec = String(b.secret); } return { ok: 1, sheet: '' }; }
@@ -499,17 +531,10 @@ async function admin_(b) {
     /* v204j: جهاز بيانات قديمة ما يمسح أرقام البطاقات المعتمدة اللي وصلت من قبل */
     try { const old = await kvJ('priv', null), nw = b.data || {}; if (old && old.s && nw.s) for (const k in nw.s) { const o = old.s[k], n = nw.s[k]; if (!o || !n) continue; if (!nid_(n.nid2) && !nid_(n.pre && n.pre.nid)) { const keep = nid_(o.nid2) || nid_(o.pre && o.pre.nid); if (keep) n.nid2 = keep; } } } catch (e) { }
     await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
-  if (b.op === 'pull') {
-    const seen = {}; for (const r of await seenAll_()) (seen[r.id] = seen[r.id] || []).push(r.kind + ':' + r.key);
-    return { ok: 1, sheet: '',
-      acc: (await all("select * from acc where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, phone: r.phone, created: r.created, updated: r.updated })),
-      prof: (await all("select kind,key,name,json,photo,updated,status from prof where key not like 'tst-%'")).map(r => ({ kind: r.kind, key: r.key, name: r.name, json: r.json, photo: r.photo ? 1 : 0, updated: r.updated, status: r.status })),
-      notes: (await notesAll_()).map(n => ({ id: n.id, scope: n.scope, target: n.target, from: n.from, title: n.title, body: n.body, date: n.date, cat: n.cat, files: n.files })),
-      seen, reports: (await all('select id,kind,key,name,text,date,status,tgt,files,reply,rdate from reports order by date')).map(r => ({ ...r, files: fl_(r.files) })),
-      unv: await (async () => { const F = await kvJ('NIDFIX', {}), P = await private_(); return (await all("select key,nid from acc where kind='s' and key not like 'tst-%'")).filter(r => !schoolNid_(F, P, 's', r.key)).map(r => ({ key: r.key, nid: r.nid || '' })); })(),
-      nids: Object.fromEntries((await all("select kind,key,nid from acc where nid<>''")).map(r => [r.kind + ':' + r.key, r.nid])),
-      rel: await kvJ('REL', { c: [] }), tgc: (await all('select tkey,label,subj,tname,count(*) n,max(date) d from tgr group by tkey,label,subj order by d desc limit 300')) };
-  }
+  if (b.op !== 'pull') gcDel('pull217', 'tgc217');
+  if (b.op === 'pull' && b.hs && typeof b.hs === 'object') return pull217_(b.hs, async () => { const r = await pullFull_(); return r; });
+  if (b.op === 'pull') return pullFull_();
+
   if (b.op === 'photo') { const q = await profGet_(String(b.kind), String(b.key)); return { ok: 1, photo: q ? await photo_(q.photo) : '' }; }
   if (b.op === 'setPhone') {
     const kind = String(b.kind), key = String(b.key), ph = phone_(b.phone);
