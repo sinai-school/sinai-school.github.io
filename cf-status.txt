@@ -1,0 +1,443 @@
+has-bearer=1
+tok-len=53 acc-len=32 acc-hex=yes tok-shape=ok
+check: {"result":{"id":"90553433ec17b364776daf0ed1119613","status":"active"},"success":true,"errors":[],"messages":[{"code":10000,"message":"This API Token is valid and active","type":null}]}
+subdomain=7svyn82yzr
+npm warn deprecated rollup-plugin-inject@3.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-10_080.log"
+db=99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-12_770.log"
+fdb=8fed9997-c9c6-474d-bc18-d3f47d05d76c
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-15_190.log"
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files2 (be9cd1f6-5165-4a79-8355-e38f0730ed72):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.16ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.1602
+      },
+      "duration": 0.1602,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 3395584,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-19_219.log"
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files3 (7d5693d1-bd9f-4cc3-8f26-7fca903e07d5):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.11ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "IAD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.106
+      },
+      "duration": 0.106,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 20480,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-21_955.log"
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files4 (4f44fbcf-ccf4-44d6-91f6-756a1f504c05):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.08ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "EWR",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.0787
+      },
+      "duration": 0.0787,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 20480,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-24_770.log"
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files5 (fdef2040-ff42-4771-9886-cf37cfa06b82):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.12ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.1241
+      },
+      "duration": 0.1241,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 20480,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-07_12-27-27_497.log"
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files6 (8ff39df8-725f-480f-82b9-d587a87da0a5):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.47ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.4704
+      },
+      "duration": 0.4704,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 20480,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+FDB3=7d5693d1-bd9f-4cc3-8f26-7fca903e07d5
+FDB4=4f44fbcf-ccf4-44d6-91f6-756a1f504c05
+FDB5=fdef2040-ff42-4771-9886-cf37cfa06b82
+FDB6=8ff39df8-725f-480f-82b9-d587a87da0a5
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on remote database sinai_files (8fed9997-c9c6-474d-bc18-d3f47d05d76c):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.13ms
+[
+  {
+    "results": [],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "ENAM",
+      "served_by_colo": "ORD",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.1335
+      },
+      "duration": 0.1335,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 499863552,
+      "rows_read": 0,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1m⚠️ This process may take some time, during which your D1 database will be unavailable to serve queries.[0m
+
+
+🌀 Executing on remote database sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+Note: if the execution fails to complete, your DB will return to its original state and you can safely retry.
+├ Checking if file needs uploading
+│
+🌀 File already uploaded. Processing.
+🌀 Starting import...
+🌀 Processed 15 queries.
+🚣 Executed 15 queries in 3.62ms (0 rows read, 0 rows written)
+   Database is currently at bookmark 000000d0-00000152-0000511c-26db12fb8fdc61f24bdb5f8b41aa92a9.
+[
+  {
+    "results": [
+      {
+        "Total queries executed": 15,
+        "Rows read": 0,
+        "Rows written": 0,
+        "Database size (MB)": "112.18"
+      }
+    ],
+    "success": true,
+    "finalBookmark": "000000d0-00000152-0000511c-26db12fb8fdc61f24bdb5f8b41aa92a9",
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "WNAM",
+      "served_by_colo": "SJC",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 3.619
+      },
+      "duration": 3.619,
+      "changes": 1,
+      "last_row_id": 0,
+      "changed_db": true,
+      "size_after": 112181248,
+      "rows_read": 0,
+      "rows_written": 0,
+      "num_tables": 16,
+      "total_attempts": 1
+    }
+  }
+]
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 3.114.17 (update available 4.158.0)
+------------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+Total Upload: 125.30 KiB / gzip: 32.78 KiB
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: sinai (99d38829-a6e3-4bb9-b8d6-42ed03a2c4f0)
+  - FDB: sinai_files (8fed9997-c9c6-474d-bc18-d3f47d05d76c)
+  - FDB2: sinai_files2 (be9cd1f6-5165-4a79-8355-e38f0730ed72)
+  - FDB3: sinai_files3 (7d5693d1-bd9f-4cc3-8f26-7fca903e07d5)
+  - FDB4: sinai_files4 (4f44fbcf-ccf4-44d6-91f6-756a1f504c05)
+  - FDB5: sinai_files5 (fdef2040-ff42-4771-9886-cf37cfa06b82)
+  - FDB6: sinai_files6 (8ff39df8-725f-480f-82b9-d587a87da0a5)
+Uploaded sinai (1.55 sec)
+Deployed sinai triggers (0.30 sec)
+  https://sinai.7svyn82yzr.workers.dev
+  schedule: * * * * *
+Current Version ID: fb1c48e2-acc8-4153-aeee-4c2cf4c93161
+url=https://sinai.7svyn82yzr.workers.dev
+test: {"ok":1,"service":"sinai-portal","host":"cloudflare","v":5,"nid":1,"bk":1,"stf":1,"fast":1,"bridge":1,"files":1,"seen":1,"relay":1,"v6":1,"fget":1,"snap":1,"v7":1,"sent":1,"v8":1,"up":1,"v202":1,"v204":1,"ready":1}
+pk: {"ok":1,"pub":{"kty":"RSA","key_ops":["encrypt"],"alg":"RSA-OAEP-256","ext":true,"n":"t6w2ik9hAAUlx1g0mXy3oRVurBda17_18DMIiQAdG9THSG2LEn_DlvcEkdlTe8DmFw-Zi8LDGt1rjCP_1Hh1eNGI27UBNwCIldbV6xpfEXHYt7iN7HwpfKLZiyL7IZB_XM4vs9i2NtoI7EbQzRWbTZrYbo7jZYdQjKC2oftnbg0LJmkAXsn_AambZbFkljkc9prhI-fxOU46QtODqmOhfuIULiE6AZuYxNz50KPUBOHRwWFJu-Q4_UVLKusKf-4TYMJnOiuzpyAzkDyZ04ynBQo5_9baJm-0-uSgdw8SXkbYT-cTPehbRQ50UG4lfyLEuzKhm33N28vHufH0wbOCEw","e":"AQAB"}}
+tst-s: None notreg  None 0
+tst-t: None notreg None
+sizes [{'t': 'docs', 'n': 878, 'bytes': 4506918}]
+biggest [{'p': '_bk205/stuinfo/g5/1793925232089', 'b': 124864}, {'p': 'stuinfo/g5', 'b': 114660}, {'p': '_bk205/stuinfo/g5/1793923158823', 'b': 114423}, {'p': '_bk205/stuinfo/g5/1793842977743', 'b': 114013}, {'p': '_bk205/stuinfo/g4/1793926219133', 'b': 111354}, {'p': '_bk205/stuinfo/g4/1793926089531', 'b': 111248}, {'p': '_bk205/stuinfo/g4/1793925901772', 'b': 110833}, {'p': '_bk205/stuinfo/g4/1793925231378', 'b': 110270}]
+mvblob done at 1: {"ok":1,"moved":0,"left":"done"}
+│ database_size         │ 112 MB                               │
+│ database_size         │ 500 MB                               │
+│ database_size         │ 3.4 MB                               │
+recent [{'p': 'qaid/c000', 'by': 's:sinai100', 't': '2026-11-07 12:13:09'}, {'p': 'stuinfo/g6', 'by': 'portal', 't': '2026-11-07 10:57:10'}]
+kv [{'k': 'DREV', 'v': '9445'}, {'k': 'snapat', 'v': '2026-11-07T12:13:20.095Z'}]
