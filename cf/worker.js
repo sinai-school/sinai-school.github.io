@@ -477,7 +477,7 @@ async function handle(b) {
       await noteAdd_({ id: ci || uid().slice(0, 8), scope: sc, target: tg, from: y.a.name, title: String(b.title || '').slice(0, 120), body: String(b.body || '').slice(0, 8000), date: now(), cat: 'tch', files: F.out.length ? JSON.stringify(F.out) : '' });
       return { ok: 1, nf: F.n, ferr: F.err };
     }
-    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; try { const pr = await profGet_(y.kind, y.key); if (pr) { o.pu = String(pr.updated || ''); if (String(b.pu || '') !== o.pu) o.profile = JSON.parse(pr.json || '{}'); } } catch (e) { } await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
+    if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; try { const pr = await profGet_(y.kind, y.key); if (pr) { o.pu = String(pr.updated || ''); if (String(b.pu || '') !== o.pu) o.profile = JSON.parse(pr.json || '{}'); } } catch (e) { } /* v217: المعلومات الخاصة (شعب المدرس وطلابه، معلومات الطالب) توصل بالفحص الخفيف إذا تغيّرت */ if ('pvh' in b) { try { const rl = y.kind === 's' ? ((gcGet('rel217', 15000) || gcSet('rel217', await kvJ('REL', { c: [] }))).c || []) : 0, uv = y.kind === 's' && !schoolNid_(gcGet('nf217', 15000) || gcSet('nf217', await kvJ('NIDFIX', {})), P, y.kind, y.key); o.pvh = h217_(JSON.stringify([pv, rl, uv ? 1 : 0])).toString(36); if (String(b.pvh || '') !== o.pvh) { o.private = pv; o.pvch = 1; } } catch (e) { } } await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
     if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
@@ -531,7 +531,7 @@ async function admin_(b) {
     /* v204j: جهاز بيانات قديمة ما يمسح أرقام البطاقات المعتمدة اللي وصلت من قبل */
     try { const old = await kvJ('priv', null), nw = b.data || {}; if (old && old.s && nw.s) for (const k in nw.s) { const o = old.s[k], n = nw.s[k]; if (!o || !n) continue; if (!nid_(n.nid2) && !nid_(n.pre && n.pre.nid)) { const keep = nid_(o.nid2) || nid_(o.pre && o.pre.nid); if (keep) n.nid2 = keep; } } } catch (e) { }
     await kvPut('priv', b.data || {}); await kvPut('privx', {}); await privBump_(); return { ok: 1 }; }
-  if (b.op !== 'pull') gcDel('pull217', 'tgc217');
+  if (b.op !== 'pull') gcDel('pull217', 'tgc217', 'rel217', 'nf217');
   if (b.op === 'pull' && b.hs && typeof b.hs === 'object') return pull217_(b.hs, async () => { const r = await pullFull_(); return r; });
   if (b.op === 'pull') return pullFull_();
 
