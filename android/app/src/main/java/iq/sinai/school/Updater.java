@@ -20,6 +20,7 @@ final class Updater {
     private static volatile boolean busy = false;
 
     static void check(Activity a) {
+        if (!BuildConfig.SELF_UPDATE) return; /* نسخة جوجل بلاي تتحدث من المتجر نفسه */
         final android.content.SharedPreferences p = a.getSharedPreferences("upd", 0);
         long now = System.currentTimeMillis();
         if (busy || now - p.getLong("at", 0) < 6 * 3600 * 1000L || !Offline.online(a)) return;

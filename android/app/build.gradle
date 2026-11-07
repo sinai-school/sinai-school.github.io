@@ -17,6 +17,12 @@ android {
             keyPassword "sinai-school"
         }
     }
+    buildFeatures { buildConfig true }
+    flavorDimensions "dist"
+    productFlavors {
+        direct { dimension "dist"; buildConfigField "boolean", "SELF_UPDATE", "true" }
+        play { dimension "dist"; buildConfigField "boolean", "SELF_UPDATE", "false" }
+    }
     buildTypes {
         release { minifyEnabled false; signingConfig signingConfigs.rel }
     }
