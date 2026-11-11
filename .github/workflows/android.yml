@@ -1,0 +1,37 @@
+name: تطبيق أندرويد
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build APK
+        working-directory: android
+        env:
+          APP_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          gradle assembleDirectRelease bundlePlayRelease --no-daemon
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/direct/release/app-direct-release.apk sinai-school.apk
+          cp android/app/build/outputs/bundle/playRelease/app-play-release.aab sinai-school.aab
+          echo "${{ github.run_number }}" > app-version.txt
+          gh release delete app -y --cleanup-tag || true
+          gh release create app sinai-school.apk sinai-school.aab app-version.txt --title "تطبيق إعدادية سيناء للأندرويد والهواوي" --notes "النسخة ${{ github.run_number }}" --latest

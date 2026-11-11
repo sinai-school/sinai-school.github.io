@@ -1,0 +1,28 @@
+{
+ "name": "إعدادية سيناء للبنين",
+ "short_name": "إعدادية سيناء للبنين",
+ "description": "إعدادية سيناء للبنين — جدول الدروس وبوابة المدرسين والطلاب",
+ "lang": "ar",
+ "dir": "rtl",
+ "id": "./",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#0c362f",
+ "theme_color": "#0c362f",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}

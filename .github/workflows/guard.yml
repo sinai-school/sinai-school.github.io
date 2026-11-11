@@ -1,0 +1,23 @@
+name: حارس حد Cloudflare
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['ops/guard.py', '.github/workflows/guard.yml']
+concurrency:
+  group: guard
+  cancel-in-progress: true
+jobs:
+  g:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: {node-version: '20'}
+      - env:
+          RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 ops/guard.py

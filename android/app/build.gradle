@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'iq.sinai.school'
+    compileSdk 35
+    defaultConfig {
+        applicationId "iq.sinai.school"
+        minSdk 21
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv("APP_VERSION_CODE") ?: "1")
+        versionName "1." + (System.getenv("APP_VERSION_CODE") ?: "1")
+    }
+    signingConfigs {
+        rel {
+            storeFile file("../sinai.keystore")
+            storePassword "sinai-school"
+            keyAlias "sinai"
+            keyPassword "sinai-school"
+        }
+    }
+    buildFeatures { buildConfig true }
+    flavorDimensions "dist"
+    productFlavors {
+        direct { dimension "dist"; buildConfigField "boolean", "SELF_UPDATE", "true" }
+        play { dimension "dist"; buildConfigField "boolean", "SELF_UPDATE", "false" }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.rel }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.work:work-runtime:2.9.1'
+}
