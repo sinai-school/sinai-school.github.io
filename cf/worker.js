@@ -278,7 +278,11 @@ async function bundle_(x, b) {
   try { await extra204_(o, x); } catch (e) { }
   return gate_(o, x);
 }
+/* v226c: ملف واحد چان مرفوع ٣ مرات (١٢٫٥ م.ب × ٣) — النسختين المكررة انحذفت والتبليغات تأشر على نسخة وحدة.
+   الأجهزة اللي حافظة التبليغ برقم النسخة القديمة تبقى تفتح المرفق عادي: الرقم القديم يتحول للنسخة الباقية. */
+const FALIAS226 = { cfeae65340e8e542c69bd8d5: 'cfd54284d7544641c6be9f41', cfdf19277d931243f9964656: 'cfd54284d7544641c6be9f41' };
 async function fget_(b) {
+  if (b && b.id && FALIAS226[String(b.id)]) b = Object.assign({}, b, { id: FALIAS226[String(b.id)] });
   if (b.rid) { const x0 = await auth_(b); if (x0.err) return x0; const r = await one('select * from reports where id=?', String(b.rid)); if (!r || !((r.kind === x0.kind && r.key === x0.key) || r.tgt === 't:' + x0.key)) return { err: 'nofile' }; const f = fl_(r.files).find(z => String(z.id) === String(b.id)); if (!f) return { err: 'nofile' }; const d = await blobGet('f_' + f.id); return d ? { ok: 1, n: f.n, m: f.m, d } : { err: 'nofile' }; }
   const x = await auth_(b); if (x.err) return x;
   const P = await private_(), pv = (P[x.kind] || {})[x.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []), id = String(b.id || '');
@@ -1494,7 +1498,7 @@ export default {
           return r;
         }
         let m = u.pathname.match(/^\/f\/([A-Za-z0-9_-]+)$/);
-        if (m) { const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); /* v222: الملفات الخطرة (صفحات/سكربتات) تنزل تنزيل بس وما تنفتح كصفحة — منع سكربت مدسوس بمرفق */ const safe = /^(image\/(jpeg|png|webp|gif)|application\/pdf|audio\/|video\/)/i.test(f.m || ''); return new Response(unb64(d), { headers: { 'Content-Type': safe ? f.m : 'application/octet-stream', 'Content-Disposition': (safe ? 'inline' : 'attachment') + '; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff', ...(/pdf/i.test(f.m || '') && safe ? {} : { 'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox" }) } }); }
+        if (m) { if (FALIAS226[m[1]]) m[1] = FALIAS226[m[1]]; const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); /* v222: الملفات الخطرة (صفحات/سكربتات) تنزل تنزيل بس وما تنفتح كصفحة — منع سكربت مدسوس بمرفق */ const safe = /^(image\/(jpeg|png|webp|gif)|application\/pdf|audio\/|video\/)/i.test(f.m || ''); return new Response(unb64(d), { headers: { 'Content-Type': safe ? f.m : 'application/octet-stream', 'Content-Disposition': (safe ? 'inline' : 'attachment') + '; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff', ...(/pdf/i.test(f.m || '') && safe ? {} : { 'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox" }) } }); }
         m = u.pathname.match(/^\/bk\/([A-Za-z0-9_-]+)$/);
         if (m) { const k = await exK_('mac'); if (!k || u.searchParams.get('k') !== (await hm_(k, 'bk|' + m[1])).slice(0, 22)) return new Response('no', { status: 403 }); const s = await blobGet('bk_' + m[1]); const f = await one('select name from bk where id=?', m[1]); return new Response(s || '', { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(f ? f.name : 'backup.json') } }); }
         return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, v204: 1, ready: (await secret_()) ? 1 : 0 });

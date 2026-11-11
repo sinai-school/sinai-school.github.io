@@ -95,6 +95,17 @@ if REQ.get('chk226'):
                          'nonid': [len((_api({'a': 'nonid', 'i': i}).get('L') or [])) for i in range(len((json.loads(_gz.decompress(_b.b64decode(n['z'])))).get('sn', [])))]}
     except Exception as e:
         log['chk226'] = 'ERR ' + repr(e)[:300]
+# v226c: فحص حي — المرفق المدموج ينفتح بالرقم الباقي وبالرقمين القديمين (الحجم بس، بدون محتوى)
+if REQ.get('falias226'):
+    import urllib.request as _u2
+    o = {}
+    for fid in REQ['falias226']:
+        try:
+            r = _u2.urlopen(_u2.Request('https://sinai.7svyn82yzr.workers.dev/f/' + str(fid), headers={'User-Agent': 'sinai-ops'}), timeout=120)
+            o[fid] = [r.status, len(r.read())]
+        except Exception as e:
+            o[fid] = 'ERR ' + repr(e)[:80]
+    log['falias226'] = o
 # حجم القاعدة الأساسية حسب نوع الملف
 if REQ.get('dbsz'):
     try:
