@@ -1,0 +1,90 @@
+name: اختبار تدوير مفتاح التطبيق
+# اختبار فقط — ما ينشر أي شي. يبني التطبيق بتوقيع مدوّر ويجرّب الترقية من النسخة الحالية على محاكيات أندرويد ٨ و٩ و١٤.
+on:
+  push:
+    branches: [main]
+    paths: ['ops/rot-test.txt']
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v5
+        with: { node-version: '20' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - name: Current release
+        run: |
+          mkdir -p /tmp/rot /tmp/rk
+          gh release download app -p sinai-school.apk -p app-version.txt -D /tmp/rel
+          cp /tmp/rel/sinai-school.apk /tmp/rot/cur.apk
+          echo "CUR=$(tr -d '[:space:]' < /tmp/rel/app-version.txt)" >> $GITHUB_ENV
+      - name: New secret key
+        run: |
+          CLOUDFLARE_API_TOKEN=$(printf %s "$CLOUDFLARE_API_TOKEN" | python3 cf/tok.py)
+          CLOUDFLARE_ACCOUNT_ID=$(printf %s "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]"')
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          cd cf
+          DBID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai"][0])')
+          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n' "$DBID" > wrangler.toml
+          cd ..
+          python3 ops/andkey.py /tmp/rk
+          echo "::add-mask::$(cat /tmp/rk/new.pass)"
+      - name: Build three versions
+        working-directory: android
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          for n in 1 2 3; do
+            APP_VERSION_CODE=$((CUR + n)) gradle assembleDirectRelease --no-daemon -q
+            cp app/build/outputs/apk/direct/release/app-direct-release.apk /tmp/rot/b$n.apk
+          done
+      - name: Sign with rotation
+        run: |
+          bash ops/rot-sign.sh /tmp/rk /tmp/rot/b1.apk /tmp/rot/r1.apk
+          cp /tmp/rot/b2.apk /tmp/rot/att.apk
+          bash ops/rot-sign.sh /tmp/rk /tmp/rot/b3.apk /tmp/rot/r3.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          { echo "current=$CUR build-tools=$(basename $BT)"; for f in cur r1 att r3; do echo "== $f"; "$BT/apksigner" verify -v --print-certs --min-sdk-version 21 /tmp/rot/$f.apk 2>&1 | grep -E "Verified using|Signer #1 certificate SHA-256|certificate SHA-256|Source Stamp|WARNING: .*sdk" | head -12; "$BT/apksigner" lineage --in /tmp/rot/$f.apk --print-certs 2>&1 | grep -E "Signer #|SHA-256|Has |No lineage|does not" | head -14; done; } > /tmp/rot/sign.txt 2>&1
+          cat /tmp/rot/sign.txt
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android 9 (API 28)
+        uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
+        with: { api-level: 28, arch: x86_64, target: default, disable-animations: true, script: bash ops/rot-test.sh 28 }
+      - name: Android 14 (API 34)
+        uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
+        with: { api-level: 34, arch: x86_64, target: default, disable-animations: true, script: bash ops/rot-test.sh 34 }
+      - name: Android 8 (API 26)
+        uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
+        with: { api-level: 26, arch: x86_64, target: default, disable-animations: true, script: bash ops/rot-test.sh 26 }
+      - name: Save results
+        if: always()
+        run: |
+          rm -f /tmp/rk/new.jks /tmp/rk/new.pass
+          mkdir -p /tmp/out && cp /tmp/rot/sign.txt /tmp/rot/res-*.txt /tmp/out/ 2>/dev/null || true
+          date -u +%FT%TZ > /tmp/out/at.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan rot-tmp
+          git rm -rfq --cached . >/dev/null
+          git clean -fdxq
+          cp /tmp/out/* .
+          git add at.txt sign.txt res-*.txt 2>/dev/null || git add at.txt
+          git commit -qm "نتيجة اختبار تدوير المفتاح"
+          git push -qf origin HEAD:rot-status
