@@ -746,7 +746,10 @@ async function bkget_(b) {
 }
 
 /* ---------- حسابات الموظفين + مزامنة بيانات النظام ---------- */
-const DOC_RE = /^(school\/(config|timetable|students|custom)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
+/* v227: حسابات الصلاحيات چانت ما توصل لملفات تستعملها أقسامها: تعديلات الاستمارات (forms/)، التعديل المحفوظ قبل الطباعة (pedit207/)،
+   عدّاد الكتب (school/lcnt)، سجل تصحيح القيد (school/qfix205)، school/m70، وبيانات البوردات (brdx/ — قراءة بس).
+   فتعديل الموظف چان يضيع بصمت (err:path) والجهاز يعيد سحب كل البيانات. الصلاحية لكل نوع بـ W222/R222. */
+const DOC_RE = /^(school\/(config|timetable|students|custom|lcnt|m70|qfix205)|priv\/official|stuinfo\/(g4|g5|g6)|(letters|arch|archpart|grades|attendance|staff|staffphoto|mail|mailimg|qaid|qaidimg|forms|pedit207|brdx)\/[A-Za-z0-9_\-.~:@+]{1,200})$/;
 const BLOB_RE = /^(archpart|mailimg|qaidimg|staffphoto)\//;
 /* حساب المالك على رابط المدرسة: نفس الملفات + الأختام والتوقيع */
 /* مدير النظام: كل ملفات النظام بدون استثناء (عدا الملفات الداخلية للخادم) */
@@ -807,6 +810,12 @@ const W222 = [
   [/^(letters|mail|mailimg)\//, ['l', 'lt', 'y'], 1],
   [/^(arch|archpart)\//, ['z', 'b', 'q', 'y']],
   [/^(qaid|qaidimg)\//, ['q', 'p', 'z', 'sw']],
+  [/^school\/lcnt$/, ['l', 'lt', 'y'], 1],                                   // عدّاد أرقام الكتب
+  [/^school\/qfix205$/, ['q', 'p', 'z', 'sw']],                             // سجل تصحيح أسماء القيد
+  [/^school\/m70$/, ['int70', 'p', 'mh']],
+  [/^forms\//, ['s6', 'sw', 'i', 'fx', 'gfm', 'grc', 'att207', 'seat207'], 1],  // تعديلات الاستمارات والسجلات: أي قسم استمارة/سجل
+  [/^pedit207\//, null],                                                    // «تعديل قبل الطباعة» المحفوظ: أي حساب مو «عرض فقط»
+  [/^brdx\//, []],                                                          // بيانات البوردات المقروءة: المالك بس يكتبها
   [/^school\/config$/, null],          // الإعدادات العامة: أي حساب مو «عرض فقط»
   [/^priv\/official$/, []],            // المعلومات الرسمية والأختام: المالك بس يعدّلها
   [/^school\/custom$/, []]
@@ -824,7 +833,8 @@ const R222 = [
   [/^(letters|mail|mailimg)\//, ['l', 'lt', 'y'], 1],
   [/^(arch|archpart)\//, ['z', 'b', 'q', 'y', 'l']],
   [/^(qaid|qaidimg)\//, ['q', 'p', 'z', 'sw', 's6'], 1],
-  [/^staffphoto\//, ['m', 'f', 'i', 'k', 'sal'], 1]
+  [/^staffphoto\//, ['m', 'f', 'i', 'k', 'sal'], 1],
+  [/^brdx\//, ['z', 'b', 'q', 'y', 'l', 'lt', 'r', 'g', 'n', 'gr137', 's6']]   // نتائج البوردات: الأرشيف/الكتب (تأييد الدرجات)/الدرجات
 ];
 function canR222_(a, p) {
   if (!a) return false; if (a.own) return true;
