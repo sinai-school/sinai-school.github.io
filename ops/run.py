@@ -105,6 +105,52 @@ if REQ.get('dbsz'):
             except Exception as e: log['n_' + t] = 'x'
     except Exception as e:
         log['dbsz'] = 'ERR ' + repr(e)[:300]
+# v226c: تقرير المرفقات (بدون أسماء ملفات ولا محتوى) — أي مرفق مربوط بتبليغ/بلاغ وأي واحد يتيم
+def _frefs226():
+    refs = {}
+    def add(src, txt):
+        for m in re.findall(r'cf[0-9a-zA-Z]{8,40}', txt or ''):
+            refs.setdefault(m, set()).add(src)
+    for r in q("select id,files,title,body from notes"):
+        add('note', r.get('files')); add('notetext', (r.get('title') or '') + ' ' + (r.get('body') or ''))
+    for r in q("select id,files,text,reply from reports"):
+        add('report', r.get('files')); add('reporttext', (r.get('text') or '') + ' ' + (r.get('reply') or ''))
+    try:
+        for r in q("select id from ups where exp > %d" % int(time.time() * 1000)): refs.setdefault(r['id'], set()).add('pending')
+    except Exception as e: pass
+    # أي ملف نظام (كتب، إعدادات…) يذكر رابط مرفق /f/cf…
+    try:
+        for r in q("select id, d from chunks where id >= 'd_' and id < 'd`' and instr(d, '/f/cf') > 0"):
+            add('doc:' + r['id'][:30], r.get('d'))
+    except Exception as e: refs.setdefault('__docscan_err', set()).add(repr(e)[:80])
+    return refs
+if REQ.get('fchk226') or REQ.get('fdel226'):
+    try:
+        F = q("select id,m,s,at from files")
+        C = {r['id'][2:]: r for r in q("select id, count(*) n, sum(length(d)) b from chunks where id >= 'f_cf' and id < 'f_cg' group by id")}
+        R = _frefs226()
+        rows = []
+        for f in F:
+            c = C.get(f['id']); rf = sorted(R.get(f['id'], []))
+            rows.append({'id': f['id'], 'mb': round((c['b'] if c else 0) * 0.75 / 1048576, 2), 'mime': (f.get('m') or '')[:24], 'at': str(f.get('at') or '')[:10], 'main': bool(c), 'refs': rf})
+        known = {f['id'] for f in F}
+        blob_only = [{'id': k, 'mb': round(v['b'] * 0.75 / 1048576, 2)} for k, v in C.items() if k not in known]
+        orph = [r for r in rows if not r['refs']]
+        log['fchk226'] = {'files': len(F), 'in_main_db': sum(1 for r in rows if r['main']), 'main_mb': round(sum(r['mb'] for r in rows if r['main']), 1),
+                          'referenced': len(rows) - len(orph), 'orphans': len(orph), 'orphans_mb': round(sum(r['mb'] for r in orph), 1),
+                          'blob_without_file_row': blob_only, 'docscan_err': sorted(R.get('__docscan_err', [])),
+                          'big': sorted([r for r in rows if r['mb'] >= 1], key=lambda r: -r['mb'])[:40],
+                          'orphan_list': sorted(orph, key=lambda r: -r['mb'])}
+        if REQ.get('fdel226'):
+            # يحذف بس اللي بالقائمة المطلوبة + بعده يتيم هسه + عمره أكثر من يومين. ينحذف صف الملف وقطعه.
+            want = set(REQ['fdel226']); lim = time.strftime('%Y-%m-%d', time.gmtime(time.time() - 2 * 86400)); done = []; skip = []
+            for r in orph:
+                if r['id'] not in want: continue
+                if not re.fullmatch(r'cf[0-9a-zA-Z]{8,40}', r['id']) or not r['at'] or r['at'] > lim: skip.append(r['id']); continue
+                q("delete from chunks where id = 'f_%s'" % r['id']); q("delete from files where id = '%s'" % r['id']); done.append({'id': r['id'], 'mb': r['mb']})
+            log['fdel226'] = {'deleted': len(done), 'mb': round(sum(d['mb'] for d in done), 1), 'skipped': skip + sorted(want - {r['id'] for r in orph}), 'ids': [d['id'] for d in done]}
+    except Exception as e:
+        log['fchk226'] = 'ERR ' + repr(e)[:400]
 if REQ.get('sizes'):
     log['main_big_left'] = q("select count(distinct id) n, sum(length(d)) b from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%'")
     log['arch_n'] = q("select count(*) n from docs where p like 'arch/%' and h<>'DEL'")
