@@ -147,10 +147,49 @@ if REQ.get('fchk226') or REQ.get('fdel226'):
             for r in orph:
                 if r['id'] not in want: continue
                 if not re.fullmatch(r'cf[0-9a-zA-Z]{8,40}', r['id']) or not r['at'] or r['at'] > lim: skip.append(r['id']); continue
+                # فحص أخير: المعرّف ما مذكور بأي مكان ثاني (إعدادات kv، ملفات البوابة)
+                x = q("select (select count(*) from kv where instr(v,'%s')>0) + (select count(*) from prof where instr(json,'%s')>0) n" % (r['id'], r['id']))
+                if not x or x[0]['n'] != 0: skip.append(r['id'] + ':used-elsewhere'); continue
                 q("delete from chunks where id = 'f_%s'" % r['id']); q("delete from files where id = '%s'" % r['id']); done.append({'id': r['id'], 'mb': r['mb']})
             log['fdel226'] = {'deleted': len(done), 'mb': round(sum(d['mb'] for d in done), 1), 'skipped': skip + sorted(want - {r['id'] for r in orph}), 'ids': [d['id'] for d in done]}
     except Exception as e:
         log['fchk226'] = 'ERR ' + repr(e)[:400]
+# v226c: نفس الملف مرفوع أكثر من مرة — التبليغات كلها تأشر على نسخة وحدة والنسخ المكررة تنحذف.
+# {"fdup226":{"keep":"cf…","dups":["cf…","cf…"]}} — ما يسوي شي إلا إذا القطع متطابقة ١٠٠٪ حرف بحرف.
+if REQ.get('fdup226'):
+    D = REQ['fdup226']; keep = str(D.get('keep') or ''); out = []
+    okid = lambda x: bool(re.fullmatch(r'cf[0-9a-zA-Z]{8,40}', x))
+    def one(sql):
+        r = q(sql); return r[0] if r else None
+    for dup in [str(x) for x in (D.get('dups') or [])]:
+        st = {'dup': dup}
+        try:
+            if not okid(keep) or not okid(dup) or dup == keep: st['err'] = 'id'; out.append(st); continue
+            a = one("select count(*) n, sum(length(d)) b from chunks where id='f_%s'" % keep); b = one("select count(*) n, sum(length(d)) b from chunks where id='f_%s'" % dup)
+            fk = one("select count(*) n from files where id='%s'" % keep)
+            if not a or not b or not fk or not a['n'] or a['n'] != b['n'] or a['b'] != b['b'] or fk['n'] != 1: st['err'] = 'size/count differ or missing'; st['a'] = a; st['b'] = b; out.append(st); continue
+            mm = one("select count(*) n from chunks x join chunks y on x.i=y.i where x.id='f_%s' and y.id='f_%s' and x.d = y.d" % (keep, dup))
+            if not mm or mm['n'] != a['n']: st['err'] = 'content differs'; st['same_chunks'] = mm; out.append(st); continue
+            st['identical_chunks'] = mm['n']
+            n0 = one("select (select count(*) from notes where instr(files,'%s')>0) n, (select count(*) from reports where instr(files,'%s')>0) r" % (dup, dup))
+            if not n0: st['err'] = 'count refs'; out.append(st); continue
+            st['notes'] = n0['n']; st['reports'] = n0['r']
+            q("insert into kv(k,v) select 'FDUP226_n_'||id, files from notes where instr(files,'%s')>0 on conflict(k) do nothing" % dup)
+            q("insert into kv(k,v) select 'FDUP226_r_'||id, files from reports where instr(files,'%s')>0 on conflict(k) do nothing" % dup)
+            bk = one("select count(*) n from kv where k like 'FDUP226_%%' and instr(v,'%s')>0" % dup)
+            if not bk or bk['n'] < n0['n'] + n0['r']: st['err'] = 'backup failed'; out.append(st); continue
+            q("update notes set files=replace(files,'%s','%s') where instr(files,'%s')>0" % (dup, keep, dup))
+            q("update reports set files=replace(files,'%s','%s') where instr(files,'%s')>0" % (dup, keep, dup))
+            n1 = one("select (select count(*) from notes where instr(files,'%s')>0) + (select count(*) from reports where instr(files,'%s')>0) lft, (select count(*) from notes where instr(files,'%s')>0 and json_valid(files)) ok" % (dup, dup, keep))
+            if not n1 or n1['lft'] != 0 or n1['ok'] < 1: st['err'] = 'verify after update'; st['v'] = n1; out.append(st); continue
+            st['now_pointing_to_keep'] = n1['ok']
+            q("delete from chunks where id='f_%s'" % dup); q("delete from files where id='%s'" % dup)
+            gone = one("select (select count(*) from chunks where id='f_%s') c, (select count(*) from files where id='%s') f, (select count(*) from chunks where id='f_%s') k" % (dup, dup, keep))
+            st['deleted'] = bool(gone and gone['c'] == 0 and gone['f'] == 0); st['keep_chunks'] = gone and gone['k']; st['mb'] = round(b['b'] * 0.75 / 1048576, 2)
+        except Exception as e:
+            st['err'] = repr(e)[:200]
+        out.append(st)
+    log['fdup226'] = out
 if REQ.get('sizes'):
     log['main_big_left'] = q("select count(distinct id) n, sum(length(d)) b from chunks where id like 'd_archpart/%' or id like 'd_qaidimg/%' or id like 'd_mailimg/%' or id like 'd_staffphoto/%'")
     log['arch_n'] = q("select count(*) n from docs where p like 'arch/%' and h<>'DEL'")
