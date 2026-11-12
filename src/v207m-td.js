@@ -65,7 +65,7 @@
     const e = D.getElementById("tdq120"); if (e) e.innerHTML = "";
     render();
     const miss = td.rows.filter(z => z.v === "").length;
-    toast(td.sum ? "انكتبت الدرجات — المجموع حسب البورد" : miss ? "انكتبت الدرجات — " + A(miss) + " مادة بدون درجة بالبورد" : "انكتب الاسم والرقم الامتحاني والدرجات من البورد ✓", td.sum || miss ? "err" : "");
+    toast(td.sum ? "كُتبت الدرجات — المجموع حسب البورد" : miss ? "كُتبت الدرجات — " + A(miss) + " مادة بدون درجة بالبورد" : "كُتب الاسم والرقم الامتحاني والدرجات من البورد ✓", td.sum || miss ? "err" : "");
   }
   W.tdBx207 = tdBx;
 
@@ -98,7 +98,7 @@
         const q = String(v || "").trim(); if (q.length < 2) return;
         const h = boardHTML(q); if (!h) return;
         let cur = e.innerHTML;
-        if (/ما لكيت هذا الاسم/.test(cur)) cur = "";
+        if (/لم أجد هذا الاسم/.test(cur)) cur = "";
         e.innerHTML = h + cur;
       } catch (x) { console.warn(x); }
     };

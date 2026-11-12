@@ -87,7 +87,7 @@ ${rowId ? `<label class="rep">استبدال الصورة<input type="file" acce
         await qPhoto(rowId, f);
         const r = (typeof QD != "undefined" ? QD : []).find(x => x.i == rowId);
         const d = r && r.im && typeof QIMG != "undefined" ? QIMG[r.im] : null;
-        if (d) { img.src = d; } else msg.textContent = "انحفظت ✓";
+        if (d) { img.src = d; } else msg.textContent = "حُفظت ✓";
       } catch (e) { msg.textContent = "تعذّر حفظ الصورة"; }
       inp.value = "";
     };

@@ -23,7 +23,7 @@
       let h = _pv.apply(this, a);
       try {
         if (!PS.b || !PS.b.unv || PS.stage != "in") return h;
-        const b = `<div class="banner warn unvb204">${typeof ic == "function" ? ic("shield") : ""}<span><b>حسابك بانتظار تأكيد إدارة المدرسة.</b> ما عندنا رقم بطاقتك الموحدة بسجلات المدرسة، فلازم الإدارة تتأكد إن الحساب مالك. راجع الإدارة وويّاك البطاقة الموحدة. تكدر تكمّل معلوماتك وصورتك هسه، ودرجاتك وتبليغاتك الخاصة تطلعلك أول ما يتأكد حسابك.</span></div>`;
+        const b = `<div class="banner warn unvb204">${typeof ic == "function" ? ic("shield") : ""}<span><b>حسابك بانتظار تأكيد إدارة المدرسة.</b> لا يوجد رقم بطاقتك الموحدة في سجلات المدرسة، لذا يجب أن تتأكد الإدارة من أن الحساب يعود لك. راجع الإدارة ومعك البطاقة الموحدة. يمكنك إكمال معلوماتك وصورتك الآن، وستظهر درجاتك وتبليغاتك الخاصة فور تأكيد حسابك.</span></div>`;
         const i = h.indexOf('<div class="box');
         h = i >= 0 ? h.slice(0, i) + b + h.slice(i) : b + h;
       } catch (e) { }
@@ -37,23 +37,23 @@
     if (btn) btn.disabled = true;
     try {
       const r = await api({ a: "admin", op: "nidOk", secret: APIK.secret, kind: "s", key, nid }, APIK.url);
-      if (r && r.ok) { toast("تأكّد الحساب ✓ — درجاته وتبليغاته توصله هسه"); await apiPull(); }
+      if (r && r.ok) { toast("تأكّد الحساب ✓ — تصله درجاته وتبليغاته الآن"); await apiPull(); }
       else { toast(typeof errTxt == "function" ? errTxt(r) : "تعذّر التأكيد", "err"); if (btn) btn.disabled = false; }
-    } catch (e) { toast("تعذّر الاتصال، حاول مرة ثانية", "err"); if (btn) btn.disabled = false; }
+    } catch (e) { toast("تعذّر الاتصال، حاول مجدداً", "err"); if (btn) btn.disabled = false; }
   };
   W.unv204Del = async (btn, key, name) => {
-    if (!confirm("تحذف حساب «" + name + "» من البوابة؟ صورته ومعلوماته تنمسح، وصاحب الاسم الحقيقي يكدر يسجّل من جديد.")) return;
+    if (!confirm("تحذف حساب «" + name + "» من البوابة؟ ستُحذف صورته ومعلوماته، ويستطيع صاحب الاسم الحقيقي التسجيل من جديد.")) return;
     if (btn) btn.disabled = true;
     try {
       const r = await api({ a: "admin", op: "setPhone", secret: APIK.secret, kind: "s", key, phone: "" }, APIK.url);
-      if (r && r.ok) { toast("انحذف الحساب"); await apiPull(); } else { toast("تعذّر الحذف", "err"); if (btn) btn.disabled = false; }
-    } catch (e) { toast("تعذّر الاتصال، حاول مرة ثانية", "err"); if (btn) btn.disabled = false; }
+      if (r && r.ok) { toast("حُذف الحساب"); await apiPull(); } else { toast("تعذّر الحذف", "err"); if (btn) btn.disabled = false; }
+    } catch (e) { toast("تعذّر الاتصال، حاول مجدداً", "err"); if (btn) btn.disabled = false; }
   };
   W.unv204Ph = async (key, name) => {
     try {
       toast("جارٍ تحميل الصورة…");
       const r = await api({ a: "admin", op: "photo", secret: APIK.secret, kind: "s", key }, APIK.url);
-      if (!r || !r.photo) return toast("ما نزّل صورة بعد", "err");
+      if (!r || !r.photo) return toast("لم يرفع صورة بعد", "err");
       if (W.v204View) W.v204View([{ n: "صورة " + name + ".jpg", m: "image/jpeg", u: r.photo }], 0);
     } catch (e) { toast("تعذّر تحميل الصورة", "err"); }
   };
@@ -64,8 +64,8 @@
     const rows = L.map(u => ({ u, s: stu(u.key), a: acc[u.key] || {}, p: prof[u.key] || {} }))
       .sort((x, y) => String((x.s || {}).s || "").localeCompare(String((y.s || {}).s || ""), "ar") || String((x.s || {}).n || x.a.name || "").localeCompare(String((y.s || {}).n || y.a.name || ""), "ar"));
     return `<div class="box unv204"><h3>${typeof ic == "function" ? ic("shield") : ""} حسابات طلاب تحتاج تأكيدك (${A(rows.length)})</h3>
-<p class="muted" style="margin:0 0 8px">هذول الطلاب ما عندهم رقم بطاقة موحدة بسجلات المدرسة، فأي واحد يعرف الاسم يكدر يسجّل بداله. طابق رقم البطاقة ويا بطاقة الطالب نفسه، وبعدين اضغط «تأكيد». لحد ما تأكده، درجاته ونتائجه وتبليغاته الخاصة ما توصله.</p>
-<div class="tw"><table><tr><th>ت</th><th>اسم الطالب</th><th>الشعبة</th><th>رقم البطاقة اللي كتبه</th><th>الهاتف</th><th>تاريخ التسجيل</th><th></th></tr>
+<p class="muted" style="margin:0 0 8px">هؤلاء الطلاب لا يوجد لهم رقم بطاقة موحدة في سجلات المدرسة، فيستطيع أي شخص يعرف الاسم أن يسجّل بدلاً منهم. طابق رقم البطاقة مع بطاقة الطالب نفسه، ثم اضغط «تأكيد». وإلى أن تؤكده لن تصله درجاته ونتائجه وتبليغاته الخاصة.</p>
+<div class="tw"><table><tr><th>ت</th><th>اسم الطالب</th><th>الشعبة</th><th>رقم البطاقة الذي كتبه</th><th>الهاتف</th><th>تاريخ التسجيل</th><th></th></tr>
 ${rows.map((r, i) => { const n = (r.s || {}).n || r.a.name || r.u.key, d = String(r.a.created || "").slice(0, 10); return `<tr><td>${A(i + 1)}</td><td><b>${E(n)}</b></td><td>${E((r.s || {}).s || "")}</td><td class="nid">${E(r.u.nid || "—")}</td><td class="nid">${E(r.a.phone || "")}</td><td>${E(d ? A(d.split("-").reverse().join("/")) : "")}</td><td><div class="acts">${r.p.photo ? `<button class="btn ghost sm" onclick="unv204Ph('${E(r.u.key)}','${E(n).replace(/'/g, "")}')">الصورة</button>` : ""}<button class="btn sm" ${r.u.nid ? "" : "disabled"} onclick="unv204Ok(this,'${E(r.u.key)}','${E(r.u.nid)}')">تأكيد</button><button class="btn danger sm" onclick="unv204Del(this,'${E(r.u.key)}','${E(n).replace(/'/g, "")}')">حذف الحساب</button></div></td></tr>`; }).join("")}
 </table></div></div>`;
   };

@@ -1,4 +1,4 @@
-/* ===== v204 (29 Oct 2026) — سرعة الفتح والتحديث، منو شاف التبليغ بالأسماء، التبليغات تطلع أول ما يدخل،
+/* ===== v204 (29 Oct 2026) — سرعة الفتح والتحديث، من شاهد التبليغ بالأسماء، التبليغات تطلع أول ما يدخل،
    البحث يفتح ملف الطالب مباشرة، الدرجات اليومية والشهرية، جداول الامتحانات للطلاب (نشر + تحديث تلقائي)،
    الملفات والصور تنفتح بدون إنترنت، مطابقة EMIS ===== */
 (function () {
@@ -64,7 +64,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     } catch (e) { }
   };
   setTimeout(seed204, 2500); W.addEventListener("online", () => setTimeout(seed204, 1500));
-  /* التطبيق القديم (أندرويد) ما ينفتح بدون إنترنت إذا ما انحفظت نسخة — نطلب منه يحدّث مرة وحدة */
+  /* التطبيق القديم (أندرويد) ما ينفتح بدون إنترنت إذا ما حُفظت نسخة — نطلب منه يحدّث مرة وحدة */
   setTimeout(() => {
     try {
       if (!W.SinaiApp || !/SinaiSchoolApp\/1\b/.test(navigator.userAgent)) return;
@@ -73,7 +73,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
       try { localStorage.setItem("app204h", Date.now()); } catch (e) { }
       const b = D.createElement("div");
       b.style.cssText = "position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#0c362f;color:#f6edd2;border:1px solid #e0c47c;border-radius:14px;padding:12px 14px;font:600 15px/1.7 inherit;box-shadow:0 8px 24px #0006;display:flex;gap:10px;align-items:center;direction:rtl";
-      b.innerHTML = '<div style="flex:1">نسخة جديدة من التطبيق: تنفتح بدون إنترنت وتتحدث وحدها. اضغط «تحديث» وثبّتها فوق القديمة — بياناتك ودخولك يبقون.</div><a href="https://github.com/sinai-school/sinai-school.github.io/releases/latest/download/sinai-school.apk" style="background:#e0c47c;color:#1b1406;border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:800">تحديث</a><button style="background:none;border:0;color:#f6edd2;font-size:20px">×</button>';
+      b.innerHTML = '<div style="flex:1">نسخة جديدة من التطبيق: تعمل بدون إنترنت وتتحدّث تلقائياً. اضغط «تحديث» وثبّتها فوق القديمة — بياناتك ودخولك محفوظان.</div><a href="https://github.com/sinai-school/sinai-school.github.io/releases/latest/download/sinai-school.apk" style="background:#e0c47c;color:#1b1406;border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:800">تحديث</a><button style="background:none;border:0;color:#f6edd2;font-size:20px">×</button>';
       b.querySelector("button").onclick = () => b.remove();
       D.body.appendChild(b);
     } catch (e) { }
@@ -142,7 +142,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     };
   });
 
-  /* ================= (٣) منو شاف التبليغ — بالأسماء (الإدارة) ================= */
+  /* ================= (٣) من شاهد التبليغ — بالأسماء (الإدارة) ================= */
   const kn = (k, key) => { try { return (typeof kname == "function" ? kname(k, key) : "") || ""; } catch (e) { return ""; } };
   const staffNow = () => { try { return (typeof sortStf == "function" ? sortStf() : STF).filter(f => { const s = typeof stOf == "function" ? stOf(f) : (f.status || "مستمر"); return s == "مستمر"; }); } catch (e) { return []; } };
   function audience(n) {
@@ -165,11 +165,11 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     const tl = L => `<ol>${L.map(f => `<li>${E(f.name)} <small>${E(f.job || "")}</small></li>`).join("")}</ol>`;
     const sec = (ttl, cls, nS, nT, body) => (nS + nT) ? `<details ${cls == "good" ? "open" : ""}><summary><h4 style="display:inline-flex"><span class="chip ${cls}">${A(nS + nT)}</span> ${ttl}</h4></summary>${body}</details>` : "";
     const tot = sS.length + tS.length + extra.length;
-    modal(`<h3>${I("eye")} منو شاف التبليغ</h3><p style="margin:0 0 6px"><b>${E(n.title || "")}</b><br><span class="sub">${E(FD(n.date))}</span></p>
+    modal(`<h3>${I("eye")} من شاهد التبليغ</h3><p style="margin:0 0 6px"><b>${E(n.title || "")}</b><br><span class="sub">${E(FD(n.date))}</span></p>
     <div class="who204">
     ${sec("شافوه", "good", sS.length + extra.length, tS.length, (sS.length ? grp(sS) : "") + (tS.length ? `<div><small class="sub">المدرسون والموظفون</small>${tl(tS)}</div>` : "") + (extra.length ? `<ol>${extra.map(x => `<li>${E(x.n)}</li>`).join("")}</ol>` : ""))}
     ${sec("مسجلون بالبوابة وما شافوه بعد", "bad", sN.length, tN.length, (sN.length ? grp(sN) : "") + (tN.length ? `<div><small class="sub">المدرسون والموظفون</small>${tl(tN)}</div>` : ""))}
-    ${sec("غير مسجلين بالبوابة (ما يوصلهم)", "", sU.length, tU.length, (sU.length ? grp(sU) : "") + (tU.length ? `<div><small class="sub">المدرسون والموظفون</small>${tl(tU)}</div>` : ""))}
+    ${sec("غير مسجلين في البوابة (لا يصلهم)", "", sU.length, tU.length, (sU.length ? grp(sU) : "") + (tU.length ? `<div><small class="sub">المدرسون والموظفون</small>${tl(tU)}</div>` : ""))}
     ${!tot && !sN.length && !tN.length && !sU.length && !tU.length ? '<p class="muted">ما شافه أحد بعد.</p>' : ""}
     </div><div class="tools"><button class="btn ghost" onclick="this.closest('.zoom').remove()">إغلاق</button></div>`);
   };
@@ -182,7 +182,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         if (typeof APIT == "undefined" || APIT != "n" || !D0 || !D0.seen) return h;
         h = h.replace(/<tr><td class="l">[\s\S]*?<\/tr>/g, row => {
           const m = row.match(/delNote',id:'([^']+)'/); if (!m) return row;
-          return row.replace(/<td title="([^"]*)"><b>([^<]*)<\/b>/, (x, tip, nn) => `<td title="${tip}" class="sn204" onclick="v204Seen('${E(m[1])}')"><b>${nn}</b><span class="lk">منو شافه؟</span>`);
+          return row.replace(/<td title="([^"]*)"><b>([^<]*)<\/b>/, (x, tip, nn) => `<td title="${tip}" class="sn204" onclick="v204Seen('${E(m[1])}')"><b>${nn}</b><span class="lk">من شاهده؟</span>`);
         });
       } catch (e) { console.warn(e); }
       return h;
@@ -208,7 +208,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         ${seen.length ? `<details><summary class="sub">${I("ok")} شافوه (${A(seen.length)})</summary><p class="sub" style="margin:4px 0 0">${seen.map(x => E(x[1])).join("، ")}</p></details>` : ""}
         ${not.length ? `<details><summary class="sub">ما شافوه بعد (${A(not.length)})</summary><p class="sub" style="margin:4px 0 0">${not.map(x => E(x[1])).join("، ")}</p></details>` : ""}</div>`;
       };
-      return `<div class="box"><h3>${I("eye")} تبليغاتي المرسلة — منو شافها <span class="chip">${A(L.length)}</span></h3>${L.length ? nDesc224(L).map(row).join("") : '<p class="muted" style="margin:0">ما أرسلت تبليغات بعد.</p>'}</div>`;
+      return `<div class="box"><h3>${I("eye")} تبليغاتي المرسلة — من شاهدها <span class="chip">${A(L.length)}</span></h3>${L.length ? nDesc224(L).map(row).join("") : '<p class="muted" style="margin:0">ما أرسلت تبليغات بعد.</p>'}</div>`;
     };
   });
 
@@ -261,7 +261,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
   const wd = d => { try { return typeof wdOf == "function" ? wdOf(d) : ""; } catch (e) { return ""; } };
   function exTab() {
     const L = (PS.b && PS.b.ex) || [];
-    if (!L.length) return `<div class="box"><h3>${I("cal")} جداول الامتحانات</h3><p class="muted" style="margin:0">ما انتشر أي جدول امتحانات بعد. أول ما تنشره الإدارة يطلع هنا ويوصلك تبليغ.</p></div>`;
+    if (!L.length) return `<div class="box"><h3>${I("cal")} جداول الامتحانات</h3><p class="muted" style="margin:0">لم يُنشر أي جدول امتحانات بعد. فور نشره من الإدارة سيظهر هنا ويصلك تبليغ.</p></div>`;
     const t0 = today();
     return L.map(t => {
       const stu = PS.kind == "s", G = t.g || [];
@@ -326,16 +326,16 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
   async function exPush(k, quiet) {
     try {
       const r = await admApi({ op: "exPub", k, data: exData(k) });
-      if (r && r.ok) { EXP = EXP || {}; EXP[k] = Object.assign({}, EXP[k] || {}, { at: r.at || new Date().toISOString(), h: r.h || (EXP[k] || {}).h }); if (!quiet) T0("انتشر الجدول للطلاب ✓ — أي تعديل بعد هذا يوصلهم وحده"); if (has("cur") && cur == "ex") render(); return 1; }
+      if (r && r.ok) { EXP = EXP || {}; EXP[k] = Object.assign({}, EXP[k] || {}, { at: r.at || new Date().toISOString(), h: r.h || (EXP[k] || {}).h }); if (!quiet) T0("نُشر الجدول للطلاب ✓ — أي تعديل بعد ذلك يصلهم تلقائياً"); if (has("cur") && cur == "ex") render(); return 1; }
       if (!quiet) T0("تعذّر النشر — " + (typeof errTxt == "function" ? errTxt(r) : ""), "err");
-    } catch (e) { if (!quiet) T0("تعذّر النشر — تأكد من الإنترنت (ينعاد وحده)", "err"); const Q = LG("ex204q") || []; if (!Q.includes(k)) Q.push(k); LS("ex204q", Q); }
+    } catch (e) { if (!quiet) T0("تعذّر النشر — تأكد من الإنترنت (سيُعاد تلقائياً)", "err"); const Q = LG("ex204q") || []; if (!Q.includes(k)) Q.push(k); LS("ex204q", Q); }
     return 0;
   }
   let EXT0 = {};
   const exAutoOne = k => { clearTimeout(EXT0[k]); EXT0[k] = setTimeout(() => { if (EXP && EXP[k]) exPush(k, 1); }, 1500); };
   function exAuto() { if (!EXP) return; Object.keys(EXP).forEach(k => exAutoOne(k)); }
   setInterval(() => { const Q = LG("ex204q") || []; if (!Q.length || navigator.onLine === false || !own()) return; LS("ex204q", null); Q.forEach(k => exPush(k, 1)); }, 3e4);
-  W.v204ExPub = async k => { k = k || EXK; try { exSave(1); } catch (e) { } const d = exData(k); if (!d.rows.length) return T0("الجدول فارغ — أضف الأيام والمواد أولاً", "err"); if (k == "f2" && !Object.keys(d.f2 || {}).length) return T0("ما اكو طلاب دور ثاني بالنتائج بعد — أكمل درجات آخر السنة أولاً", "err"); if (!confirm("نشر «" + d.t + "» للطلاب" + (k == "f2" ? " (" + Object.keys(d.f2).length + " طالب دور ثاني)" : "") + "؟\nبعد النشر أي تعديل يوصلهم تلقائياً.")) return; await exPush(k); };
+  W.v204ExPub = async k => { k = k || EXK; try { exSave(1); } catch (e) { } const d = exData(k); if (!d.rows.length) return T0("الجدول فارغ — أضف الأيام والمواد أولاً", "err"); if (k == "f2" && !Object.keys(d.f2 || {}).length) return T0("لا يوجد طلاب دور ثانٍ في النتائج بعد — أكمل درجات آخر السنة أولاً", "err"); if (!confirm("نشر «" + d.t + "» للطلاب" + (k == "f2" ? " (" + Object.keys(d.f2).length + " طالب دور ثاني)" : "") + "؟\nبعد النشر يصلهم أي تعديل تلقائياً.")) return; await exPush(k); };
   W.v204ExOff = async k => { k = k || EXK; if (!confirm("إيقاف ظهور هذا الجدول عند الطلاب؟")) return; try { const r = await admApi({ op: "exPub", k, data: null }); if (r && r.ok) { delete EXP[k]; T0("توقف ظهور الجدول عند الطلاب"); render(); } } catch (e) { T0("تعذّر — تأكد من الإنترنت", "err"); } };
   on(() => {
     if (!has("V") || typeof V.ex != "function") return;
@@ -346,7 +346,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         if (!own()) return h;
         if (EXP == null) setTimeout(exLoad, 0);
         const p = EXP && EXP[EXK];
-        const box = `<div class="banner ${p ? "ok" : ""}" style="margin:8px 0">${I("upload")} <span>${EXP == null ? "جارٍ فحص حالة النشر…" : p ? `<b>منشور للطلاب</b> — آخر تحديث ${E(FD(p.at))}. أي تعديل وحفظ هنا يوصلهم تلقائياً.` : "هذا الجدول <b>ما منشور</b> للطلاب بعد. بعد ما تكمله اضغط «نشر للطلاب»."}${EXK == "f1" || EXK == "f2" ? " (السادس وزاري — ما يطلعله)" : ""}${EXK == "f2" ? " يوصل بس للطلاب المكملين حسب النتائج، وكل طالب يشوف مواده." : ""}</span> ${p ? `<button class="btn sm" onclick="v204ExPub()">${I("rld")} تحديث النشر هسه</button><button class="btn ghost sm" onclick="v204ExOff()">إيقاف</button>` : `<button class="btn sm" onclick="v204ExPub()">${I("upload")} نشر للطلاب</button>`}</div>`;
+        const box = `<div class="banner ${p ? "ok" : ""}" style="margin:8px 0">${I("upload")} <span>${EXP == null ? "جارٍ فحص حالة النشر…" : p ? `<b>منشور للطلاب</b> — آخر تحديث ${E(FD(p.at))}. أي تعديل وحفظ هنا يصلهم تلقائياً.` : "هذا الجدول <b>ما منشور</b> للطلاب بعد. بعد إكماله اضغط «نشر للطلاب»."}${EXK == "f1" || EXK == "f2" ? " (السادس وزاري — لا يظهر له)" : ""}${EXK == "f2" ? " يصل إلى الطلاب المكملين فقط حسب النتائج، وكل طالب يرى مواده." : ""}</span> ${p ? `<button class="btn sm" onclick="v204ExPub()">${I("rld")} تحديث النشر الآن</button><button class="btn ghost sm" onclick="v204ExOff()">إيقاف</button>` : `<button class="btn sm" onclick="v204ExPub()">${I("upload")} نشر للطلاب</button>`}</div>`;
         const i = h.indexOf('<div class="box">');
         h = i >= 0 ? h.slice(0, i) + box + h.slice(i) : box + h;
       } catch (e) { console.warn(e); }
@@ -374,7 +374,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         if (L.length && labs.length) {
           const v = (sk, l) => { const r = R.find(x => x.skey == sk && x.label == l); return r ? r.val : ""; };
           const short = l => l.replace(/^يومي — (\d{4}-\d{2}-\d{2})$/, (m, d) => "يومي " + FD(d)).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
-          const tbl = `<div class="box gr204"><h3>${I("sheet") || I("pen")} سجل درجات ${E(G.sec)} — ${E(G.sj)}</h3><p class="muted" style="margin:0 0 6px">كل الدرجات اللي أرسلتها (اليومية والشهرية والفصلية) بجدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(short(l))}</th>`).join("")}</tr>${L.map((x, i) => `<tr><td>${A(i + 1)}</td><td class="l">${E(x[1])}</td>${labs.map(l => { const z = v(x[0], l); return `<td class="${z !== "" && +z < 50 && !/^يومي/.test(l) ? "red" : ""}">${z === "" ? "" : E(A(z))}</td>`; }).join("")}</tr>`).join("")}</table></div></div>`;
+          const tbl = `<div class="box gr204"><h3>${I("sheet") || I("pen")} سجل درجات ${E(G.sec)} — ${E(G.sj)}</h3><p class="muted" style="margin:0 0 6px">جميع الدرجات التي أرسلتها (اليومية والشهرية والفصلية) في جدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(short(l))}</th>`).join("")}</tr>${L.map((x, i) => `<tr><td>${A(i + 1)}</td><td class="l">${E(x[1])}</td>${labs.map(l => { const z = v(x[0], l); return `<td class="${z !== "" && +z < 50 && !/^يومي/.test(l) ? "red" : ""}">${z === "" ? "" : E(A(z))}</td>`; }).join("")}</tr>`).join("")}</table></div></div>`;
           const i = h.indexOf('<div class="box"><h3>' + I("print") + " طباعة طلابي");
           h = i >= 0 ? h.slice(0, i) + tbl + h.slice(i) : h;
         }
@@ -411,7 +411,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         n = n.replace(/\s+/g, " ").trim(); if (!n || !/[ء-ي]/.test(n)) continue;
         E2.push({ n, g: cG >= 0 ? String(r[cG] || "").trim() : "", s: cS >= 0 ? String(r[cS] || "").trim() : "" });
       }
-      if (!E2.length) return T0("ما لكيت أسماء بالملف — تأكد إنه ملف طلاب EMIS", "err");
+      if (!E2.length) return T0("لم أجد أسماء في الملف — تأكد من أنه ملف طلاب EMIS", "err");
       const S = STA(), ks = s => nk(s.n).split(" ").slice(0, 4).join(" "), ke = e => nk(e.n).split(" ").slice(0, 4).join(" ");
       const mE = new Map; E2.forEach(e => { const k = ke(e); (mE.get(k) || mE.set(k, []).get(k)).push(e); });
       const mS = new Map; S.forEach(s => { const k = ks(s); (mS.get(k) || mS.set(k, []).get(k)).push(s); });
@@ -420,7 +420,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
       S.forEach(s => { const e = (mE.get(ks(s)) || [])[0]; if (!e || !e.s) return; const sl = String(s.s).split(" ").pop(); if (nk(e.s).replace(/[^ء-ي]/g, "") && nk(e.s).replace(/[^ء-ي]/g, "") != nk(sl).replace(/[^ء-ي]/g, "")) secMis.push([s, e]); });
       EMC = { at: new Date().toISOString(), file: f.name, nE: E2.length, nS: S.length, add, del, secMis };
       render(); T0("انتهت المطابقة");
-    } catch (e) { console.error(e); T0("تعذّرت قراءة الملف — نزّله من EMIS بصيغة Excel وجرّب مرة ثانية", "err"); }
+    } catch (e) { console.error(e); T0("تعذّرت قراءة الملف — نزّله من EMIS بصيغة Excel وحاول مجدداً", "err"); }
   };
   /* ملف EMIS (نفس ترتيب حقول الاستمارة) لقائمة طلاب معيّنة */
   async function emisFile(L, name) {
@@ -428,20 +428,20 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     const rows = [EMISH.map(v => ({ v, h: 1 }))]; let k = 0;
     L.forEach(s => { const x = (INF[s.id] || {}).x; const sp = x ? [x.n1, x.n2, x.n3, x.n4] : splitName101(s.n).slice(0, 4); const [y, m, d] = String(x && x.dob || "").split("-"); const [gr, ...sc] = String(s.s || "").split(" ");
       rows.push([String(++k), { v: sp[0] || "", l: 1, b: 1 }, sp[1] || "", sp[2] || "", sp[3] || "", x && x.laqab || "", x && x.m1 || "", x && x.m2 || "", x && x.m3 || "", "ذكر", d ? String(+d) : "", m ? String(+m) : "", y || "", x && x.nid || "", gr || "", sc.join(" "), x && x.gphone || s.p || "", x && x.gr || "", x && x.city || "", x && x.hay || "", x && x.mahalla || "", x && x.zuqaq || "", x && x.dar || "", x && x.near || "", x && x.email || "", x ? "مكتمل" : "لم يكمل بعد"]); });
-    if (!k) return T0("ما اكو طلاب", "err");
+    if (!k) return T0("لا يوجد طلاب", "err");
     return exportSheets("xlsx", name, [{ title: name + " — إعدادية سيناء للبنين", sheet: "EMIS", orient: "landscape", fs: 9, hr: 1, rows, xw: [5, 14, 14, 14, 14, 12, 14, 14, 14, 7, 6, 6, 7, 16, 10, 10, 15, 10, 12, 14, 8, 8, 8, 22, 24, 12] }]);
   }
   W.v204EmisAddFile = function () {
-    if (!EMC || !EMC.add.length) return T0("ما اكو أسماء ناقصة بـ EMIS ✓");
+    if (!EMC || !EMC.add.length) return T0("لا توجد أسماء ناقصة في  EMIS ✓");
     const keep = new Set(EMC.add.map(s => s.id));
     return emisFile(STA().filter(s => keep.has(s.id)), "طلاب ناقصون بـ EMIS");
   };
   W.v204EmisCmpPrint = function () {
     if (!EMC) return;
     const sh = [];
-    if (EMC.add.length) sh.push(sheet137("طلاب موجودون بالنظام وناقصون بـ EMIS (تنضاف)", ["ت", "اسم الطالب", "الصف والشعبة"], EMC.add.map((s, i) => [A(i + 1), { v: s.n, l: 1 }, s.s]), [0.8, 6, 3], [6, 50, 26]));
-    if (EMC.del.length) sh.push(sheet137("أسماء موجودة بـ EMIS ومو موجودة بالنظام (تنشال من EMIS)", ["ت", "الاسم", "الصف", "الشعبة"], EMC.del.map((e, i) => [A(i + 1), { v: e.n, l: 1 }, e.g, e.s]), [0.8, 6, 2, 1.5], [6, 50, 16, 12]));
-    if (EMC.secMis.length) sh.push(sheet137("الشعبة مختلفة بين النظام و EMIS (تتصحح بـ EMIS حسب النظام)", ["ت", "اسم الطالب", "بالنظام", "بـ EMIS"], EMC.secMis.map(([s, e], i) => [A(i + 1), { v: s.n, l: 1 }, s.s, (e.g + " " + e.s).trim()]), [0.8, 6, 3, 3], [6, 46, 22, 22]));
+    if (EMC.add.length) sh.push(sheet137("طلاب موجودون في النظام وناقصون في EMIS (يُضافون)", ["ت", "اسم الطالب", "الصف والشعبة"], EMC.add.map((s, i) => [A(i + 1), { v: s.n, l: 1 }, s.s]), [0.8, 6, 3], [6, 50, 26]));
+    if (EMC.del.length) sh.push(sheet137("أسماء موجودة بـ EMIS وغير موجودة في النظام (تُحذف من EMIS)", ["ت", "الاسم", "الصف", "الشعبة"], EMC.del.map((e, i) => [A(i + 1), { v: e.n, l: 1 }, e.g, e.s]), [0.8, 6, 2, 1.5], [6, 50, 16, 12]));
+    if (EMC.secMis.length) sh.push(sheet137("الشعبة مختلفة بين النظام و EMIS (تُصحَّح في EMIS حسب النظام)", ["ت", "اسم الطالب", "بالنظام", "بـ EMIS"], EMC.secMis.map(([s, e], i) => [A(i + 1), { v: s.n, l: 1 }, s.s, (e.g + " " + e.s).trim()]), [0.8, 6, 3, 3], [6, 46, 22, 22]));
     if (!sh.length) return T0("EMIS مطابق للنظام 100% ✓");
     return exportSheets("pdf", "مطابقة EMIS مع النظام", sh);
   };
@@ -454,13 +454,13 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         const S = STA();
         const res = EMC ? `<div class="em204" style="margin-top:8px">${!EMC.add.length && !EMC.del.length && !EMC.secMis.length ? `<div class="banner ok">${I("ok")} <span>EMIS مطابق للنظام 100% — ${A(EMC.nS)} طالب.</span></div>` : `<div class="banner warn">${I("alert")} <span>نتيجة المطابقة مع «${E(EMC.file)}»: بالنظام ${A(EMC.nS)} طالب، وبـ EMIS ${A(EMC.nE)}.</span></div>
           <p style="margin:6px 0"><span class="chip bad">ناقصون بـ EMIS: ${A(EMC.add.length)}</span> <span class="chip bad">زايدون بـ EMIS: ${A(EMC.del.length)}</span> <span class="chip">شعبة مختلفة: ${A(EMC.secMis.length)}</span></p>
-          ${EMC.add.length ? `<details open><summary><b>ناقصون بـ EMIS (لازم ينضافون)</b></summary><ol>${EMC.add.map(s => `<li>${E(s.n)} <small class="sub">${E(s.s)}</small></li>`).join("")}</ol></details>` : ""}
-          ${EMC.del.length ? `<details><summary><b>موجودون بـ EMIS ومو بالنظام (ينشالون من EMIS)</b></summary><ol>${EMC.del.map(e => `<li>${E(e.n)} <small class="sub">${E((e.g + " " + e.s).trim())}</small></li>`).join("")}</ol></details>` : ""}
+          ${EMC.add.length ? `<details open><summary><b>ناقصون بـ EMIS (يجب إضافتهم)</b></summary><ol>${EMC.add.map(s => `<li>${E(s.n)} <small class="sub">${E(s.s)}</small></li>`).join("")}</ol></details>` : ""}
+          ${EMC.del.length ? `<details><summary><b>موجودون بـ EMIS وغير موجودين في النظام (يُحذفون من EMIS)</b></summary><ol>${EMC.del.map(e => `<li>${E(e.n)} <small class="sub">${E((e.g + " " + e.s).trim())}</small></li>`).join("")}</ol></details>` : ""}
           ${EMC.secMis.length ? `<details><summary><b>الشعبة مختلفة</b></summary><ol>${EMC.secMis.map(([s, e]) => `<li>${E(s.n)} <small class="sub">النظام: ${E(s.s)} — EMIS: ${E((e.g + " " + e.s).trim())}</small></li>`).join("")}</ol></details>` : ""}
           <div class="tools">${EMC.add.length ? `<button class="btn sm" onclick="v204EmisAddFile()">${I("download")} ملف الناقصين جاهز للرفع على EMIS</button>` : ""}<button class="btn ghost sm" onclick="v204EmisCmpPrint()">${I("print")} طباعة تقرير المطابقة</button></div>`}</div>` : "";
         const extra = `<div class="tools" style="margin-top:6px"><button class="btn sm" onclick="v204EmisAll()">${I("download")} كل طلاب النظام (${A(S.length)}) — مطابق للنظام بالضبط</button>
         <label class="btn ghost sm" style="cursor:pointer">${I("upload")} مطابقة مع ملف EMIS<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="v204EmisCmp(this)"></label></div>
-        <p class="sub" style="margin:4px 0 0">نزّل قائمة الطلاب من موقع EMIS وارفعها هنا: يطلعلك منو ناقص بـ EMIS ومنو زايد ومنو شعبته مختلفة — والمرجع دائماً قوائم النظام (بدون أي إضافة أو تغيير عليها).</p>${res}`;
+        <p class="sub" style="margin:4px 0 0">نزّل قائمة الطلاب من موقع EMIS وارفعها هنا: يظهر لك من هو ناقص في  EMIS ومن هو زائد ومن شعبته مختلفة — والمرجع دائماً قوائم النظام (بدون أي إضافة أو تغيير عليها).</p>${res}`;
         const i = h.lastIndexOf("</div>");
         h = i > 0 ? h.slice(0, i) + extra + h.slice(i) : h + extra;
       } catch (e) { console.warn(e); }
@@ -492,7 +492,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     for (let i = 0; i < 4; i++) {
       try { await _sl.apply(this, arguments); } catch (e) { console.warn("v204f login", e); }
       if (!bad() || i == 3) return;
-      if (navigator.onLine === false) { er.textContent = "ماكو إنترنت بالجهاز هسه — شغّل الإنترنت وراح يدخل وحده."; await new Promise(ok => { const f = () => { removeEventListener("online", f); ok(); }; addEventListener("online", f); setTimeout(f, 60e3); }); }
+      if (navigator.onLine === false) { er.textContent = "لا يوجد إنترنت في الجهاز الآن — شغّل الإنترنت وسيتم الدخول تلقائياً."; await new Promise(ok => { const f = () => { removeEventListener("online", f); ok(); }; addEventListener("online", f); setTimeout(f, 60e3); }); }
       else { er.textContent = "الإنترنت ضعيف — جارٍ إعادة المحاولة (" + (i + 2) + " من ٤)…"; await new Promise(ok => setTimeout(ok, 1500 * (i + 1))); }
     }
   };

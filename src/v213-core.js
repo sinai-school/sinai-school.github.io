@@ -12,14 +12,14 @@
     fxSave(FX.id, { bak213: { ov: D.ov || {}, stpos: D.stpos || {}, at: new Date().toISOString() }, ov: {}, stpos: {} });
     on(() => { FX.ed = 0; });
     reload();
-    toast("رجعت الاستمارة للتصميم الأصلي — إذا تريد تعديلاتك اضغط «إرجاع تعديلاتي»");
+    toast("أُعيدت الاستمارة إلى التصميم الأصلي — لاستعادة تعديلاتك اضغط «إرجاع تعديلاتي»");
   };
   window.fxUndo213 = () => {
     const D = fxDoc(FX.id), b = D.bak213;
     if (!b) return;
     fxSave(FX.id, { ov: b.ov || {}, stpos: b.stpos || {}, bak213: 0 });
     reload();
-    toast("رجعت تعديلاتك السابقة");
+    toast("استُعيدت تعديلاتك السابقة");
   };
   if (typeof V != "undefined" && V.fx) {
     const _vfx = V.fx;
@@ -28,8 +28,8 @@
       on(() => {
         if (typeof h != "string" || !FXR[FX.id]) return;
         const D = fxDoc(FX.id), n = ovCount(D);
-        const b = (n ? `<button class="btn ghost sm" onclick="ask(this,fxOrig213)" title="يمسح كل التعديلات اليدوية لهذي الاستمارة (كل الطلاب والشعب) ومكان الختم">${ic("rld")} التصميم الأصلي</button>` : "")
-          + (D.bak213 ? `<button class="btn ghost sm" onclick="ask(this,fxUndo213)" title="يرجّع التعديلات اللي انمسحت">${ic("undo")} إرجاع تعديلاتي</button>` : "");
+        const b = (n ? `<button class="btn ghost sm" onclick="ask(this,fxOrig213)" title="يحذف كل التعديلات اليدوية لهذه الاستمارة (لجميع الطلاب والشعب) وموضع الختم">${ic("rld")} التصميم الأصلي</button>` : "")
+          + (D.bak213 ? `<button class="btn ghost sm" onclick="ask(this,fxUndo213)" title="يستعيد التعديلات المحذوفة">${ic("undo")} إرجاع تعديلاتي</button>` : "");
         if (!b) return;
         const i = h.indexOf('<div class="tools fxt">'); if (i < 0) return;
         const j = h.indexOf("</div>", i); if (j < 0) return;

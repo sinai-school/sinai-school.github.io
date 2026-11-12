@@ -128,7 +128,7 @@
   W.seat215Signs = async how => {
     const dg = v => parseInt(String(v || "").replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632)) || 0;
     const H = Math.max(1, +ST7.halls || 16), a = Math.max(1, dg((D.getElementById("sg215a") || {}).value) || 1), b = Math.min(H, dg((D.getElementById("sg215b") || {}).value) || H);
-    if (a > b) return T("الأرقام غلط", "err");
+    if (a > b) return T("الأرقام خاطئة", "err");
     T("جارٍ تجهيز الأوراق…");
     let logo = (W.LOGO215 && W.LOGO215.s) || "img/logo_s.png";
     if (!/^data:/.test(logo)) { try { const bl = await (await fetch(logo)).blob(); logo = await new Promise(ok => { const r = new FileReader; r.onload = () => ok(r.result); r.readAsDataURL(bl); }); } catch (e) { } }
@@ -201,16 +201,16 @@
     const prev = P.placed[hi] ? (typeof modelHTML == "function" ? modelHTML(hallModel(P, hi)) : "") : "";
     const [hc, hr] = layOf(hi), custom = !!(ST7.lay && ST7.lay[String(hi + 1)]);
     const hinp = (k, l, v) => `<label class="sub">${l} <input value="${AD(v)}" inputmode="numeric" style="width:46px" onchange="seat207Set('${k}',this.value)"></label>`;
-    return `<div class="vh"><h2>خارطة جلوس الطلبة</h2><span class="sub">توزيع آلي على القاعات حسب حجم كل قاعة — الرحلة بيها طالب واحد أو طالبين من صفين مختلفين، وما يكعد طالب ورا طالب من نفس صفه</span></div>
+    return `<div class="vh"><h2>خارطة جلوس الطلبة</h2><span class="sub">توزيع آلي على القاعات حسب حجم كل قاعة — في الرحلة طالب واحد أو طالبان من صفين مختلفين، ولا يجلس طالب خلف طالب من الصف نفسه</span></div>
 <div class="tools">${segB(ST7.t, [["m", "امتحانات نصف السنة"], ["f", "امتحانات نهاية السنة (بدون السادس)"]], "seat207Set.bind(0,'t')")}</div>
 <div class="tools">${inp("halls", "عدد القاعات")}${inp("cols", "السروات بكل قاعة", 46)}${inp("rows", "الرحلات بكل سرة", 46)}<label class="sub"><input type="checkbox" ${ST7.pair ? "checked" : ""} onchange="seat207Set('pair',this.checked)"> طالبين بالرحلة (صفين مختلفين) عند الحاجة</label><button class="btn ghost sm" onclick="seat207Set('new')">${I("refresh")} توزيع جديد</button></div>
 <p class="muted" style="margin:0 0 6px">المقاعد الكلية: ${AD(P.totCap)} لـ ${AD(P.L.length)} طالب${Object.keys(ST7.lay || {}).length ? " — قاعات بحجم خاص: " + Object.keys(ST7.lay).sort((a, b) => a - b).map(k => "القاعة " + AD(k) + " (" + AD(ST7.lay[k][0]) + " سروات × " + AD(ST7.lay[k][1]) + " رحلات)").join("، ") : ""}</p>
 ${P.over ? `<div class="banner err">${I("alert")} الطلبة (${AD(P.L.length)}) أكثر من مقاعد القاعات (${AD(P.totCap)}). زيد عدد القاعات أو الرحلات.</div>` : ""}
-${(() => { const r = P.placed.map((g, i) => g && g.lv ? i + 1 : 0).filter(Boolean); return r.length && !P.over ? `<div class="banner">${I("alert")} القاعات (${r.map(AD).join("، ")}): بسبب الأعداد بعض الطلاب المتتاليين من نفس المرحلة بس من فرع أو شعبة مختلفة.</div>` : ""; })()}
+${(() => { const r = P.placed.map((g, i) => g && g.lv ? i + 1 : 0).filter(Boolean); return r.length && !P.over ? `<div class="banner">${I("alert")} القاعات (${r.map(AD).join("، ")}): بسبب الأعداد، بعض الطلاب المتتاليين من المرحلة نفسها لكن من فرع أو شعبة مختلفة.</div>` : ""; })()}
 <div class="box"><h3>التوزيع على القاعات (${AD(P.L.length)} طالب)</h3><div class="tw">${typeof modelHTML == "function" ? modelHTML(sumModel(P)) : ""}</div></div>
 <div class="box"><h3>القاعة</h3><div class="tools" style="flex-wrap:wrap">${P.halls.map((h, i) => `<button class="btn ${i == hi ? "" : "ghost"} sm" onclick="seat207Set('hall',${i})">${AD(i + 1)}</button>`).join("")}</div>
 <div class="tools"><span class="sub">حجم القاعة (${AD(hi + 1)}):</span>${hinp("lc", "سروات", hc)}${hinp("lr", "رحلات كل سرة", hr)}<span class="sub">= ${AD(hc * hr)} رحلة</span>${custom ? `<button class="btn ghost sm" onclick="seat207Set('lreset')">رجّعها مثل باقي القاعات</button>` : ""}</div>
-<div class="tools"><span class="sub">جهة باب القاعة (${AD(hi + 1)}):</span>${DOORS.map(([k, t]) => `<button class="btn ${doorOf(hi) == k ? "" : "ghost"} sm" onclick="seat215Door(${hi},'${k}')">${t}</button>`).join("")}<button class="btn ghost sm" onclick="seat215Door(-1,'${doorOf(hi)}')">نفس الجهة لكل القاعات</button></div>
+<div class="tools"><span class="sub">جهة باب القاعة (${AD(hi + 1)}):</span>${DOORS.map(([k, t]) => `<button class="btn ${doorOf(hi) == k ? "" : "ghost"} sm" onclick="seat215Door(${hi},'${k}')">${t}</button>`).join("")}<button class="btn ghost sm" onclick="seat215Door(-1,'${doorOf(hi)}')">الجهة نفسها لكل القاعات</button></div>
 <div class="tw seat207">${prev}</div></div>
 <div class="box"><h3>${I("doc")} أوراق أرقام القاعات</h3><p class="muted" style="margin:0 0 8px">ورقة بالعرض لكل قاعة: شعار المدرسة و«قاعة رقم -١-» بخط كبير — تنلصق على باب القاعة.</p><div class="tools"><label class="sub">من <input id="sg215a" value="١" inputmode="numeric" style="width:46px"></label><label class="sub">إلى <input id="sg215b" value="${AD(P.H)}" inputmode="numeric" style="width:46px"></label><button class="btn sm" onclick="seat215Signs('pdf')">${I("doc")} PDF</button><button class="btn ghost sm" onclick="seat215Signs('print')">${I("print")} طباعة</button></div></div>
 ${expBar()}`;
@@ -256,7 +256,7 @@ ${expBar()}`;
   function attView() {
     CURX = { name: AT7.k == "a" ? "سجل حضور الإدارة" : "سجل حضور الملاك", sheets: () => [attModel()] };
     const m = attModel();
-    return `<div class="vh"><h2>سجلات الحضور</h2><span class="sub">ورقة وحدة بالعرض لكل الأسبوع: وقت الحضور والتوقيع ووقت الانصراف والتوقيع لكل يوم</span></div>
+    return `<div class="vh"><h2>سجلات الحضور</h2><span class="sub">ورقة واحدة بالعرض لكل الأسبوع: وقت الحضور والتوقيع ووقت الانصراف والتوقيع لكل يوم</span></div>
 <div class="tools">${segB(AT7.k, [["s", "سجل حضور الملاك (" + AD(staffIn().length) + ")"], ["a", "سجل حضور الإدارة (" + AD(admList().length) + ")"]], "att207Set.bind(0,'k')")}</div>
 <div class="tools">${segB(AT7.days, [["5", "الأحد – الخميس"], ["2", "الأحد والثلاثاء (العطلة الصيفية)"]], "att207Set.bind(0,'days')")}
 <label class="sub">بداية الأسبوع (الأحد) <input type="date" value="${E(AT7.start || sunday())}" onchange="att207Set('start',this.value)"></label>

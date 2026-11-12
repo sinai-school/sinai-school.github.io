@@ -25,7 +25,7 @@
     } catch (e) { }
   }
   W.pub205 = () => { clearTimeout(PUBT); PUBT = setTimeout(pub205, 1500); };
-  /* مدير النظام: أول ما يفتح النظام تنتشر نسخة كاملة وحديثة للبوابة (حتى لو ما تغيّر شي بجهازه) */
+  /* مدير النظام: عند فتح النظام تنتشر نسخة كاملة وحديثة للبوابة (حتى لو ما تغيّر شي بجهازه) */
   let FP = 0;
   const firstPub = () => { if (FP) return; if (isStaff() && W.GXOWN && typeof READY != "undefined" && READY.stf && READY.tt && READY.st && typeof gxSnapPush == "function") { FP = 1; gxSnapPush(1); } };
   let fpN = 0; const fpT = setInterval(() => { firstPub(); if (FP || ++fpN > 60) clearInterval(fpT); }, 5000);
@@ -119,7 +119,7 @@
         try {
           for (const G of [["n1", "n2", "n3", "n4"], ["m1", "m2", "m3"]]) for (let i = 1; i < G.length; i++) {
             const a = String(o[G[i - 1]] || "").trim().split(/\s+/), b = String(o[G[i]] || "").trim().split(/\s+/);
-            if (!E[G[i]] && a.length > 1 && b.length > 1 && a[a.length - 1] == b[0]) E[G[i]] = "كل خانة بيها اسم واحد — «" + b[0] + "» مكتوب بالخانة اللي قبلها";
+            if (!E[G[i]] && a.length > 1 && b.length > 1 && a[a.length - 1] == b[0]) E[G[i]] = "في كل خانة اسم واحد — «" + b[0] + "» مكتوب في الخانة السابقة";
           }
         } catch (e) { }
         return E;
@@ -141,7 +141,7 @@
       const r = await api({ a: "login", kind, key: x.key, phone: x.phone, nid: x.nid });
       if (r && r.ok) { PS.b = r; PS.stage = "in"; PS.off = 0; try { psKeep(); } catch (e) { } LS("tst205", kind); }
       else { PS.stage = "login"; PS.err = "تعذّر فتح الحساب التجريبي"; }
-    } catch (e) { PS.stage = "login"; PS.err = "تعذّر الاتصال — حاول مرة ثانية"; }
+    } catch (e) { PS.stage = "login"; PS.err = "تعذّر الاتصال — حاول مجدداً"; }
     prender();
   }
   W.tst205 = tstOpen;
@@ -168,7 +168,7 @@
     const _pv = psView;
     psView = function () {
       let h = _pv.apply(this, arguments);
-      try { if (0 && PS && /^tst-/.test(PS.key || "")) h = `<div class="banner" style="border-color:#b8860b;background:#fff8e6">${typeof ic == "function" ? ic("alert") : ""} <span><b>حساب تجريبي</b> — للتجربة فقط، ما يأثر على الطلاب والمدرسين. التبليغات اللي ترسلها الإدارة «للكل» أو لـ«الحساب التجريبي» توصل هنا.</span> <button class="btn ghost sm" onclick="localStorage.removeItem('tst205');psOut();PS.key=null;prender()">خروج</button></div>` + h; } catch (e) { }
+      try { if (0 && PS && /^tst-/.test(PS.key || "")) h = `<div class="banner" style="border-color:#b8860b;background:#fff8e6">${typeof ic == "function" ? ic("alert") : ""} <span><b>حساب تجريبي</b> — للتجربة فقط، ولا يؤثر في الطلاب والمدرسين. التبليغات التي ترسلها الإدارة «للكل» أو لـ«الحساب التجريبي» تصل هنا.</span> <button class="btn ghost sm" onclick="localStorage.removeItem('tst205');psOut();PS.key=null;prender()">خروج</button></div>` + h; } catch (e) { }
       return h;
     };
   }
@@ -244,7 +244,7 @@
   /* زر «تفعيل الإشعارات» لمن ما فعّلها بعد (المتصفح يحتاج ضغطة من المستخدم) */
   function pushBan() {
     if (!canPush() || Notification.permission != "default") return "";
-    return `<div class="banner" id="pb205" style="border-color:var(--brand,#1f5f4a)">${typeof ic == "function" ? ic("bell") : "🔔"} <span><b>فعّل الإشعارات</b> حتى توصلك التبليغات والجدول الجديد بصوت حتى لو التطبيق مسدود.</span> <button class="btn sm" onclick="sub205(1).then(ok=>{const b=document.getElementById('pb205');if(b)b.remove();toast(ok?'تفعّلت الإشعارات ✓':'ما تفعّلت — فعّلها من إعدادات المتصفح',ok?'':'err')})">تفعيل</button></div>`;
+    return `<div class="banner" id="pb205" style="border-color:var(--brand,#1f5f4a)">${typeof ic == "function" ? ic("bell") : "🔔"} <span><b>فعّل الإشعارات</b> لتصلك التبليغات والجدول الجديد بصوت حتى والتطبيق مغلق.</span> <button class="btn sm" onclick="sub205(1).then(ok=>{const b=document.getElementById('pb205');if(b)b.remove();toast(ok?'تفعّلت الإشعارات ✓':'لم تُفعَّل — فعّلها من إعدادات المتصفح',ok?'':'err')})">تفعيل</button></div>`;
   }
   if (typeof psView == "function") {
     const _pv = psView;
@@ -257,9 +257,9 @@
   setTimeout(() => on(() => {
     if (!isStaff() || !W.GXOWN || !canPush() || Notification.permission != "default" || LG("pb205o")) return;
     const b = D.createElement("div"); b.className = "banner"; b.style.cssText = "position:fixed;bottom:76px;left:12px;right:12px;z-index:60;max-width:560px;margin:auto";
-    b.innerHTML = `🔔 <span>فعّل الإشعارات حتى توصلك <b>البلاغات</b> الجديدة من الطلاب والمدرسين فوراً.</span> <button class="btn sm">تفعيل</button> <button class="btn ghost sm">لاحقاً</button>`;
+    b.innerHTML = `🔔 <span>فعّل الإشعارات لتصلك <b>البلاغات</b> الجديدة من الطلاب والمدرسين فوراً.</span> <button class="btn sm">تفعيل</button> <button class="btn ghost sm">لاحقاً</button>`;
     const [y, n] = b.querySelectorAll("button");
-    y.onclick = () => { b.remove(); sub205(1).then(ok => T(ok ? "تفعّلت الإشعارات ✓" : "ما تفعّلت", ok ? "" : "err")); };
+    y.onclick = () => { b.remove(); sub205(1).then(ok => T(ok ? "تفعّلت الإشعارات ✓" : "لم تُفعَّل", ok ? "" : "err")); };
     n.onclick = () => { b.remove(); LS("pb205o", 1); };
     D.body.appendChild(b);
   }), 12000);
@@ -377,7 +377,7 @@
         if (typeof QSEL != "undefined" && (QSEL || QIMP) || !QF) { if (!QF) setTimeout(qAuto, 300); return h; }
         const A = v => typeof toAr == "function" ? toAr(v) : v, e = s => typeof esc == "function" ? esc(s) : s;
         const rows = QF.rev.slice(0, 200).map((it, i) => `<tr><td>${A(it.r.pg)}</td><td class="l">${e(it.s.s)}</td><td class="l"><b>${e(it.s.n)}</b></td><td class="l">${e(it.r.n)}</td><td class="l">${e(it.pn || "—")}</td><td style="white-space:nowrap"><button class="btn sm" onclick="qFix205(${i})">اعتماد اسم الصف</button> <button class="btn ghost sm" onclick="qSkip205(${i})">اتركه</button></td></tr>`).join("");
-        const box = `<details class="box" ${QF.rev.length ? "open" : ""}><summary style="cursor:pointer"><b>مطابقة أسماء الطلاب مع القيد العام</b> — تصحّح تلقائياً: ${A(QF.done || 0)} · فرق همزة أو مسافة فقط (نفس الاسم): ${A(QF.fmt)} · تحتاج مراجعتك: ${A(QF.rev.length)}</summary>${QF.rev.length ? `<p class="muted" style="margin:6px 0">المقارنة حسب رقم صفحة القيد. «اسم الصف» هو المعتمد بالنظام، و«البوابة» هو اللي كتبه الطالب حسب بطاقته.</p><div class="tw"><table><tr><th>الصفحة</th><th class="l">الشعبة</th><th class="l">اسم الصف</th><th class="l">اسم القيد</th><th class="l">البوابة</th><th></th></tr>${rows}</table></div>` : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>'}</details>`;
+        const box = `<details class="box" ${QF.rev.length ? "open" : ""}><summary style="cursor:pointer"><b>مطابقة أسماء الطلاب مع القيد العام</b> — تصحّح تلقائياً: ${A(QF.done || 0)} · فرق همزة أو مسافة فقط (نفس الاسم): ${A(QF.fmt)} · تحتاج مراجعتك: ${A(QF.rev.length)}</summary>${QF.rev.length ? `<p class="muted" style="margin:6px 0">المقارنة حسب رقم صفحة القيد. «اسم الصف» هو المعتمد في النظام، و«البوابة» هو ما كتبه الطالب حسب بطاقته.</p><div class="tw"><table><tr><th>الصفحة</th><th class="l">الشعبة</th><th class="l">اسم الصف</th><th class="l">اسم القيد</th><th class="l">البوابة</th><th></th></tr>${rows}</table></div>` : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>'}</details>`;
         const k = h.indexOf("</div>"); h = k >= 0 ? h.slice(0, k + 6) + box + h.slice(k + 6) : box + h;
       } catch (x) { console.warn(x); }
       return h;

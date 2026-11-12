@@ -77,7 +77,7 @@
   /* القسم المحذوف إذا كان مفتوح → الرئيسية */
   on(() => { if (typeof view == "function") { const _v = view; view = function (k) { if (DROP.has(k) && k != "n") k = "home"; return _v.apply(this, [k, ...[].slice.call(arguments, 1)]); }; } });
 
-  /* التخصيص المتقدم انحذف: أي كود/تنسيق إضافي كان مفعّل ينطفي (مدير النظام، مرة وحدة) */
+  /* التخصيص المتقدم انحذف: أي كود/تنسيق إضافي كان مفعّل ينطفي (مدير النظام، مرة واحدة) */
   function custOff() {
     if (!isOwn() || typeof DB == "undefined" || !DB) return;
     if (localStorage.getItem("cust215") == "1") return;
@@ -160,7 +160,7 @@
     m.pdf215 = ids; m.pdfAt215 = new Date().toISOString();
     mPut(m);
     old.forEach(im => on(() => { if (typeof DB != "undefined" && DB) q("mailimg/" + im, () => retry(() => DB.doc("mailimg/" + im).delete())); }));
-    T0("انحفظت نسخة PDF من الكتاب بسجل الصادر ✓");
+    T0("حُفظت نسخة PDF من الكتاب بسجل الصادر ✓");
   }
   on(() => {
     if (typeof lAfter70 != "function") return;
@@ -178,7 +178,7 @@
       const b = Uint8Array.from(atob(d.split(",")[1]), c => c.charCodeAt(0));
       pages.push({ jpg: b, w: im.naturalWidth, h: im.naturalHeight });
     }
-    if (!pages.length) return T0("ما انفتحت النسخة — تحتاج إنترنت أول مرة", "err");
+    if (!pages.length) return T0("تعذّر فتح النسخة — تحتاج إلى إنترنت في المرة الأولى", "err");
     const blob = pdfJpegs(pages, 595.28, 841.89), nm = "كتاب صادر " + AD(m.no || "") + " — " + String(m.subj || "").slice(0, 40);
     try { await saveFile(nm + ".pdf", blob, { print: () => lPrintPdf70(blob, nm) }); } catch (e) { await saveFile(nm + ".pdf", blob); }
   };
@@ -251,7 +251,7 @@
     if (!L.length || MISS_SHOWN == k || D.getElementById("miss215")) return;
     MISS_SHOWN = k;
     const w = D.createElement("div"); w.id = "miss215"; w.className = "miss215";
-    w.innerHTML = `<div class="mb" role="dialog" aria-modal="true"><div class="mi">${I("alert")}</div><h3>معلوماتك غير مكتملة</h3><p>حتى توصلك الدرجات والتبليغات بدون مشاكل، كمّل هذي المعلومات:</p><ul>${L.slice(0, 8).map(x => `<li>${E(x)}</li>`).join("")}${L.length > 8 ? `<li>و${AD(L.length - 8)} غيرها</li>` : ""}</ul><div class="tools"><button class="btn" data-go>${I("edit")} أكمل معلوماتي الآن</button><button class="btn ghost" data-x>لاحقاً</button></div></div>`;
+    w.innerHTML = `<div class="mb" role="dialog" aria-modal="true"><div class="mi">${I("alert")}</div><h3>معلوماتك غير مكتملة</h3><p>لتصلك الدرجات والتبليغات بدون مشاكل، أكمل هذه المعلومات:</p><ul>${L.slice(0, 8).map(x => `<li>${E(x)}</li>`).join("")}${L.length > 8 ? `<li>و${AD(L.length - 8)} غيرها</li>` : ""}</ul><div class="tools"><button class="btn" data-go>${I("edit")} أكمل معلوماتي الآن</button><button class="btn ghost" data-x>لاحقاً</button></div></div>`;
     w.querySelector("[data-go]").onclick = () => { w.remove(); on(() => { PS.tab = "f"; PS.edit = 1; prender(); scrollTo(0, 0); }); };
     w.querySelector("[data-x]").onclick = () => w.remove();
     D.body.appendChild(w);
@@ -272,7 +272,7 @@
     const Dm = fxDoc("f_med"); if (!Dm || Dm.r215) return;
     const n = Object.keys(Dm.ov || {}).length + Object.keys(Dm.stpos || {}).length + Object.keys(Dm.pe || {}).length;
     fxSave("f_med", n ? { bak213: { ov: Dm.ov || {}, stpos: Dm.stpos || {}, at: new Date().toISOString() }, ov: {}, stpos: {}, r215: 1 } : { r215: 1 });
-    if (n) T0("استمارة الفحص الطبي رجعت للنموذج الأصلي ✓");
+    if (n) T0("أُعيدت استمارة الفحص الطبي إلى النموذج الأصلي ✓");
   }
 
   /* ---------- تشغيل بعد الدخول ---------- */
@@ -351,7 +351,7 @@ input,select,textarea{max-width:100%;min-width:0}
     let img = "";
     if (r && r.im) {
       const d = (typeof QIMG != "undefined" && QIMG[r.im]) || null;
-      if (d) img = `<figure class="pf215i"><img src="${d}" alt="صفحة القيد العام" onclick="qZoom('${E(r.im)}')"><figcaption>صورة صفحة القيد العام — ${AD(r.pg || "")} <small>(للإدارة فقط — ما تبين للطالب)</small></figcaption></figure>`;
+      if (d) img = `<figure class="pf215i"><img src="${d}" alt="صفحة القيد العام" onclick="qZoom('${E(r.im)}')"><figcaption>صورة صفحة القيد العام — ${AD(r.pg || "")} <small>(للإدارة فقط — لا تظهر للطالب)</small></figcaption></figure>`;
       else if (!QW[r.im]) { QW[r.im] = 1; on(() => qImgGet(r.im).then(() => { if (typeof SPF != "undefined" && SPF == s.id) render(); })); img = `<p class="muted">جارٍ تحميل صورة صفحة القيد…</p>`; }
     }
     const empty = rows.filter(x => !String(x[1] || "").trim()).map(x => x[0]);
@@ -404,9 +404,9 @@ input,select,textarea{max-width:100%;min-width:0}
   function grBox(D0) {
     const L = D0.tgc || [];
     if (!L.length) return "";
-    return `<div class="box tg215"><h3>${I("pen")} تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال حتى تشوف أسماء الطلاب ودرجاتهم.</p>${L.map((r, i) => {
+    return `<div class="box tg215"><h3>${I("pen")} تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال لعرض أسماء الطلاب ودرجاتهم.</p>${L.map((r, i) => {
       const k = kOf(r), op = OPEN[k], d = DET[k];
-      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة حتى تنفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>'
+      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>'
         : `<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>${(d || []).map((x, j) => `<tr><td>${AD(j + 1)}</td><td class="l">${E(sName(x.skey))}</td><td><b>${E(AD(x.val))}</b></td><td class="l">${E(x.note || "")}</td><td>${E(FD(x.date))}</td></tr>`).join("")}</table></div>`;
       return `<div class="tg215r"><button type="button" class="tg215h" onclick="tg215(${i})"><span><b>${E(r.tname || tName(r.tkey))}</b><small>${E(r.subj)} — ${E(r.label)}</small></span><span class="chip">${AD(r.n)} طالب</span><span class="chip">${E(FD(r.d))}</span><span class="tg215c">${op ? "▲" : "▼"}</span></button>${body}</div>`;
     }).join("")}</div>`;

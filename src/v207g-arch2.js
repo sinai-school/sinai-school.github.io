@@ -60,7 +60,7 @@
   let pT = 0;
   function paint() { clearTimeout(pT); pT = setTimeout(() => { const e = D.getElementById("pf207"); if (e) e.outerHTML = chip(); }, 400); }
   const chip = () => !PF.n ? `<span id="pf207"></span>` : PF.ok >= PF.n
-    ? `<span id="pf207" class="pf207 ok">✓ كل ملفات الأرشيف (${A(PF.n)}) محفوظة بالجهاز — تنفتح فوراً وبدون إنترنت</span>`
+    ? `<span id="pf207" class="pf207 ok">✓ كل ملفات الأرشيف (${A(PF.n)}) محفوظة في الجهاز — تُفتح فوراً وبدون إنترنت</span>`
     : `<span id="pf207" class="pf207">⬇ جارٍ حفظ الأرشيف بالجهاز للفتح بدون إنترنت: ${A(PF.ok)} / ${A(PF.n)}</span>`;
   const st = D.createElement("style");
   st.textContent = `.pf207{display:inline-block;font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--sunk,#eef1ee);color:var(--muted,#555);margin:4px 0}.pf207.ok{color:#1e5a46}

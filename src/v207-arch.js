@@ -13,7 +13,7 @@
   const MEM = new Map(), PEND = new Map();
   /* v207g: النسخة تعتمد على الملف نفسه (مو على وقت تعديل المعلومات) حتى نقل الملف أو تغيير عنوانه ما يمسح النسخة المحفوظة بالجهاز */
   const ver = a => a.id + ":" + (a.size || 0) + ":" + (a.parts || 1);
-  /* v209: نسخة سليمة؟ (طول الملف يطابق حجمه) — نسخ انحفظت ناقصة وقت توقف الخادم تنمسح وتنجاب من جديد */
+  /* v209: نسخة سليمة؟ (طول الملف يطابق حجمه) — نسخ حُفظت ناقصة وقت توقف الخادم تنمسح وتنجاب من جديد */
   const lenOk = (d, a) => { if (!d || typeof d != "string") return false; if (!a.size) return d.length > 16; const L = d.replace(/=+$/, "").length, exp = Math.ceil(a.size * 4 / 3); return Math.abs(L - exp) <= 4; };
   const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1)) && lenOk(c.d, a);
   const purge207 = a => { try { for (const k of [...MEM.keys()]) if (k.startsWith(a.id + ":")) MEM.delete(k); } catch (e) { } try { IDB() && IDB().del && IDB().del("ab_" + a.id); } catch (e) { } try { IDB() && IDB().put("ab_" + a.id, { k: "x", d: "", at: 0 }); } catch (e) { } try { IDB() && IDB().put("pr_" + a.id, { k: "x", b: null, at: 0 }); } catch (e) { } };
@@ -121,7 +121,7 @@
     try { im = await Promise.race([decode207(a), new Promise((_, no) => setTimeout(() => no("slow"), 25000))]); } catch (e) { if (e && e.type) e = "decode";
       clearTimeout(slow); if (!V7 || V7.i != i) return;
       img.style.visibility = "hidden"; msg.style.display = "";
-      msg.innerHTML = navigator.onLine === false ? "هذا الملف بعده ما محفوظ بالجهاز — يتحفظ وحده أول ما يرجع الإنترنت" : e === "missing" ? `<div style="text-align:center;line-height:1.9;padding:0 18px">هذا الملف رفعه ما كمل (قطعة منه ناقصة على الخادم)<br><small style="opacity:.8">لازم ينرفع من جديد من «إضافة ملف» بالأرشيف — باقي الملفات سليمة</small></div>` : `<div style="text-align:center">ما انفتح هسه (الخادم مشغول) — <button class="btn sm" id="rt207">إعادة المحاولة</button></div>`;
+      msg.innerHTML = navigator.onLine === false ? "هذا الملف لم يُحفظ في الجهاز بعد — سيُحفظ تلقائياً فور عودة الإنترنت" : e === "missing" ? `<div style="text-align:center;line-height:1.9;padding:0 18px">لم يكتمل رفع هذا الملف (جزء منه ناقص على الخادم)<br><small style="opacity:.8">يجب رفعه من جديد من «إضافة ملف» في الأرشيف — بقية الملفات سليمة</small></div>` : `<div style="text-align:center">تعذّر الفتح الآن (الخادم مشغول) — <button class="btn sm" id="rt207">إعادة المحاولة</button></div>`;
       const rb = w.querySelector("#rt207"); if (rb) rb.onclick = () => show(i);
       return;
     }
@@ -245,7 +245,7 @@
     const row = a => `<div class="arw207"><span class="t">${E(short(a))}</span><span class="b"><button class="btn sm" onclick="av207('${a.id}')">${I("eye") || ""}فتح</button><button class="btn ghost sm" onclick="ap207('${a.id}')">${I("print")} طباعة</button><button class="btn ghost sm" onclick="aGet('${a.id}')">${I("inst")} تنزيل</button><button class="btn ghost sm" title="التفاصيل" onclick="ASEL='${a.id}';HOLD=1;render()">⋯</button></span></div>`;
     return `<div class="sel207"><p class="sub" style="margin:0 0 4px">العام الدراسي</p><div class="yr207">${yrs.map(v => `<button class="${v == y ? "on" : ""}" onclick="ay207('${E(v)}')">${A(E(v))}</button>`).join("")}</div>
 ${brs.length > 2 ? `<p class="sub" style="margin:6px 0 4px">الفرع</p><div class="yr207">${brs.map(([k, t]) => `<button class="${AB == k ? "on" : ""}" onclick="ab207('${k}')">${t}</button>`).join("")}</div>` : ""}</div>
-${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "السادس " : ""}${k} — ${A(y)} <span class="sub">(${A(G[k].length)})</span></h3>${G[k].sort((p, q) => short(p).localeCompare(short(q), "ar", { numeric: true })).map(row).join("")}</div>`).join("") || (typeof emptyState == "function" ? emptyState("ما بيه ملفات", "") : "")}`;
+${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "السادس " : ""}${k} — ${A(y)} <span class="sub">(${A(G[k].length)})</span></h3>${G[k].sort((p, q) => short(p).localeCompare(short(q), "ar", { numeric: true })).map(row).join("")}</div>`).join("") || (typeof emptyState == "function" ? emptyState("لا يحتوي ملفات", "") : "")}`;
   }
   on(() => {
     if (typeof aResHTML != "function") return;
@@ -322,7 +322,7 @@ ${ord.filter(k => G[k]).map(k => `<div class="box"><h3>${AS0 == "brd" ? "الس�
         const q = typeof AQ != "undefined" ? String(AQ).trim() : "";
         if (q && typeof AS0 != "undefined" && AS0 == "brd") {
           const R = (W.bxFind207 || bxFind)(q);
-          const box = `<div class="box hl"><h3>${I("search")} نتيجة البحث بالبوردات (${A(R.length)})</h3>${R.length ? R.slice(0, 30).map(bxCard).join("") : `<p class="muted" style="margin:0">ما لكيت هذا الاسم بالبوردات المقروءة لحد هسه${BX ? " (" + A(BX.length) + " بورد مقروء)" : ""}.</p>`}</div>`;
+          const box = `<div class="box hl"><h3>${I("search")} نتيجة البحث بالبوردات (${A(R.length)})</h3>${R.length ? R.slice(0, 30).map(bxCard).join("") : `<p class="muted" style="margin:0">لم أجد هذا الاسم في البوردات المقروءة حتى الآن${BX ? " (" + A(BX.length) + " بورد مقروء)" : ""}.</p>`}</div>`;
           h = box + h.replace(/<div class="box empty">[\s\S]*?<\/div>/, "");
         }
       } catch (e) { console.warn(e); }

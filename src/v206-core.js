@@ -45,7 +45,7 @@
       const r = await api(Object.assign({ a: "login" }, credOf(k)));
       if (r && r.ok) { LS("tst206b" + k, r); if (hasPS() && PS.key == TST[k].key) { PS.b = r; PS.stage = "in"; try { psKeep(); } catch (e) { } } }
       else if (!quiet) T("تعذّر تحديث الحساب التجريبي من الخادم — معروض آخر نسخة", "err");
-    } catch (e) { if (!quiet) T("ما أكو اتصال — الحساب التجريبي معروض بدون إنترنت", "err"); }
+    } catch (e) { if (!quiet) T("لا يوجد اتصال — الحساب التجريبي معروض بدون إنترنت", "err"); }
     finally { TSTB = 0; }
     if (hasPS() && PS.key == TST[k].key && !PS.b) { PS.b = localBundle(k); PS.stage = "in"; }
     if (hasPS() && PS.key == TST[k].key && portalOn()) { const y = W.scrollY; prender(); W.scrollTo(0, y); }
@@ -91,12 +91,12 @@
     T("جارٍ التغيير…");
     try {
       const r = await api(Object.assign({ a: "tstSet" }, credOf(k), o));
-      if (!r || !r.ok) return T(r && r.err == "sec" ? "الشعبة غير موجودة بالجدول المنشور" : "تعذّر التغيير — حاول مرة ثانية", "err");
+      if (!r || !r.ok) return T(r && r.err == "sec" ? "الشعبة غير موجودة بالجدول المنشور" : "تعذّر التغيير — حاول مجدداً", "err");
       if (k == "s" && PS.b && PS.b.private) { PS.b.private.s = o.sec; PS.b.private.secs = [o.sec, "شعبة تجريبية"]; }
       if (k == "t" && PS.b && PS.b.private) PS.b.private.as = o.as || "";
       prender(); await tstRefresh(k, 0);
-      T(k == "s" ? "صار الطالب التجريبي بـ «" + o.sec + "» ✓" : (o.as ? "المدرس التجريبي يعرض جدول المدرس المختار ✓" : "رجع جدول المدرس التجريبي فارغ"));
-    } catch (e) { T("ما أكو اتصال", "err"); }
+      T(k == "s" ? "أصبح الطالب التجريبي في  «" + o.sec + "» ✓" : (o.as ? "المدرس التجريبي يعرض جدول المدرس المختار ✓" : "رجع جدول المدرس التجريبي فارغ"));
+    } catch (e) { T("لا يوجد اتصال", "err"); }
   };
   W.tst206Br = br => { const s = snapSN().find(n => n.startsWith(br + " ")); if (s) W.tst206Set({ sec: s }); };
   function tstBanner() {
@@ -109,9 +109,9 @@
         + (pv.demo ? `<p class="t206n">الدرجات تجريبية تلقائية — تتغير من «الحسابات التجريبية» بالنظام.</p>` : "");
     } else {
       const L = (typeof SNAP != "undefined" && SNAP && SNAP.tch) || [];
-      ctl = `<div class="t206row"><span class="t206l">اعرض جدول المدرس:</span><select onchange="tst206Set({as:this.value})"><option value="">— بدون —</option>${L.filter(x => x && x.k).map(x => `<option value="${E(x.k)}" ${x.k == pv.as ? "selected" : ""}>${E(x.n)}${x.spec ? " — " + E(x.spec) : ""}</option>`).join("")}</select></div><p class="t206n">إرسال التبليغات والدرجات من المدرس التجريبي يوصل للطالب التجريبي فقط.</p>`;
+      ctl = `<div class="t206row"><span class="t206l">اعرض جدول المدرس:</span><select onchange="tst206Set({as:this.value})"><option value="">— بدون —</option>${L.filter(x => x && x.k).map(x => `<option value="${E(x.k)}" ${x.k == pv.as ? "selected" : ""}>${E(x.n)}${x.spec ? " — " + E(x.spec) : ""}</option>`).join("")}</select></div><p class="t206n">إرسال التبليغات والدرجات من المدرس التجريبي يصل إلى الطالب التجريبي فقط.</p>`;
     }
-    return `<div class="t206b"><div class="t206h"><span>${I("alert")} <b>حساب تجريبي</b> <small>ما ينحسب بالإحصاءات ولا الأعداد ولا الشعب</small></span><button class="btn ghost sm" onclick="tst206Out()">خروج</button></div>${ctl}</div>`;
+    return `<div class="t206b"><div class="t206h"><span>${I("alert")} <b>حساب تجريبي</b> <small>لا يُحتسب في الإحصاءات ولا الأعداد ولا الشعب</small></span><button class="btn ghost sm" onclick="tst206Out()">خروج</button></div>${ctl}</div>`;
   }
   if (typeof psView == "function") {
     const _pv = psView;
@@ -132,7 +132,7 @@
   }
 
   /* =====================================================================
-     (٢) الإشعارات: نافذة «لازم تفعّل الإشعارات» لكل طالب ومدرس لحد ما يفعّلها
+     (٢) الإشعارات: نافذة «يجب تفعيل الإشعارات» لكل طالب ومدرس لحد ما يفعّلها
      ===================================================================== */
   const isApp = () => /SinaiSchoolApp/.test(navigator.userAgent);
   const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform == "MacIntel" && navigator.maxTouchPoints > 1);
@@ -150,12 +150,12 @@
     try { if (sessionStorage.getItem("nm206")) return; } catch (e) { }
     NM = 1;
     const body = st == "ios"
-      ? `<p>بالآيفون الإشعارات تشتغل بس من أيقونة البوابة على الشاشة الرئيسية:</p><ol><li>افتح الرابط بـ <b>Safari</b>.</li><li>اضغط زر <b>المشاركة</b> ⬆️ ثم <b>«إضافة إلى الشاشة الرئيسية»</b>.</li><li>افتح البوابة من الأيقونة الجديدة واضغط «تفعيل».</li></ol>`
+      ? `<p>في الآيفون تعمل الإشعارات من أيقونة البوابة على الشاشة الرئيسية فقط:</p><ol><li>افتح الرابط بـ <b>Safari</b>.</li><li>اضغط زر <b>المشاركة</b> ⬆️ ثم <b>«إضافة إلى الشاشة الرئيسية»</b>.</li><li>افتح البوابة من الأيقونة الجديدة واضغط «تفعيل».</li></ol>`
       : st == "denied"
-        ? `<p>الإشعارات مقفولة بالمتصفح. افتحها هيج:</p><ol><li>اضغط على 🔒 جنب الرابط (أو إعدادات المتصفح).</li><li>اختار <b>الأذونات ← الإشعارات ← سماح</b>.</li><li>ارجع للبوابة وحدّث الصفحة.</li></ol>`
-        : `<p>حتى توصلك <b>التبليغات والدرجات وتحديثات الجدول</b> فوراً وبصوت حتى لو البوابة مسدودة، لازم تفعّل الإشعارات.</p>`;
+        ? `<p>الإشعارات محظورة في المتصفح. افتحها هكذا:</p><ol><li>اضغط على 🔒 بجانب الرابط (أو إعدادات المتصفح).</li><li>اختر <b>الأذونات ← الإشعارات ← سماح</b>.</li><li>ارجع للبوابة وحدّث الصفحة.</li></ol>`
+        : `<p>لتصلك <b>التبليغات والدرجات وتحديثات الجدول</b> فوراً وبصوت حتى والبوابة مغلقة، يجب تفعيل الإشعارات.</p>`;
     const m = D.createElement("div"); m.id = "nm206"; m.className = "nm206";
-    m.innerHTML = `<div class="nm206c" role="dialog" aria-modal="true"><div class="nm206i">🔔</div><h3>لازم تفعّل الإشعارات</h3>${body}<div class="nm206b">${st == "default" ? `<button class="btn" id="nm206y">تفعيل الإشعارات الآن</button>` : ""}<button class="btn ghost" id="nm206n">لاحقاً</button></div></div>`;
+    m.innerHTML = `<div class="nm206c" role="dialog" aria-modal="true"><div class="nm206i">🔔</div><h3>يجب تفعيل الإشعارات</h3>${body}<div class="nm206b">${st == "default" ? `<button class="btn" id="nm206y">تفعيل الإشعارات الآن</button>` : ""}<button class="btn ghost" id="nm206n">لاحقاً</button></div></div>`;
     D.body.appendChild(m);
     const close = () => { m.remove(); NM = 0; try { sessionStorage.setItem("nm206", "1"); } catch (e) { } };
     m.querySelector("#nm206n").onclick = close;
@@ -164,7 +164,7 @@
       y.disabled = true; y.textContent = "لحظة…";
       let ok = 0; try { ok = typeof W.sub205 == "function" ? await W.sub205(1) : (await Notification.requestPermission()) == "granted"; } catch (e) { }
       close();
-      T(ok ? "تفعّلت الإشعارات ✓" : (Notification.permission == "denied" ? "انرفض الإذن — فعّله من إعدادات المتصفح" : "ما تفعّلت — حاول مرة ثانية"), ok ? "" : "err");
+      T(ok ? "تفعّلت الإشعارات ✓" : (Notification.permission == "denied" ? "رُفض الإذن — فعّله من إعدادات المتصفح" : "لم تُفعَّل — حاول مجدداً"), ok ? "" : "err");
       if (ok) { const b = D.getElementById("pb205"); if (b) b.remove(); }
     };
   }
@@ -287,7 +287,7 @@
           }
         }
         const d = u.slice(u.indexOf(",") + 1);
-        if (d.length * .75 > SZ) { T("الملف «" + n + "» أكبر من ٢٥ ميغا — ما ينرسل", "err"); continue; }
+        if (d.length * .75 > SZ) { T("الملف «" + n + "» أكبر من ٢٥ ميغابايت — لا يُرسل", "err"); continue; }
         out.push({ n, m, d });
       }
       return out;
@@ -373,7 +373,7 @@
   W.q206Link = (i, pg) => {   /* ربط الطالب بصفحة القيد الصحيحة */
     const it = qi(i); if (!it || (typeof guard == "function" && guard())) return;
     if (!confirm("ربط «" + it.s.n + "» بصفحة القيد " + pg + "؟")) return;
-    const s = ST.find(x => x.id == it.s.id); if (!s) return; s.pg = pg; P.st(); qDone(i, "انربط الطالب بصفحة القيد الصحيحة ✓");
+    const s = ST.find(x => x.id == it.s.id); if (!s) return; s.pg = pg; P.st(); qDone(i, "رُبط الطالب بصفحة القيد الصحيحة ✓");
   };
   if (typeof V != "undefined" && typeof V.q == "function") {
     const _vq = V.q;
@@ -389,11 +389,11 @@
           const c = kind == "d" ? cands(it.s) : [];
           return `<div class="q206c"><div class="q206h"><span>صفحة القيد <b>${A(it.r.pg)}</b>${it.r.y ? " · سنة " + A(E(it.r.y)) : ""}</span><span class="muted">${E(it.s.s || "")}</span></div>
 <dl><dt>اسم الصف (النظام)</dt><dd><b>${E(it.s.n)}</b></dd><dt>اسم القيد</dt><dd>${E(it.r.n)}</dd><dt>البوابة (حسب البطاقة)</dt><dd>${E(it.pn || "—")}</dd></dl>
-${kind == "d" ? `<p class="q206w">⚠️ الاسمين لطالبين مختلفين — رقم صفحة القيد المسجّل للطالب بالنظام غالباً غلط، فما ينغيّر أي اسم.</p>${c.length ? `<div class="q206a"><span class="muted">صفحات قيد بنفس اسم الطالب:</span>${c.map(r => `<button class="btn sm" onclick="q206Link(${i},'${E(String(r.pg))}')">ربط بصفحة ${A(r.pg)}${r.y ? " (" + A(E(r.y)) + ")" : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:4px 0">ما لكيت صفحة ثانية بنفس الاسم — راجع رقم الصفحة بملف الطالب.</p>`}<div class="q206a"><button class="btn ghost sm" onclick="qSkip205(${i})">اتركه</button></div>`
+${kind == "d" ? `<p class="q206w">⚠️ الاسمان لطالبين مختلفين — رقم صفحة القيد المسجّل للطالب في النظام خاطئ على الأرجح، لذا لن يُغيَّر أي اسم.</p>${c.length ? `<div class="q206a"><span class="muted">صفحات قيد بنفس اسم الطالب:</span>${c.map(r => `<button class="btn sm" onclick="q206Link(${i},'${E(String(r.pg))}')">ربط بصفحة ${A(r.pg)}${r.y ? " (" + A(E(r.y)) + ")" : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:4px 0">لم أجد صفحة أخرى بالاسم نفسه — راجع رقم الصفحة في ملف الطالب.</p>`}<div class="q206a"><button class="btn ghost sm" onclick="qSkip205(${i})">اتركه</button></div>`
               : `<div class="q206a"><button class="btn sm" onclick="qFix205(${i})">اسم الصف صحيح ← يتصحح القيد</button><button class="btn sm" onclick="q206Sys(${i})">اسم القيد صحيح ← يتصحح النظام</button>${it.pn ? `<button class="btn sm" onclick="q206Por(${i})">اسم البطاقة صحيح ← يتصحح الاثنين</button>` : ""}<button class="btn ghost sm" onclick="qSkip205(${i})">اتركه</button></div>`}</div>`;
         };
         const box = `<details class="box q206" ${Q.rev.length ? "open" : ""}><summary><b>مطابقة أسماء الطلاب مع القيد العام</b><span class="q206s">تصحّح تلقائياً: ${A(Q.done || 0)} · فرق همزة أو مسافة فقط: ${A(Q.fmt || 0)} · تحتاج اختيارك: ${A(near.length)} · صفحة قيد لطالب ثاني: ${A(diff.length)}</span></summary>
-${Q.rev.length ? `<p class="muted" style="margin:6px 0">لكل طالب اختار الاسم الصحيح، وينصحح وحده بالمكان الثاني. «البوابة» هو الاسم اللي كتبه الطالب حسب بطاقته الموحدة.</p>${near.slice(0, 150).map(x => card(x, "n")).join("")}${diff.length ? `<h3 style="margin:14px 0 6px">صفحة القيد مربوطة بطالب ثاني (${A(diff.length)})</h3>` + diff.slice(0, 150).map(x => card(x, "d")).join("") : ""}` : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>'}</details>`;
+${Q.rev.length ? `<p class="muted" style="margin:6px 0">اختر لكل طالب الاسم الصحيح، وسيُصحَّح تلقائياً في الموضع الآخر. «البوابة» هو الاسم الذي كتبه الطالب حسب بطاقته الموحدة.</p>${near.slice(0, 150).map(x => card(x, "n")).join("")}${diff.length ? `<h3 style="margin:14px 0 6px">صفحة القيد مربوطة بطالب ثاني (${A(diff.length)})</h3>` + diff.slice(0, 150).map(x => card(x, "d")).join("") : ""}` : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>'}</details>`;
         h = h.slice(0, a) + box + h.slice(b + 10);
       } catch (x) { console.warn(x); }
       return h;
@@ -408,16 +408,16 @@ ${Q.rev.length ? `<p class="muted" style="margin:6px 0">لكل طالب اختا
   async function xtLoad() {
     if (!own()) { XT.err = "هذه الصفحة لمدير النظام فقط (سجّل دخول بحساب مدير النظام)."; return; }
     XT.busy = 1; XT.err = "";
-    try { const r = await gx({ op: "tstGet" }); if (r && r.ok) XT.d = r; else XT.err = "تعذّر التحميل من الخادم (" + E((r && r.err) || "") + ")"; } catch (e) { XT.err = "ما أكو اتصال بالخادم"; }
+    try { const r = await gx({ op: "tstGet" }); if (r && r.ok) XT.d = r; else XT.err = "تعذّر التحميل من الخادم (" + E((r && r.err) || "") + ")"; } catch (e) { XT.err = "لا يوجد اتصال بالخادم"; }
     XT.busy = 0; if (typeof cur != "undefined" && cur == "tst206") render();
   }
   const COLS = ["معدل النصف الأول", "نصف السنة", "معدل النصف الثاني", "السعي السنوي", "الامتحان النهائي", "الدرجة النهائية"];
   const secList = () => (typeof SN != "undefined" && SN.length ? SN : snapSN()).filter(Boolean);
   function xtView() {
     if (!XT.d && !XT.busy && !XT.err) setTimeout(xtLoad, 10);
-    const head = `<div class="vh"><h2>${I("user")} الحسابات التجريبية</h2></div><p class="muted">طالب تجريبي ومدرس تجريبي يشوفون النظام مثل الحقيقيين بالضبط — جرّب عليهم الدرجات والتبليغات والجدول والامتحانات وشوف النتيجة بالبوابة. <b>ما ينحسبون</b> بالإحصاءات ولا الأعداد ولا قوائم الشعب.</p>
+    const head = `<div class="vh"><h2>${I("user")} الحسابات التجريبية</h2></div><p class="muted">طالب تجريبي ومدرس تجريبي يريان النظام كالحسابات الحقيقية تماماً — جرّب عليهما الدرجات والتبليغات والجدول والامتحانات وشاهد النتيجة في البوابة. <b>لا يُحتسبون</b> بالإحصاءات ولا الأعداد ولا قوائم الشعب.</p>
 <div class="tools"><a class="btn" href="./?tst=s" target="_blank" rel="noopener">${I("users")} افتح البوابة كطالب تجريبي</a><a class="btn" href="./?tst=t" target="_blank" rel="noopener">${I("user")} افتح البوابة كمدرس تجريبي</a></div>
-<p class="muted" style="margin:4px 0">الدخول اليدوي: من البوابة اختار «الطلاب» أو «المدرسون» واكتب <b>test</b> وكلمة المرور <b>1234</b>.</p>`;
+<p class="muted" style="margin:4px 0">الدخول اليدوي: من البوابة اختر «الطلاب» أو «المدرسون» واكتب <b>test</b> وكلمة المرور <b>1234</b>.</p>`;
     if (XT.err) return head + `<div class="box"><p class="muted">${E(XT.err)}</p><button class="btn ghost" onclick="xt206Reload()">إعادة المحاولة</button></div>`;
     if (!XT.d) return head + `<div class="box"><p class="muted">جارٍ التحميل…</p></div>`;
     const ps = XT.d.ps || {}, pt = XT.d.pt || {}, g = ps.g || [];
@@ -427,7 +427,7 @@ ${Q.rev.length ? `<p class="muted" style="margin:6px 0">لكل طالب اختا
     return head + `<div class="two">
 <div class="box"><h3>${I("users")} الطالب التجريبي</h3>
 <label>الصف والشعبة<select id="x206sec">${secOpts}</select></label>
-<p class="muted" style="margin:6px 0">يشوف جدول هذي الشعبة، وتبليغاتها، وجداول امتحانات صفها.</p>
+<p class="muted" style="margin:6px 0">يرى جدول هذه الشعبة وتبليغاتها وجداول امتحانات صفها.</p>
 <h4 style="margin:12px 0 6px">الدرجات ${ps.demo ? '<span class="muted" style="font-weight:400">(تجريبية تلقائية حسب مواد الشعبة)</span>' : ""}</h4>
 <div class="tw"><table class="x206g"><tr><th class="l">المادة</th>${COLS.map(c => `<th>${c}</th>`).join("")}<th></th></tr>${rows}</table></div>
 <div class="tools"><button class="btn ghost sm" onclick="xt206Row()">+ مادة</button><button class="btn ghost sm" onclick="xt206Auto()">درجات تلقائية</button></div>
@@ -436,7 +436,7 @@ ${Q.rev.length ? `<p class="muted" style="margin:6px 0">لكل طالب اختا
 <div class="tools"><button class="btn" onclick="xt206SaveS()">${I("check")} حفظ وإرسال للطالب التجريبي</button></div></div>
 <div class="box"><h3>${I("user")} المدرس التجريبي</h3>
 <label>يعرض جدول المدرس<select id="x206as"><option value="">— بدون —</option>${tch.filter(x => x && x.k).map(x => `<option value="${E(x.k)}" ${x.k == pt.as ? "selected" : ""}>${E(x.n)}${x.spec ? " — " + E(x.spec) : ""}</option>`).join("")}</select></label>
-<p class="muted" style="margin:6px 0">طلاب المدرس التجريبي = الطالب التجريبي فقط، فالدرجات والتبليغات اللي يرسلها ما توصل لأي طالب حقيقي.</p>
+<p class="muted" style="margin:6px 0">طلاب المدرس التجريبي = الطالب التجريبي فقط، فالدرجات والتبليغات التي يرسلها لا تصل إلى أي طالب حقيقي.</p>
 <div class="tools"><button class="btn" onclick="xt206SaveT()">${I("check")} حفظ</button></div>
 <h3 style="margin-top:18px">${I("bell")} تبليغ تجريبي</h3>
 <label>إلى<select id="x206to"><option value="both">الطالب والمدرس التجريبيين</option><option value="s">الطالب التجريبي</option><option value="t">المدرس التجريبي</option></select></label>
@@ -444,31 +444,31 @@ ${Q.rev.length ? `<p class="muted" style="margin:6px 0">لكل طالب اختا
 <label>النص<textarea id="x206tb" rows="3">هذا تبليغ تجريبي من إدارة المدرسة.</textarea></label>
 <div class="tools"><button class="btn" onclick="xt206Note()">${I("upload")} إرسال</button></div>
 <p class="muted" style="margin:6px 0">ممكن ترسل أيضاً من «حسابات وتبليغات البوابة» ← «إرسال إلى» ← «للتجربة» (مع مرفقات).</p>
-<div class="tools" style="margin-top:14px"><button class="btn ghost sm" onclick="xt206Reset()">إرجاع كل شي للوضع التلقائي</button></div></div></div>`;
+<div class="tools" style="margin-top:14px"><button class="btn ghost sm" onclick="xt206Reset()">إرجاع كل شيء إلى الوضع التلقائي</button></div></div></div>`;
   }
   W.xt206Reload = () => { XT.d = null; XT.err = ""; render(); };
   W.xt206Row = () => { const t = D.querySelector(".x206g"); if (!t) return; const tr = t.insertRow(-1); tr.innerHTML = `<td class="l"><input class="x206n" placeholder="المادة"></td>${"<td><input class=\"x206v\" inputmode=\"decimal\" maxlength=\"6\"></td>".repeat(6)}<td><button class="btn ghost sm" onclick="this.closest('tr').remove()">✕</button></td>`; };
-  const busy = async (fn, ok) => { try { const r = await fn(); if (r && r.ok) { if (r.ps) XT.d = Object.assign(XT.d || {}, r); T(ok); render(); } else T("تعذّر الحفظ (" + ((r && r.err) || "") + ")", "err"); } catch (e) { T("ما أكو اتصال", "err"); } };
+  const busy = async (fn, ok) => { try { const r = await fn(); if (r && r.ok) { if (r.ps) XT.d = Object.assign(XT.d || {}, r); T(ok); render(); } else T("تعذّر الحفظ (" + ((r && r.err) || "") + ")", "err"); } catch (e) { T("لا يوجد اتصال", "err"); } };
   W.xt206SaveS = () => {
     const g = [...D.querySelectorAll(".x206g tr")].slice(1).map(tr => { const n = (tr.querySelector(".x206n") || {}).value || ""; return [n.trim(), ...[...tr.querySelectorAll(".x206v")].map(i => String(i.value || "").trim().replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)))]; }).filter(r => r[0]);
     const days = String((D.getElementById("x206days") || {}).value || "").replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)).split(/[\s,،]+/).map(s => s.trim()).filter(s => /^\d{4}-\d{1,2}-\d{1,2}$/.test(s)).map(s => s.split("-").map((v, i) => i ? v.padStart(2, "0") : v).join("-"));
-    busy(() => gx({ op: "tstSet", s: { sec: (D.getElementById("x206sec") || {}).value, g, days, res: (D.getElementById("x206res") || {}).value || "" } }), "انحفظ ووصل للطالب التجريبي ✓");
+    busy(() => gx({ op: "tstSet", s: { sec: (D.getElementById("x206sec") || {}).value, g, days, res: (D.getElementById("x206res") || {}).value || "" } }), "حُفظ ووصل إلى الطالب التجريبي ✓");
   };
-  W.xt206Auto = () => busy(() => gx({ op: "tstSet", s: { sec: (D.getElementById("x206sec") || {}).value, g: [] } }), "رجعت الدرجات التلقائية ✓");
-  W.xt206SaveT = () => busy(() => gx({ op: "tstSet", t: { as: (D.getElementById("x206as") || {}).value || "" } }), "انحفظ ✓");
+  W.xt206Auto = () => busy(() => gx({ op: "tstSet", s: { sec: (D.getElementById("x206sec") || {}).value, g: [] } }), "أُعيدت الدرجات التلقائية ✓");
+  W.xt206SaveT = () => busy(() => gx({ op: "tstSet", t: { as: (D.getElementById("x206as") || {}).value || "" } }), "حُفظ ✓");
   W.xt206Reset = () => { if (confirm("إرجاع الحسابات التجريبية للوضع التلقائي؟")) busy(() => gx({ op: "tstSet", reset: 1 }), "رجع الوضع التلقائي ✓"); };
   W.xt206Note = async () => {
     const to = (D.getElementById("x206to") || {}).value || "both", title = (D.getElementById("x206tt") || {}).value || "تبليغ تجريبي", body = (D.getElementById("x206tb") || {}).value || "";
     const L = to == "both" ? ["s:tst-s", "t:tst-t"] : [to == "s" ? "s:tst-s" : "t:tst-t"];
     let ok = 0; for (const tg of L) { try { const r = await gx({ op: "note", scope: "one", target: tg, title, body: body + "\n\n(" + new Date().toLocaleTimeString("ar-IQ") + ")", cat: "adm" }); if (r && r.ok) ok++; } catch (e) { } }
-    T(ok == L.length ? "انرسل التبليغ التجريبي ✓ — افتح البوابة التجريبية وشوفه" : "تعذّر الإرسال", ok ? "" : "err");
+    T(ok == L.length ? "أُرسل التبليغ التجريبي ✓ — افتح البوابة التجريبية وشاهده" : "تعذّر الإرسال", ok ? "" : "err");
   };
   on(() => {
     if (typeof V == "undefined" || typeof HUBS == "undefined") return;
     V.tst206 = xtView;
     if (typeof TITLE != "undefined") TITLE.tst206 = "الحسابات التجريبية";
     if (typeof NAVI != "undefined") NAVI.tst206 = ["tst206", "الحسابات التجريبية", "user", 1];
-    if (typeof HDESC != "undefined") HDESC.tst206 = "طالب ومدرس تجريبي لتجربة كل شي";
+    if (typeof HDESC != "undefined") HDESC.tst206 = "طالب ومدرس تجريبيان لتجربة كل شيء";
     if (!HUBS.some(h => h[0] == "tst206")) HUBS.push(["tst206", "الحسابات التجريبية", "user", "الطالب التجريبي والمدرس التجريبي — جرّب الدرجات والتبليغات والجدول", ["tst206"]]);
   });
 

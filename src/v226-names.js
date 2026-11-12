@@ -75,14 +75,14 @@
   const A = n => (typeof toAr == "function" ? toAr(n) : n);
   const I = n => (typeof ic == "function" ? ic(n) : "");
   const rr = () => { try { prender(); } catch (e) { } };
-  const say = e => { const c = e && (e.code || e.err); return c == "many" ? "محاولات كثيرة من هذا الجهاز. جرّب بعد ساعة، أو راجع الإدارة." : "ما كدرنا نتصل بالمدرسة. تأكد من الإنترنت وجرّب مرة ثانية."; };
+  const say = e => { const c = e && (e.code || e.err); return c == "many" ? "محاولات كثيرة من هذا الجهاز. جرّب بعد ساعة، أو راجع الإدارة." : "تعذّر الاتصال بالمدرسة. تأكد من الإنترنت وحاول مجدداً."; };
   W.pk226Go = async function (ev) {
     if (ev && ev.preventDefault) ev.preventDefault();
     if (P.busy) return false;
     const el = D.getElementById("pk226n"), n = arD(el ? el.value : P.n); P.n = n; P.L = null; P.err = "";
-    if (!/^(19|20)\d{10}$/.test(n)) { P.err = "رقم البطاقة الموحدة ١٢ رقم ويبدأ بسنة الميلاد (مثل ٢٠٠٩…). عدد الأرقام اللي كتبتها: " + A(n.length); rr(); return false; }
+    if (!/^(19|20)\d{10}$/.test(n)) { P.err = "رقم البطاقة الموحدة ١٢ رقم ويبدأ بسنة الميلاد (مثل ٢٠٠٩…). عدد الأرقام التي كتبتها: " + A(n.length); rr(); return false; }
     P.busy = 1; rr();
-    try { const r = await _api({ a: "who", nid: n }); if (r && r.ok) { P.L = r.L || []; if (!P.L.length) P.more = 1; } else P.err = r && r.err == "neednid" ? "الرقم مو صحيح، تأكد منه." : say(r); }
+    try { const r = await _api({ a: "who", nid: n }); if (r && r.ok) { P.L = r.L || []; if (!P.L.length) P.more = 1; } else P.err = r && r.err == "neednid" ? "الرقم غير صحيح، تأكد منه." : say(r); }
     catch (e) { P.err = say(e); }
     P.busy = 0; rr(); return false;
   };
@@ -104,18 +104,18 @@
     let res = "";
     if (P.busy) res = `<p class="muted" style="margin:8px 0 0">جارٍ البحث…</p>`;
     else if (P.err) res = `<p class="err" role="alert" style="margin:8px 0 0;color:var(--bad,#b3261e);font-weight:600">${E(P.err)}</p>`;
-    else if (P.L && P.L.length) res = `<p class="muted" style="margin:10px 0 6px">${P.L.length > 1 ? "اختر اسمك:" : "هذا اسمك؟ اضغط عليه حتى تكمل:"}</p><div class="pk-list" style="display:grid">${P.L.map(x => `<button type="button" class="gsi" onclick="pk226Pick('${E(x.key)}','${E(String(x.n).replace(/['\\]/g, ""))}',1)"><b>${E(x.n)}</b><span>${E(x.sec || "")}</span></button>`).join("")}</div>`;
-    else if (P.L) res = `<p role="alert" style="margin:8px 0 0;font-weight:600">ما لكينا هذا الرقم بسجلات المدرسة. تأكد من الرقم واكتبه مرة ثانية — وإذا متأكد منه شوف الخيار جوّه.</p>`;
+    else if (P.L && P.L.length) res = `<p class="muted" style="margin:10px 0 6px">${P.L.length > 1 ? "اختر اسمك:" : "هل هذا اسمك؟ اضغط عليه للمتابعة:"}</p><div class="pk-list" style="display:grid">${P.L.map(x => `<button type="button" class="gsi" onclick="pk226Pick('${E(x.key)}','${E(String(x.n).replace(/['\\]/g, ""))}',1)"><b>${E(x.n)}</b><span>${E(x.sec || "")}</span></button>`).join("")}</div>`;
+    else if (P.L) res = `<p role="alert" style="margin:8px 0 0;font-weight:600">لم نجد هذا الرقم في سجلات المدرسة. تأكد من الرقم واكتبه مجدداً — وإن كنت متأكداً منه فانظر الخيار أدناه.</p>`;
     let G = [], secs = [];
     try { G = pGrades(); if (P.g != null && G[P.g] != null) secs = pSecs(G[P.g]); } catch (e) { }
     const lst = P.s != null ? (P.sb ? `<p class="muted">جارٍ التحميل…</p>` : (P.sec[P.s] || []).length
-      ? `<div class="pk-list" style="display:grid">${P.sec[P.s].map(x => `<button type="button" class="gsi" onclick="pk226Pick('${E(x.key)}','${E(String(x.n).replace(/['\\]/g, ""))}',0)"><b>${E(x.n)}</b><span>${A(x.j + 1)}</span></button>`).join("")}</div><p class="muted" style="margin:8px 0 0">إذا اسمك مو بهاي القائمة: رقم بطاقتك مسجّل بالمدرسة — اكتبه فوك. وإذا ما يطلع، راجع الإدارة حتى تصحّحه.</p>`
-      : `<p class="muted" style="margin:8px 0 0">كل طلاب هاي الشعبة أرقام بطاقاتهم مسجّلة — اكتب رقم بطاقتك فوك. إذا ما يطلع اسمك راجع إدارة المدرسة حتى تصحّح الرقم.</p>`) : "";
-    const more = `<details ${P.more ? "open" : ""} ontoggle="PK226.more=this.open?1:0" style="margin-top:14px;border-top:1px solid var(--line,#ddd);padding-top:10px"><summary style="cursor:pointer;font-weight:600">ما طلع اسمي / ما عندي بطاقة موحدة</summary>
+      ? `<div class="pk-list" style="display:grid">${P.sec[P.s].map(x => `<button type="button" class="gsi" onclick="pk226Pick('${E(x.key)}','${E(String(x.n).replace(/['\\]/g, ""))}',0)"><b>${E(x.n)}</b><span>${A(x.j + 1)}</span></button>`).join("")}</div><p class="muted" style="margin:8px 0 0">إذا لم يكن اسمك في هذه القائمة فرقم بطاقتك مسجّل في المدرسة — اكتبه في الأعلى. وإن لم يظهر اسمك فراجع الإدارة لتصحيحه.</p>`
+      : `<p class="muted" style="margin:8px 0 0">جميع طلاب هذه الشعبة أرقام بطاقاتهم مسجّلة — اكتب رقم بطاقتك في الأعلى. إن لم يظهر اسمك فراجع إدارة المدرسة لتصحيح الرقم.</p>`) : "";
+    const more = `<details ${P.more ? "open" : ""} ontoggle="PK226.more=this.open?1:0" style="margin-top:14px;border-top:1px solid var(--line,#ddd);padding-top:10px"><summary style="cursor:pointer;font-weight:600">لم يظهر اسمي / ليست لدي بطاقة موحدة</summary>
       <p class="muted" style="margin:8px 0">اختر صفك وشعبتك:</p>
       <div class="pk-sel"><select aria-label="الصف" onchange="PK226.g=this.value===''?null:+this.value;PK226.s=null;prender()"><option value="">الصف…</option>${G.map((g0, i) => `<option value="${i}" ${P.g === i ? "selected" : ""}>الصف ${E(g0)}</option>`).join("")}</select>
       <select aria-label="الشعبة" ${P.g == null ? "disabled" : ""} onchange="pk226Sec(this.value===''?null:+this.value)"><option value="">الشعبة…</option>${secs.map(([n, i]) => `<option value="${i}" ${P.s === i ? "selected" : ""}>${E(String(n).split(" ").slice(1).join(" "))}</option>`).join("")}</select></div>${lst}</details>`;
-    return `<div class="box pk120 pk226"><div class="pk-hd"><span class="pk-ic">${I("users")}</span><div><h2>اكتب رقم بطاقتك الموحدة</h2><p class="muted">حتى يطلع اسمك وتكمل الدخول. الرقم ١٢ رقم ومكتوب على بطاقتك الموحدة.</p></div></div>
+    return `<div class="box pk120 pk226"><div class="pk-hd"><span class="pk-ic">${I("users")}</span><div><h2>اكتب رقم بطاقتك الموحدة</h2><p class="muted">ليظهر اسمك وتُكمل الدخول. الرقم مكوّن من ١٢ رقماً ومكتوب على بطاقتك الموحدة.</p></div></div>
       <form onsubmit="return pk226Go(event)" style="display:grid;gap:10px"><input id="pk226n" type="tel" inputmode="numeric" maxlength="12" autocomplete="off" dir="ltr" aria-label="رقم البطاقة الموحدة" placeholder="رقم البطاقة الموحدة — ١٢ رقم" value="${E(P.n)}" oninput="dg120(this,12);PK226.n=this.value" style="font-size:1.15em;text-align:center;letter-spacing:.06em">
       <button class="btn" type="submit" ${P.busy ? "disabled" : ""}>${I("search")} بحث عن اسمي</button></form>
       <div id="pk226r" aria-live="polite">${res}</div>${more}</div>`;

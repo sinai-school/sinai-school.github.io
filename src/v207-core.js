@@ -247,7 +247,7 @@
     if (typeof guard == "function" && guard()) return;
     const st = ST.find(y => y.id == sid); if (!st) return;
     if (!confirm("ربط «" + st.n + "» بصفحة القيد " + pg + "؟")) return;
-    st.pg = String(pg); P.st(); T("انربط الطالب بصفحة القيد ✓"); rr();
+    st.pg = String(pg); P.st(); T("رُبط الطالب بصفحة القيد ✓"); rr();
   };
   /* صندوق «طلاب بدون قيد» بصفحة القيد العام */
   on(() => {
@@ -259,8 +259,8 @@
         if (typeof QSEL != "undefined" && (QSEL || QIMP)) return h;
         const L = noQaid(); if (!L) return h;
         setTimeout(autoLink, 400);
-        const rows = L.map(x => `<tr><td class="l"><b>${E(x.s.n)}</b>${x.pn && NZ(x.pn) != NZ(x.s.n) ? `<div class="sub">البوابة: ${E(x.pn)}</div>` : ""}</td><td class="l">${E(x.s.s)}</td><td>${x.bad ? `<span class="chip bad">${A(x.s.pg)} مو موجودة بالقيد</span>` : '<span class="chip bad">بدون</span>'}</td><td class="l">${[...x.ex, ...x.near].length ? [...x.ex, ...x.near].map(r => `<button class="btn ghost sm" style="margin:2px" onclick="qLink207('${E(x.s.id)}','${E(String(r.pg))}')">صفحة ${A(r.pg)} — ${E(r.n)}${r.y ? " (" + A(E(r.y)) + ")" : ""}</button>`).join("") : '<span class="muted">ما بيه اسم قريب بكل القيد العام (' + A(QD.length) + ' اسم) — يحتاج تسجيل بالقيد</span>'}</td></tr>`).join("");
-        const box = `<details class="box" style="grid-template-columns:minmax(0,1fr)" ${L.length ? "open" : ""}><summary style="cursor:pointer"><b>طلاب بدون صفحة قيد</b> — ${L.length ? A(L.length) + " طالب" : "كل الطلاب عندهم قيد ✓"}</summary>${L.length ? `<p class="muted" style="margin:6px 0">انفحص كل اسم ويا كل القيد العام من ١٩٦٧ لهسه (الأسماء القديمة والمصححة وأسماء البوابة). اضغط على الصفحة الصحيحة حتى تنربط.</p><div class="tw"><table><tr><th class="l">الطالب</th><th class="l">الشعبة</th><th>صفحة القيد</th><th class="l">صفحات قريبة بالقيد</th></tr>${rows}</table></div>` : ""}</details>`;
+        const rows = L.map(x => `<tr><td class="l"><b>${E(x.s.n)}</b>${x.pn && NZ(x.pn) != NZ(x.s.n) ? `<div class="sub">البوابة: ${E(x.pn)}</div>` : ""}</td><td class="l">${E(x.s.s)}</td><td>${x.bad ? `<span class="chip bad">${A(x.s.pg)} غير موجودة في القيد</span>` : '<span class="chip bad">بدون</span>'}</td><td class="l">${[...x.ex, ...x.near].length ? [...x.ex, ...x.near].map(r => `<button class="btn ghost sm" style="margin:2px" onclick="qLink207('${E(x.s.id)}','${E(String(r.pg))}')">صفحة ${A(r.pg)} — ${E(r.n)}${r.y ? " (" + A(E(r.y)) + ")" : ""}</button>`).join("") : '<span class="muted">لا يوجد اسم قريب في القيد العام كله (' + A(QD.length) + ' اسم) — يحتاج تسجيل بالقيد</span>'}</td></tr>`).join("");
+        const box = `<details class="box" style="grid-template-columns:minmax(0,1fr)" ${L.length ? "open" : ""}><summary style="cursor:pointer"><b>طلاب بدون صفحة قيد</b> — ${L.length ? A(L.length) + " طالب" : "كل الطلاب عندهم قيد ✓"}</summary>${L.length ? `<p class="muted" style="margin:6px 0">تمت مطابقة كل اسم مع القيد العام كاملاً من ١٩٦٧ إلى الآن (الأسماء القديمة والمصححة وأسماء البوابة). اضغط على الصفحة الصحيحة لربطها.</p><div class="tw"><table><tr><th class="l">الطالب</th><th class="l">الشعبة</th><th>صفحة القيد</th><th class="l">صفحات قريبة بالقيد</th></tr>${rows}</table></div>` : ""}</details>`;
         const a = h.indexOf('<details class="box'); h = a >= 0 ? h.slice(0, a) + box + h.slice(a) : box + h;
       } catch (e) { console.warn(e); }
       return h;
@@ -300,7 +300,7 @@
       } catch (e) { }
       return m;
     };
-    /* القيد العام لازم يكون محمّل حتى يطلع رقم القيد */
+    /* القيد العام يجب أن يكون محمّل حتى يطلع رقم القيد */
     if (typeof V != "undefined" && typeof V.sw == "function") { const _v = V.sw; V.sw = function () { try { if (typeof qSub == "function") qSub(); if (typeof infLoad == "function" && typeof INF != "undefined" && !INF) infLoad().then(() => rr()); } catch (e) { } return _v.apply(this, arguments); }; }
   });
 
@@ -315,7 +315,7 @@
       try {
         if (!isStaff()) return h;
         let at = ""; try { at = localStorage.getItem("pub207at") || ""; } catch (e) { }
-        const ok = `<div class="banner ok">${I("ok")} <span>البوابة تتحدث وحدها فوراً: أي تعديل بالجدول أو الأسماء أو المدرسين ينتشر للطلاب والمدرسين خلال ثانيتين${at ? " — آخر نشر: " + (typeof fmtD == "function" ? fmtD(at) : at) + " الساعة " + AD(new Date(at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })) : ""}</span></div>`;
+        const ok = `<div class="banner ok">${I("ok")} <span>البوابة تتحدّث تلقائياً وفوراً: أي تعديل في الجدول أو الأسماء أو المدرسين يصل إلى الطلاب والمدرسين خلال ثانيتين${at ? " — آخر نشر: " + (typeof fmtD == "function" ? fmtD(at) : at) + " الساعة " + AD(new Date(at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })) : ""}</span></div>`;
         h = h.replace(/<div class="banner (?:ok|warn)">[\s\S]*?<\/div>/, ok);
         h = h.replace(/نشر تلقائي: عند وجود تغييرات تُنشر بعد دقيقة ونصف من توقفك عن العمل \(على هذا الجهاز\)/, "نشر فوري تلقائي: أي تغيير ينتشر خلال ثانيتين من أي جهاز للإدارة");
       } catch (e) { }
@@ -401,7 +401,7 @@
       try {
         if (!D0 || !(D0.unv || []).length || h.indexOf("حسابات طلاب تحتاج تأكيدك") < 0) return h;
         const prof = {}; (D0.prof || []).forEach(p => { if (p.kind == "s") prof[p.key] = p; });
-        const note = `<div class="banner warn" style="margin:6px 0">${I("alert")}<span><b>منين دخلوا؟</b> هذول سجّلوا بالبوابة على الخادم القديم (١٨–٢٠ تشرين الأول) قبل ما يصير رقم البطاقة الموحدة إجباري، فانحفظ حسابهم برقم الهاتف بس. من ذاك الوقت الدخول يحتاج الهاتف + البطاقة، فهسه هذول <b>ما يكدرون يفتحون حسابهم ولا توصلهم درجات أو تبليغات</b> إلا يكتبون رقم بطاقتهم وتأكده إنت. إذا الرقم اللي كتبه يبدي بسنة قديمة (مثل ١٩٧٦) فهو بطاقة ولي الأمر مو الطالب — لا تأكده.</span></div>`;
+        const note = `<div class="banner warn" style="margin:6px 0">${I("alert")}<span><b>من أين دخلوا؟</b> هؤلاء سجّلوا في البوابة على الخادم القديم (١٨–٢٠ تشرين الأول) قبل أن يصبح رقم البطاقة الموحدة إلزامياً، فحُفظ حسابهم برقم الهاتف فقط. ومنذ ذلك الوقت يتطلب الدخول الهاتف + البطاقة، فهؤلاء الآن <b>لا يستطيعون فتح حساباتهم ولا تصلهم درجات أو تبليغات</b> إلا بعد أن يكتبوا رقم بطاقتهم وتؤكده أنت. إذا كان الرقم المكتوب يبدأ بسنة قديمة (مثل ١٩٧٦) فهو بطاقة ولي الأمر لا الطالب — لا تؤكده.</span></div>`;
         h = h.replace(/(حسابات طلاب تحتاج تأكيدك[\s\S]*?<\/h3>)/, "$1" + note);
         /* الشعبة من القائمة الكاملة (حتى طلاب المحاولات) + البطاقة المكتوبة بالمعلومات */
         (D0.unv || []).forEach(u => {
@@ -524,7 +524,7 @@
   });
 
   /* =====================================================================
-     (١١) الأرشيف: ملفات أكبر (لحد ٤٠ ميغا) وأكثر من ملف بنفس الوقت، وكل ملف يتأكد إنه انحفظ بالخادم
+     (١١) الأرشيف: ملفات أكبر (لحد ٤٠ ميغا) وأكثر من ملف بنفس الوقت، وكل ملف يتأكد إنه حُفظ بالخادم
      ===================================================================== */
   on(() => {
     try { if (typeof AMAX != "undefined") { /* const — نتعامل وياه من الواجهة */ } } catch (e) { }
@@ -544,7 +544,7 @@
         const v = w.querySelector("[data-v]"), sh = w.querySelector("[data-s]"); if (!v || !sh) return r;
         v.innerHTML = I("download") + " حفظ بالاستوديو (الصور)";
         v.className = "btn"; sh.className = "btn ghost";
-        const p = D.createElement("p"); p.className = "muted"; p.style.margin = "6px 0 0"; p.textContent = "بعد ما تضغط «حفظ بالاستوديو» تطلع قائمة الآيفون — اختار منها «حفظ الصورة» وتنحفظ بالصور.";
+        const p = D.createElement("p"); p.className = "muted"; p.style.margin = "6px 0 0"; p.textContent = "بعد الضغط على «حفظ بالاستوديو» تظهر قائمة الآيفون — اختر منها «حفظ الصورة» لتُحفظ في الصور.";
         v.parentElement.after(p);
         v.onclick = () => sh.click();
       } catch (e) { }

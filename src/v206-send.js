@@ -1,4 +1,4 @@
-/* ===== v206b — الإرسال: زر واحد = إرسال واحد، وحالة واضحة (جارٍ الإرسال… / ✓ انرسل / ✗ ما انرسل) ===== */
+/* ===== v206b — الإرسال: زر واحد = إرسال واحد، وحالة واضحة (جارٍ الإرسال… / ✓ أُرسل / ✗ ما أُرسل) ===== */
 (function () {
   "use strict";
   const W = window, D = document;
@@ -26,14 +26,14 @@
     const f = W[name]; if (typeof f != "function" || f.__s206) return;
     const g = async function () {
       const key = name + "|" + JSON.stringify([...arguments].map(String));
-      if (BUSY.has(key)) { sheet(2, "الإرسال شغّال… انتظر لحظة، لا تضغط مرة ثانية"); return; }
-      /* نفس التبليغ (نفس العنوان والنص) انرسل قبل شوية؟ نسأل قبل ما يتكرر */
+      if (BUSY.has(key)) { sheet(2, "الإرسال شغّال… انتظر لحظة، لا تضغط مرة أخرى"); return; }
+      /* نفس التبليغ (نفس العنوان والنص) أُرسل قبل شوية؟ نسأل قبل ما يتكرر */
       const F = { apiNote: ["an_t", "an_b"], psNotify: ["pn_t", "pn_b"], xt206Note: ["x206tt", "x206tb"] }[name];
       let sig = "";
       if (F) {
         sig = name + "|" + F.map(id => ((D.getElementById(id) || {}).value || "").trim()).join("|") + "|" + (((D.getElementById("an_to") || D.getElementById("pn_to") || {}).value) || "");
         let H = {}; try { H = JSON.parse(localStorage.getItem("snd206h") || "{}"); } catch (e) { }
-        const t = H[sig]; if (t && Date.now() - t < 6 * 3600e3 && !confirm("هذا التبليغ نفسه انرسل قبل " + Math.max(1, Math.round((Date.now() - t) / 6e4)) + " دقيقة ✓\nتريد ترسله مرة ثانية؟")) { sheet(1, "التبليغ واصل من قبل — ما تكرر"); return; }
+        const t = H[sig]; if (t && Date.now() - t < 6 * 3600e3 && !confirm("هذا التبليغ نفسه أُرسل سابقاً " + Math.max(1, Math.round((Date.now() - t) / 6e4)) + " دقيقة ✓\nهل تريد إرساله مرة أخرى؟")) { sheet(1, "التبليغ مُرسَل سابقاً — لم يُكرَّر"); return; }
       }
       BUSY.add(key);
       const btn = LB && Date.now() - LBT < 1500 ? LB : null, html = btn ? btn.innerHTML : "";
@@ -41,18 +41,18 @@
       sheet(2, "جارٍ الإرسال… لا تسكّر الصفحة");
       const cap = CAP = [];
       let err = 0;
-      try { await f.apply(this, arguments); } catch (e) { err = 1; cap.push(["تعذّر الإرسال — حاول مرة ثانية", "err"]); }
+      try { await f.apply(this, arguments); } catch (e) { err = 1; cap.push(["تعذّر الإرسال — حاول مجدداً", "err"]); }
       CAP = null; BUSY.delete(key);
       const last = cap[cap.length - 1] || ["", ""], bad = err || last[1] == "err", dup = /سبق|قبل|مكرر|dup/i.test(last[0]);
-      const queued = /تنرسل وحدها|انحفظت|ترجع الشبكة/.test(last[0]);
+      const queued = /تُرسل تلقائياً|حُفظت|عودة الشبكة/.test(last[0]);
       if (sig && !bad && cap.length) { try { const H = JSON.parse(localStorage.getItem("snd206h") || "{}"); H[sig] = Date.now(); for (const k in H) if (Date.now() - H[k] > 864e5) delete H[k]; localStorage.setItem("snd206h", JSON.stringify(H)); } catch (e) { } }
-      if (bad) sheet(0, last[0] || "ما انرسل — حاول مرة ثانية");
+      if (bad) sheet(0, last[0] || "لم يُرسل — حاول مجدداً");
       else if (!cap.length) { const s = D.getElementById("snd206"); if (s) s.style.display = "none"; }
-      else sheet(1, dup ? "هذا انرسل من قبل — ما تكرر ✓" : queued ? last[0] : (last[0] || label + " ✓"));
+      else sheet(1, dup ? "أُرسل هذا سابقاً — لم يُكرَّر ✓" : queued ? last[0] : (last[0] || label + " ✓"));
       if (btn && btn.isConnected) {
         if (bad) { btn.disabled = false; btn.innerHTML = html; btn.classList.remove("snd206b"); }
         else if (cap.length) {
-          btn.innerHTML = queued ? "⏳ بالانتظار" : "✓ انرسل"; btn.classList.add("snd206ok");
+          btn.innerHTML = queued ? "⏳ بالانتظار" : "✓ أُرسل"; btn.classList.add("snd206ok");
           setTimeout(() => { if (btn.isConnected) { btn.disabled = false; btn.innerHTML = html; btn.classList.remove("snd206b", "snd206ok"); } }, 2500);
         } else { btn.disabled = false; btn.innerHTML = html; btn.classList.remove("snd206b"); }
       }
@@ -60,7 +60,7 @@
     g.__s206 = 1;
     W[name] = g;
   }
-  const L = [["apiNote", "انرسل التبليغ"], ["psNotify", "انرسل التبليغ"], ["psReport", "انرسل البلاغ"], ["v202GSend", "انرسلت الدرجات"], ["v202Rep", "انرسل البلاغ"], ["v202TRep", "انرسل الرد"], ["v202Rel", "انرسلت النتائج"], ["v204ExPub", "انتشر الجدول"], ["xt206Note", "انرسل التبليغ"], ["xt206SaveS", "انحفظ ووصل"]];
+  const L = [["apiNote", "أُرسل التبليغ"], ["psNotify", "أُرسل التبليغ"], ["psReport", "أُرسل البلاغ"], ["v202GSend", "أُرسلت الدرجات"], ["v202Rep", "أُرسل البلاغ"], ["v202TRep", "أُرسل الرد"], ["v202Rel", "أُرسلت النتائج"], ["v204ExPub", "نُشر الجدول"], ["xt206Note", "أُرسل التبليغ"], ["xt206SaveS", "حُفظ ووصل"]];
   const arm = () => L.forEach(([n, l]) => { try { guardSend(n, l); } catch (e) { } });
   arm(); setTimeout(arm, 1500); setTimeout(arm, 6000);
 

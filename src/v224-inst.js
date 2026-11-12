@@ -17,20 +17,20 @@
   W.inst224Copy = async () => { let ok = false; try { await navigator.clipboard.writeText(SITE); ok = true; } catch (e) { try { const t = D.createElement("textarea"); t.value = SITE; D.body.appendChild(t); t.select(); ok = D.execCommand("copy"); t.remove(); } catch (e2) { } } if (typeof toast == "function") toast(ok ? "انسخ الرابط ✓ — افتحه بمتصفح الهاتف" : SITE); };
   inst120 = W.inst120 = function (k) {
     if (k != "and" && k != "hw") return _inst.apply(this, arguments);
-    if (typeof IS_APK != "undefined" && IS_APK) return toast("انت تستخدم التطبيق حالياً ✓");
+    if (typeof IS_APK != "undefined" && IS_APK) return toast("أنت تستخدم التطبيق حالياً ✓");
     const hw = k == "hw";
-    const warn = inApp ? `<div style="background:#fff4d6;border:1px solid #e0b84a;border-radius:10px;padding:10px 12px;margin:0 0 10px;line-height:1.8"><b>انت فاتح الرابط من داخل تطبيق ثاني (تيليگرام/فيسبوك/تيك توك…)</b> وهذا ما ينزّل ملفات. افتح الرابط بمتصفح الهاتف (Chrome أو متصفح هواوي) ثم اضغط «تثبيت».<div style="margin-top:8px"><button type="button" class="btn ghost sm" onclick="inst224Copy()">نسخ رابط المدرسة</button></div></div>` : "";
+    const warn = inApp ? `<div style="background:#fff4d6;border:1px solid #e0b84a;border-radius:10px;padding:10px 12px;margin:0 0 10px;line-height:1.8"><b>أنت تفتح الرابط من داخل تطبيق آخر (تيليگرام/فيسبوك/تيك توك…)</b> وهذا لا ينزّل الملفات. افتح الرابط في متصفح الهاتف (Chrome أو متصفح هواوي) ثم اضغط «تثبيت».<div style="margin-top:8px"><button type="button" class="btn ghost sm" onclick="inst224Copy()">نسخ رابط المدرسة</button></div></div>` : "";
     const body = warn +
       `<a class="btn" style="display:flex;justify-content:center;font-size:1.05em;padding:14px;text-decoration:none;margin:0 0 6px" href="${APK}" download="sinai-school.apk" rel="noopener">⬇ تنزيل ملف التطبيق</a>` +
-      `<p class="muted" style="margin:0 0 4px;text-align:center">إذا ما نزل: <a href="${ALT}" rel="noopener" download="sinai-school.apk">رابط ثاني للتنزيل</a></p>` +
-      st(["اضغط «تنزيل ملف التطبيق» وانتظر يكمل (٢ ميغا).",
+      `<p class="muted" style="margin:0 0 4px;text-align:center">إذا لم يبدأ التنزيل: <a href="${ALT}" rel="noopener" download="sinai-school.apk">رابط ثاني للتنزيل</a></p>` +
+      st(["اضغط «تنزيل ملف التطبيق» وانتظر اكتماله (٢ ميغابايت).",
         "افتح الملف من الإشعارات أو من «التنزيلات» / «الملفات».",
         hw ? "إذا طلب الهاتف: الإعدادات ← الأمان ← اسمح بتثبيت التطبيقات من مصادر خارجية للمتصفح أو «الملفات»." : "إذا طلب الهاتف: اسمح للمتصفح بتثبيت التطبيقات غير المعروفة.",
         "اضغط «تثبيت» ثم «فتح».",
-        hw ? "<b>إذا نافذة التثبيت طلعت واختفت:</b> الإعدادات ← النظام والتحديثات ← «الوضع النقي» (Pure Mode) ← عطّله، أو من AppGallery ← حسابي ← الإعدادات ← عطّل «فحص التطبيقات الخارجية»، ثم افتح الملف مرة ثانية."
-          : "<b>إذا نافذة التثبيت طلعت واختفت:</b> افتح متجر Play ← صورتك ← Play للحماية ← الإعدادات ← وافق على التثبيت، أو اضغط «تفاصيل أكثر ← التثبيت على أي حال».",
-        "إذا عندك نسخة قديمة من التطبيق وما يقبل: احذفها أول ثم ثبّت الجديدة (معلوماتك محفوظة بالمدرسة).",
-        "التطبيق يتحدث وحده ويفتح حتى بدون إنترنت — ما تحتاج تنزله مرة ثانية."]);
+        hw ? "<b>إذا ظهرت نافذة التثبيت ثم اختفت:</b> الإعدادات ← النظام والتحديثات ← «الوضع النقي» (Pure Mode) ← عطّله، أو من AppGallery ← حسابي ← الإعدادات ← عطّل «فحص التطبيقات الخارجية»، ثم افتح الملف مرة أخرى."
+          : "<b>إذا ظهرت نافذة التثبيت ثم اختفت:</b> افتح متجر Play ← صورتك ← Play للحماية ← الإعدادات ← وافق على التثبيت، أو اضغط «تفاصيل أكثر ← التثبيت على أي حال».",
+        "إذا كانت لديك نسخة قديمة من التطبيق ولم يُقبل التثبيت: احذفها أولاً ثم ثبّت الجديدة (معلوماتك محفوظة لدى المدرسة).",
+        "التطبيق يتحدّث تلقائياً ويعمل حتى بدون إنترنت — لا حاجة إلى تنزيله مرة أخرى."]);
     instModal120(hw ? "تثبيت التطبيق على هواوي" : "تثبيت التطبيق على أندرويد", body);
     /* النافذة ما تنسد بلمسة برّاها (چانت تختفي قبل ما يقرا) — بس بزر «تم» */
     const w = [...D.querySelectorAll(".zoom.inst")].pop(); if (w) { w.onclick = null; const bx = w.querySelector(".box"); if (bx) { bx.style.maxHeight = "88vh"; bx.style.overflowY = "auto"; } }
