@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v226-2026-11-11T17:30:00.000Z-v226";
+<script>window.APP_VER = "2k7v228-2026-11-12T00:40:00.000Z-v228";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -40420,4 +40420,33 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
 })();
 </script>
+<style id="v228">
+/* v228 (2026-11-12): ترتيب بطاقات الأقسام — آخر طبقة تنسيق، تغلب كل اللي قبلها.
+   قبل: بطاقات طويلة بعمود، ٦ بالسطر والباقي يتيم، الوصف مقطوع بثلاث نقاط، وبالموبايل ٩ أقسام تحتاج تمرير طويل.
+   هسه: كل قسم سطر مرتب (الأيقونة ← الاسم والوصف كامل ← عدد الأقسام)، ٣ بالسطر بالكمبيوتر وواحد بالموبايل. */
+#main .hubg{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))!important;gap:12px!important;max-width:none!important;margin:10px 0 22px!important;justify-content:stretch!important;align-items:stretch!important}
+#main .hubg>.hubc{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"i t c" "i d d";align-items:center;column-gap:14px;row-gap:1px;text-align:start!important;padding:14px 16px 13px!important;min-width:0!important;min-height:76px!important;height:auto!important;width:auto!important;max-width:none!important;flex:none!important;margin:0!important;justify-items:start}
+#main .hubg>.hubc>.hubi{grid-area:i;width:52px!important;height:52px!important;border-radius:16px!important;margin:0!important;flex:none}
+#main .hubg>.hubc>.hubi svg{width:24px;height:24px}
+#main .hubg>.hubc>b{grid-area:t;align-self:end;font-size:16px!important;line-height:1.45!important;margin:0!important;text-align:start}
+#main .hubg>.hubc>span:not(.hubi){grid-area:d;align-self:start;display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;font-size:12.5px!important;line-height:1.65!important;margin:0!important;text-align:start;white-space:normal!important}
+#main .hubg>.hubc>em{grid-area:c;margin:0!important;white-space:nowrap;align-self:end;justify-self:end}
+#main .hubg>.hubc>b:last-child{grid-row:1/3;align-self:center}
+#main .hubg>.hubc:hover .hubi{transform:none}
+/* رأس صفحة القسم: الاسم مكتوب بالشريط العلوي وبمسار التنقل — ما نكرره ثالث مرة، يبقى الوصف بس */
+#main .hubhd{display:block!important;margin:2px 0 4px!important;padding:0!important;text-align:start!important}
+#main .hubhd>.hubi,#main .hubhd h2{display:none!important}
+#main .hubhd p{margin:0!important;text-align:start!important}
+/* الموبايل: الأرقام الأربعة بسطر واحد صغير حتى الأقسام تبين من أول شاشة */
+@media (max-width:600px){
+  #main>.hero+.tiles{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+  #main>.hero+.tiles>.tile{display:block!important;padding:10px 4px 9px!important;text-align:center!important;min-width:0}
+  #main>.hero+.tiles>.tile>.ti{display:none!important}
+  #main>.hero+.tiles>.tile b,#main .tiles>.tile strong{font-size:21px!important;line-height:1.2!important;display:block}
+  #main>.hero+.tiles>.tile span,#main .tiles>.tile small{font-size:11.5px!important;white-space:nowrap}
+  #main .hubg{gap:9px!important}
+  #main .hubg>.hubc{padding:12px 13px!important;column-gap:12px;min-height:70px!important}
+  #main .hubg>.hubc>.hubi{width:46px!important;height:46px!important;border-radius:14px!important}
+}
+</style>
 </body></html>
