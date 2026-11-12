@@ -29,11 +29,11 @@
   const CSS = `
 :root{--h215g1:#0f4d3c;--h215g2:#1d6b55;--h215gold:#c9a24a;--h215gold2:#e8c877}
 #hm215bar{position:fixed;top:0;left:0;right:0;z-index:2147483000;height:34px;overflow:hidden;background:linear-gradient(90deg,#0b3d30,#145a47 50%,#0b3d30);border-bottom:1.5px solid var(--h215gold);box-shadow:0 2px 10px rgba(8,40,32,.25);direction:ltr;contain:layout paint;pointer-events:none}
-#hm215bar .t{display:flex;width:max-content;height:100%;align-items:center;animation:hm215m 38s linear infinite;will-change:transform}
+#hm215bar .t{display:flex;width:max-content;height:100%;align-items:center;animation:hm215m 120s linear infinite;will-change:transform}
 #hm215bar .t span{direction:rtl;white-space:nowrap;padding:0 34px;font:700 15.5px/1 "Amiri","Noto Naskh Arabic","El Messiri",serif;color:var(--h215gold2);letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.25)}
 #hm215bar .t span i{font-style:normal;color:#fff;opacity:.55;padding:0 0 0 34px}
 @keyframes hm215m{from{transform:translateX(-50%)}to{transform:translateX(0)}}
-@media (prefers-reduced-motion:reduce){#hm215bar .t{animation-duration:90s}}
+@media (prefers-reduced-motion:reduce){#hm215bar .t{animation-duration:240s!important}}
 body:not(.hm215on) #hm215bar{display:none}
 .hm215on #login{padding-top:48px!important}
 #login{align-content:start!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
@@ -101,6 +101,9 @@ body:not(.hm215on) #hm215bar{display:none}
     const b = D.createElement("div"); b.id = "hm215bar"; b.setAttribute("aria-label", txt); b.setAttribute("role", "marquee");
     b.innerHTML = `<div class="t">${one.repeat(6)}${one.repeat(6)}</div>`;
     D.body.appendChild(b);
+    /* v229b (طلب المستخدم: «الشريط سريع جداً ولا يُقرأ»): سرعة ثابتة هادئة ≈ ٢٢ بكسل/ثانية مهما كان عرض الشاشة */
+    const sp = () => { try { const t = b.firstChild, w = t.scrollWidth / 2; if (w > 50) t.style.animationDuration = Math.round(w / 22) + "s"; } catch (e) { } };
+    sp(); setTimeout(sp, 1500); if (D.fonts && D.fonts.ready) D.fonts.ready.then(sp);
   }
   function heroHTML() {
     return `<div class="hm215h">
