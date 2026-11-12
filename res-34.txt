@@ -1,0 +1,7 @@
+api=34
+1 install CURRENT release: Performing Streamed Install Success  | versionCode=14
+2 update to ROTATED (new secret key): Serving... All files should be loaded. Notifying the device. Performing Incremental Install Success Install command complete in 181 ms  | versionCode=15
+3 update with OLD-KEY-ONLY apk (what a forger could make): Performing Streamed Install adb: failed to install /tmp/rot/att.apk: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package iq.sinai.school signatures do not match newer version; ignoring!]   | versionCode=15
+4 update to newer ROTATED: Serving... All files should be loaded. Notifying the device. Performing Incremental Install Success Install command complete in 113 ms  | versionCode=17
+5 app running after updates: pid=2286
+6 fresh install of ROTATED on clean device: Serving... All files should be loaded. Notifying the device. Performing Incremental Install Success Install command complete in 217 ms  | versionCode=17

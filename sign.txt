@@ -1,0 +1,63 @@
+current=14 build-tools=37.0.0
+== cur
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+V2 Signer: certificate SHA-256 digest: d27008c329fb47704574d5e72920c849ce214fbb14fcf921fc0b55657e9b4d21
+The provided APK does not contain a valid V3 nor V3.1 signature block.
+== r1
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+V3.0 Signer: certificate SHA-256 digest: 8282ccf487330241e8166bb53c7e52a4ee5fb7cb26c5fd83f98bf74cef91401d
+Signer #1 in lineage certificate DN: CN=Sinai School, O=Sinai Preparatory School, C=IQ
+Signer #1 in lineage certificate SHA-256 digest: d27008c329fb47704574d5e72920c849ce214fbb14fcf921fc0b55657e9b4d21
+Signer #1 in lineage certificate SHA-1 digest: a9bdc25b1248622c55512592073fb7f0b7899cb6
+Signer #1 in lineage certificate MD5 digest: deb89d929d148c207f1ce8c6c3fb4e8d
+Has installed data capability: true
+Has shared UID capability    : true
+Has permission capability    : true
+Has rollback capability      : false
+Has auth capability          : true
+Signer #2 in lineage certificate DN: CN=Sinai Preparatory School for Boys, O=Sinai School, C=IQ
+Signer #2 in lineage certificate SHA-256 digest: 8282ccf487330241e8166bb53c7e52a4ee5fb7cb26c5fd83f98bf74cef91401d
+Signer #2 in lineage certificate SHA-1 digest: ffa7739032246b927604d1051e540a81c37998a5
+Signer #2 in lineage certificate MD5 digest: 5a7c63069615f48ec78b7bb721a8f233
+Has installed data capability: true
+== att
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+V2 Signer: certificate SHA-256 digest: d27008c329fb47704574d5e72920c849ce214fbb14fcf921fc0b55657e9b4d21
+The provided APK does not contain a valid V3 nor V3.1 signature block.
+== r3
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+V3.0 Signer: certificate SHA-256 digest: 8282ccf487330241e8166bb53c7e52a4ee5fb7cb26c5fd83f98bf74cef91401d
+Signer #1 in lineage certificate DN: CN=Sinai School, O=Sinai Preparatory School, C=IQ
+Signer #1 in lineage certificate SHA-256 digest: d27008c329fb47704574d5e72920c849ce214fbb14fcf921fc0b55657e9b4d21
+Signer #1 in lineage certificate SHA-1 digest: a9bdc25b1248622c55512592073fb7f0b7899cb6
+Signer #1 in lineage certificate MD5 digest: deb89d929d148c207f1ce8c6c3fb4e8d
+Has installed data capability: true
+Has shared UID capability    : true
+Has permission capability    : true
+Has rollback capability      : false
+Has auth capability          : true
+Signer #2 in lineage certificate DN: CN=Sinai Preparatory School for Boys, O=Sinai School, C=IQ
+Signer #2 in lineage certificate SHA-256 digest: 8282ccf487330241e8166bb53c7e52a4ee5fb7cb26c5fd83f98bf74cef91401d
+Signer #2 in lineage certificate SHA-1 digest: ffa7739032246b927604d1051e540a81c37998a5
+Signer #2 in lineage certificate MD5 digest: 5a7c63069615f48ec78b7bb721a8f233
+Has installed data capability: true
