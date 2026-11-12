@@ -19,6 +19,21 @@ if not k:
     q("insert into kv(k,v) values('ANDKS2','%s') on conflict(k) do nothing" % v.replace("'", "''"))
     k = get(); made = True
     if not k: raise SystemExit('could not store key')
+# نسخة ثانية من المفتاح بقاعدة ثانية (sinai_files2) — إذا ضاع المفتاح، الأجهزة اللي تحدثت ما تقبل أي تحديث بعد
+def q2(sql):
+    r = subprocess.run(['npx', '-y', 'wrangler@3', 'd1', 'execute', 'sinai_files2', '--remote', '--json', '--command', sql], cwd='cf', capture_output=True, text=True)
+    return json.loads(r.stdout)[0]['results'] if r.returncode == 0 else None
+bk = 'none'
+try:
+    r2 = q2("select d from chunks where id='andks2' and i=0")
+    if r2 is None: bk = 'unreachable'
+    elif r2 and json.loads(r2[0]['d']).get('jks') == k['jks']: bk = 'ok'
+    elif r2: bk = 'DIFFERENT'
+    else:
+        q2("insert into chunks(id,i,d) values('andks2',0,'%s')" % json.dumps(k).replace("'", "''")); r3 = q2("select d from chunks where id='andks2' and i=0")
+        bk = 'saved' if r3 and json.loads(r3[0]['d']).get('jks') == k['jks'] else 'failed'
+except Exception as e: bk = 'err'
+print('backup copy:', bk)
 open(os.path.join(out, 'new.jks'), 'wb').write(base64.b64decode(k['jks']))
 open(os.path.join(out, 'new.pass'), 'w').write(k['pass'])
 print('new key:', 'created now' if made else 'loaded', '| alias', k.get('alias'), '| jks bytes', len(base64.b64decode(k['jks'])))

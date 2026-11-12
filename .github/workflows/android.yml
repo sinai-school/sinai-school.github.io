@@ -9,8 +9,14 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -26,6 +32,26 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           gradle assembleDirectRelease bundlePlayRelease --no-daemon
+      # المفتاح القديم مكشوف بالمستودع — التطبيق ينوقّع بتدوير: القديم (v1/v2) حتى كل الأجهزة تقبل التحديث بدون حذف،
+      # والجديد السري (v3 + lineage) حتى أندرويد ٩ وما فوق بعد التحديث ما يقبل نسخة موقّعة بالقديم بس. مجرّب على محاكيات 28 و34.
+      - name: Sign with rotated key
+        run: |
+          set -e
+          CLOUDFLARE_API_TOKEN=$(printf %s "$CLOUDFLARE_API_TOKEN" | python3 cf/tok.py)
+          CLOUDFLARE_ACCOUNT_ID=$(printf %s "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]"')
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          mkdir -p /tmp/rk
+          cd cf
+          DBID=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai"][0])')
+          DB2=$(npx -y wrangler@3 d1 list --json 2>/dev/null | python3 -c 'import sys,json;print(([d["uuid"] for d in json.load(sys.stdin) if d["name"]=="sinai_files2"] or [""])[0])')
+          printf 'name = "sinai"\nmain = "worker.js"\ncompatibility_date = "2024-09-23"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "sinai"\ndatabase_id = "%s"\n' "$DBID" > wrangler.toml
+          [ -n "$DB2" ] && printf '[[d1_databases]]\nbinding = "FDB2"\ndatabase_name = "sinai_files2"\ndatabase_id = "%s"\n' "$DB2" >> wrangler.toml
+          cd ..
+          python3 ops/andkey.py /tmp/rk
+          echo "::add-mask::$(cat /tmp/rk/new.pass)"
+          bash ops/rot-sign.sh /tmp/rk android/app/build/outputs/apk/direct/release/app-direct-release.apk /tmp/rk/signed.apk
+          cp /tmp/rk/signed.apk android/app/build/outputs/apk/direct/release/app-direct-release.apk
+          rm -f /tmp/rk/new.jks /tmp/rk/new.pass cf/wrangler.toml
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
