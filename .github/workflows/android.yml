@@ -59,5 +59,12 @@ jobs:
           cp android/app/build/outputs/apk/direct/release/app-direct-release.apk sinai-school.apk
           cp android/app/build/outputs/bundle/playRelease/app-play-release.aab sinai-school.aab
           echo "${{ github.run_number }}" > app-version.txt
-          gh release delete app -y --cleanup-tag || true
-          gh release create app sinai-school.apk sinai-school.aab app-version.txt --title "تطبيق إعدادية سيناء للأندرويد والهواوي" --notes "النسخة ${{ github.run_number }}" --latest
+          # GitHub يرجّع أحياناً HTTP 500 عند حذف الإصدار (صار 13/11) — نعيد المحاولة، وإذا بقي الإصدار القديم نستبدل ملفاته بدل الفشل
+          for i in 1 2 3; do gh release delete app -y --cleanup-tag && break || sleep 15; done
+          if gh release view app >/dev/null 2>&1; then
+            gh release upload app sinai-school.apk sinai-school.aab app-version.txt --clobber
+            gh release edit app --notes "النسخة ${{ github.run_number }}" --latest
+          else
+            for i in 1 2 3; do gh release create app sinai-school.apk sinai-school.aab app-version.txt --title "تطبيق إعدادية سيناء للأندرويد والهواوي" --notes "النسخة ${{ github.run_number }}" --latest && break || sleep 15; done
+            gh release view app >/dev/null
+          fi
