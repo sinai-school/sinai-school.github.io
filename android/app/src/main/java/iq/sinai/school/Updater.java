@@ -43,9 +43,9 @@ final class Updater {
         try {
             new AlertDialog.Builder(a)
                 .setTitle("تحديث التطبيق")
-                .setMessage("نزلت نسخة جديدة من تطبيق إعدادية سيناء (أسرع وتنفتح بدون إنترنت). حدّثه هسه؟ بياناتك ودخولك يبقون مثل ما هم.")
+                .setMessage("صدرت نسخة جديدة من تطبيق إعدادية سيناء. هل تريد تحديثه الآن؟ تبقى بياناتك ودخولك كما هي دون حاجة إلى حذف التطبيق.")
                 .setPositiveButton("تحديث", (d, x) -> download(a, v))
-                .setNegativeButton("بعدين", (d, x) -> a.getSharedPreferences("upd", 0).edit().putLong("at", System.currentTimeMillis()).apply())
+                .setNegativeButton("لاحقاً", (d, x) -> a.getSharedPreferences("upd", 0).edit().putLong("at", System.currentTimeMillis()).apply())
                 .show();
         } catch (Exception e) { }
     }
