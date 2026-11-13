@@ -268,7 +268,7 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
       const rows = (t.rows || []).filter(r => r.d || r.c.some(Boolean));
       const nx = rows.find(r => r.d >= t0 && (r.c || []).some(c => c && c != "بلا امتحان"));
       let cd = "";
-      if (nx) { const n = Math.round((Date.parse(nx.d + "T00:00:00") - Date.parse(t0 + "T00:00:00")) / 864e5); cd = `<span class="cd">${I("clock") || I("cal")} ${n == 0 ? "امتحانك اليوم" : n == 1 ? "امتحانك باچر" : "باقي " + A(n) + (n <= 10 ? " أيام" : " يوماً") + " على الامتحان الجاي"}</span>`; }
+      if (nx) { const n = Math.round((Date.parse(nx.d + "T00:00:00") - Date.parse(t0 + "T00:00:00")) / 864e5); cd = `<span class="cd">${I("clock") || I("cal")} ${n == 0 ? "امتحانك اليوم" : n == 1 ? "امتحانك غداً" : "بقي " + A(n) + (n <= 10 ? " أيام" : " يوماً") + " على الامتحان القادم"}</span>`; }
       const mine = t.mine && t.mine.length ? `<p style="margin:6px 0"><b>موادك بالدور الثاني:</b> ${t.mine.map(x => `<span class="chip bad">${E(x)}</span>`).join(" ")}</p>` : "";
       return `<div class="box ex204"><div class="exp204"><h3 style="margin:0">${I("cal")} ${E(A(t.t))}</h3>${cd}</div>${mine}
       <div class="tw"><table><tr><th>اليوم</th><th>التاريخ</th>${stu ? "<th>المادة</th>" : G.map(g => `<th>${E(g)}</th>`).join("")}</tr>
@@ -574,5 +574,5 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
       e.preventDefault(); e.stopPropagation(); W.v204View(n.files, 0);
     } catch (x) { }
   }, true);
-  new MutationObserver(() => { D.querySelectorAll(".tw td.l .chip").forEach(c => { if (/مرفق/.test(c.textContent) && !c.classList.contains("att204")) { c.classList.add("att204"); c.title = "اضغط حتى تفتح المرفقات"; } }); }).observe(D.documentElement, { childList: true, subtree: true });
+  new MutationObserver(() => { D.querySelectorAll(".tw td.l .chip").forEach(c => { if (/مرفق/.test(c.textContent) && !c.classList.contains("att204")) { c.classList.add("att204"); c.title = "اضغط لفتح المرفقات"; } }); }).observe(D.documentElement, { childList: true, subtree: true });
 })();

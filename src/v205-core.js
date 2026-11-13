@@ -57,7 +57,7 @@
       SNAP = j;
       const a = D.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.value;
       if (!typing && typeof prender == "function" && !D.getElementById("portal").hidden) { const y = W.scrollY; prender(); W.scrollTo(0, y); }
-      T("تحدّث الجدول والمعلومات ✓");
+      T("تم تحديث الجدول والمعلومات ✓");
     } catch (e) { } finally { SNB = 0; }
   }
   W.snap205 = snap205;

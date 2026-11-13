@@ -44,7 +44,7 @@ self.addEventListener('message',e=>{const d=e.data||{};if(d.t=='keep204'&&Array.
 /* إشعارات التبليغات بصوت: الخادم يبعث تنبيه، وهنا نجيب عنوان آخر تبليغ ونعرضه */
 const PCH='sinai-push';
 async function pushShow(){
- let title='إعدادية سيناء للبنين',body='وصلك تبليغ جديد — اضغط حتى تشوفه',tag='sinai-note';
+ let title='إعدادية سيناء للبنين',body='وصلك تبليغ جديد — اضغط لعرضه',tag='sinai-note';
  try{
   const c=await caches.open(PCH),m=await c.match('ctx');
   if(m){

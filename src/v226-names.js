@@ -80,7 +80,7 @@
     if (ev && ev.preventDefault) ev.preventDefault();
     if (P.busy) return false;
     const el = D.getElementById("pk226n"), n = arD(el ? el.value : P.n); P.n = n; P.L = null; P.err = "";
-    if (!/^(19|20)\d{10}$/.test(n)) { P.err = "رقم البطاقة الموحدة ١٢ رقم ويبدأ بسنة الميلاد (مثل ٢٠٠٩…). عدد الأرقام التي كتبتها: " + A(n.length); rr(); return false; }
+    if (!/^(19|20)\d{10}$/.test(n)) { P.err = "رقم البطاقة الموحدة ١٢ رقماً ويبدأ بسنة الميلاد (مثل ٢٠٠٩…). عدد الأرقام التي كتبتها: " + A(n.length); rr(); return false; }
     P.busy = 1; rr();
     try { const r = await _api({ a: "who", nid: n }); if (r && r.ok) { P.L = r.L || []; if (!P.L.length) P.more = 1; } else P.err = r && r.err == "neednid" ? "الرقم غير صحيح، تأكد منه." : say(r); }
     catch (e) { P.err = say(e); }
@@ -116,7 +116,7 @@
       <div class="pk-sel"><select aria-label="الصف" onchange="PK226.g=this.value===''?null:+this.value;PK226.s=null;prender()"><option value="">الصف…</option>${G.map((g0, i) => `<option value="${i}" ${P.g === i ? "selected" : ""}>الصف ${E(g0)}</option>`).join("")}</select>
       <select aria-label="الشعبة" ${P.g == null ? "disabled" : ""} onchange="pk226Sec(this.value===''?null:+this.value)"><option value="">الشعبة…</option>${secs.map(([n, i]) => `<option value="${i}" ${P.s === i ? "selected" : ""}>${E(String(n).split(" ").slice(1).join(" "))}</option>`).join("")}</select></div>${lst}</details>`;
     return `<div class="box pk120 pk226"><div class="pk-hd"><span class="pk-ic">${I("users")}</span><div><h2>اكتب رقم بطاقتك الموحدة</h2><p class="muted">ليظهر اسمك وتُكمل الدخول. الرقم مكوّن من ١٢ رقماً ومكتوب على بطاقتك الموحدة.</p></div></div>
-      <form onsubmit="return pk226Go(event)" style="display:grid;gap:10px"><input id="pk226n" type="tel" inputmode="numeric" maxlength="12" autocomplete="off" dir="ltr" aria-label="رقم البطاقة الموحدة" placeholder="رقم البطاقة الموحدة — ١٢ رقم" value="${E(P.n)}" oninput="dg120(this,12);PK226.n=this.value" style="font-size:1.15em;text-align:center;letter-spacing:.06em">
+      <form onsubmit="return pk226Go(event)" style="display:grid;gap:10px"><input id="pk226n" type="tel" inputmode="numeric" maxlength="12" autocomplete="off" dir="ltr" aria-label="رقم البطاقة الموحدة" placeholder="رقم البطاقة الموحدة — ١٢ رقماً" value="${E(P.n)}" oninput="dg120(this,12);PK226.n=this.value" style="font-size:1.15em;text-align:center;letter-spacing:.06em">
       <button class="btn" type="submit" ${P.busy ? "disabled" : ""}>${I("search")} بحث عن اسمي</button></form>
       <div id="pk226r" aria-live="polite">${res}</div>${more}</div>`;
   };
