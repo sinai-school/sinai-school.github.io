@@ -8,7 +8,7 @@ const W=+process.argv[2]||360, N=+process.argv[3]||10, KIND=process.argv[4]||'s'
     await ctx.route(/sinai\.7svyn82yzr\.workers\.dev/, async r=>{ if(off) return r.abort(); const u=new URL(r.request().url()); try{const resp=await fetch('http://127.0.0.1:8787'+u.pathname+u.search,{method:r.request().method(),headers:{'content-type':'text/plain','x-ip':String(1+Math.floor(Math.random()*200))},body:r.request().postDataBuffer()||undefined}); r.fulfill({status:resp.status,headers:Object.fromEntries(resp.headers),body:Buffer.from(await resp.arrayBuffer())});}catch(e){r.abort()} });
     await ctx.route(/googleapis|gstatic|cdnjs|jsdelivr|unpkg/, r=>r.abort());
     const p=await ctx.newPage(); let cur='load'; p.on('pageerror',e=>errs.push([a.key,cur,'JS',e.message.slice(0,200)])); p.on('console',m=>{if(m.type()==='error'&&!/ERR_FAILED|net::|Failed to load resource|Notification|push/i.test(m.text()))errs.push([a.key,cur,'CON',m.text().slice(0,200)])}); p.on('dialog',d=>d.dismiss());
-    await p.goto('http://127.0.0.1:8811/index.html',{waitUntil:'load'}); await p.waitForTimeout(2500);
+    await p.goto('http://127.0.0.1:8811/'+(process.env.PAGE||'index.html'),{waitUntil:'load'}); await p.waitForTimeout(2500);
     // log in through the real UI path: psOpen + psAuth with phone; nid field filled
     await p.getByText(a.kind==='s'?'الطلاب':'المدرسون',{exact:false}).first().click(); await p.waitForTimeout(1200);
     await p.fill('#lgu',a.kind==='s'?'students':'Teacher'); await p.fill('#lgp',a.kind==='s'?'1968':'2026@'); await p.click('#lgbtn'); await p.waitForTimeout(3500);

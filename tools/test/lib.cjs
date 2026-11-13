@@ -7,7 +7,7 @@ exports.open = async (W, hash) => {
   p.on('pageerror', e => errs.push([p.cur, 'JS', e.message.slice(0, 220)]));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|net::|Failed to load resource/.test(m.text())) errs.push([p.cur, 'CON', m.text().slice(0, 220)]); });
   p.on('dialog', d => d.dismiss());
-  await p.goto('http://127.0.0.1:8811/index.html' + (hash || ''), { waitUntil: 'load' }); await p.waitForTimeout(2500);
+  await p.goto('http://127.0.0.1:8811/'+(process.env.PAGE||'index.html') + (hash || ''), { waitUntil: 'load' }); await p.waitForTimeout(2500);
   return { b, ctx, p, errs };
 };
 exports.staff = async (W, U) => { const o = await exports.open(W, '#staff'); const p = o.p;

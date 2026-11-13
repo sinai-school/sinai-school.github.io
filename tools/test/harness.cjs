@@ -8,7 +8,7 @@ const W = +process.argv[2] || 1366, H = W < 500 ? 780 : 820, OUT = process.argv[
   p.on('pageerror', e => errs.push([cur, 'JS', e.message.slice(0, 220)]));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|net::|Failed to load resource/.test(m.text())) errs.push([cur, 'CON', m.text().slice(0, 220)]); });
   p.on('dialog', d => d.dismiss());
-  await p.goto('http://127.0.0.1:8811/index.html#staff', { waitUntil: 'load' }); await p.waitForTimeout(2500);
+  await p.goto('http://127.0.0.1:8811/'+(process.env.PAGE||'index.html')+'#staff', { waitUntil: 'load' }); await p.waitForTimeout(2500);
   const ins = await p.$$('input:visible'); await ins[0].fill('tstown'); await ins[1].fill('Test-1234');
   await p.getByRole('button', { name: /الدخول إلى الإدارة/ }).click();
   await p.waitForFunction(() => typeof V === 'object' && document.getElementById('app') && !document.getElementById('app').hidden, null, { timeout: 60000 });
