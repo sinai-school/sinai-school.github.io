@@ -10,8 +10,8 @@ exports.open = async (W, hash) => {
   await p.goto('http://127.0.0.1:8811/index.html' + (hash || ''), { waitUntil: 'load' }); await p.waitForTimeout(2500);
   return { b, ctx, p, errs };
 };
-exports.staff = async (W) => { const o = await exports.open(W, '#staff'); const p = o.p;
-  const ins = await p.$$('input:visible'); await ins[0].fill('tstown'); await ins[1].fill('Test-1234');
+exports.staff = async (W, U) => { const o = await exports.open(W, '#staff'); const p = o.p;
+  const ins = await p.$$('input:visible'); await ins[0].fill(U || 'tstown'); await ins[1].fill('Test-1234');
   await p.getByRole('button', { name: /الدخول إلى الإدارة/ }).click();
   await p.waitForFunction(() => typeof V === 'object' && !document.getElementById('app').hidden, null, { timeout: 60000 });
   await p.waitForTimeout(7000); return o; };
