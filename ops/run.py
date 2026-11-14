@@ -249,6 +249,52 @@ if REQ.get('misschk'):
         if m: out.append([x.get('n'), x.get('s'), x.get('pg') or '', '، '.join(m)])
     log['misschk'] = {'cur': len(L), 'current': cur, 'n': len(out), 'rows': out}
 
+# v231: تبليغ هام لكل حساب بوابة (طالب/مدرس/موظف) معلوماته ناقصة — {"nag231":{"tag":"..","dry":true}}
+if REQ.get('nag231'):
+    cfg = REQ['nag231']; tag = re.sub(r'[^0-9a-z]', '', str(cfg.get('tag') or 'a'))[:10] or 'a'
+    def getd3(p):
+        t = ''.join(r['d'] for r in q("select d from chunks where id='d_" + p + "' order by i"))
+        return json.loads(t) if t else {}
+    L = getd3('school/students').get('list') or []
+    cur = set(str(x.get('id')) for x in L if not (x.get('ss') == 'مفصول' or x.get('x') == 'out'))
+    allS = set(str(x.get('id')) for x in L)
+    acc = [a for a in q("select kind,key,phone from acc where kind in ('s','t')") if not str(a['key']).startswith('tst-')]
+    st = {'acc_s': sum(1 for a in acc if a['kind'] == 's'), 'acc_t': sum(1 for a in acc if a['kind'] == 't'),
+          's_cur': sum(1 for a in acc if a['kind'] == 's' and str(a['key']) in cur), 's_out': sum(1 for a in acc if a['kind'] == 's' and str(a['key']) in allS and str(a['key']) not in cur),
+          's_unknown': sum(1 for a in acc if a['kind'] == 's' and str(a['key']) not in allS)}
+    acc = [a for a in acc if a['kind'] == 't' or str(a['key']) in cur]
+    prof = {r['kind'] + '|' + r['key']: r for r in q("select kind,key,json,(length(photo)>0 and photo<>'') ph from prof")}
+    json.dump({'acc': acc, 'prof': prof}, open('/tmp/nag_in.json', 'w'), ensure_ascii=False)
+    rr = subprocess.run(['node', 'ops/nag231.mjs', '/tmp/nag_in.json', '/tmp/nag_out.json'], capture_output=True, text=True)
+    if rr.returncode: log['nag231'] = {'err': rr.stderr[-400:]}
+    else:
+        R = json.load(open('/tmp/nag_out.json'))
+        st['miss_s'] = sum(1 for x in R if x['kind'] == 's'); st['miss_t'] = sum(1 for x in R if x['kind'] == 't')
+        cnt = {}
+        for x in R:
+            for m in x['M']: cnt[m] = cnt.get(m, 0) + 1
+        st['top'] = sorted(cnt.items(), key=lambda kv: -kv[1])[:25]
+        if not cfg.get('dry'):
+            esc = lambda v: str(v).replace("'", "''")
+            at = time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime())
+            title = 'تبليغ هام وضروري جداً: إكمال معلوماتك في البوابة'
+            rows = []
+            for x in R:
+                who = 'عزيزي الطالب' if x['kind'] == 's' else 'حضرة المدرس / الموظف المحترم'
+                items = '\n'.join('• ' + m for m in x['M'][:15]) + ('\n• وحقول أخرى' if len(x['M']) > 15 else '')
+                body = (who + '،\nمعلوماتك في بوابة إعدادية سيناء للبنين غير مكتملة حتى الآن. يُرجى الدخول إلى البوابة فوراً والضغط على «إكمال معلوماتي» واستكمال ما يأتي:\n'
+                        + items + '\n\nإكمال المعلومات إلزامي وضروري جداً، ويُرجى إنجازه في أقرب وقت ممكن.\nإدارة المدرسة')
+                rows.append("('ng%s%s%s','one','%s','إدارة المدرسة','%s','%s','%s','adm','')" % (tag, x['kind'], esc(x['key'])[:40], esc(x['kind'] + ':' + x['key']), esc(title), esc(body), at))
+            for i in range(0, len(rows), 15):
+                q("insert or ignore into notes(id,scope,target,frm,title,body,date,cat,files) values " + ','.join(rows[i:i+15]))
+            keys = ["'" + esc(x['kind'] + '|' + x['key']) + "'" for x in R]
+            for i in range(0, len(keys), 60):
+                q("insert into pushq(sid,at) select id,'%s' from psub where kind||'|'||key in (%s)" % (at, ','.join(keys[i:i+60])))
+            chk = q("select count(*) n from notes where id like 'ng%s%%'" % tag)
+            pq = q("select count(*) n from pushq")
+            st['sent'] = {'rows': len(rows), 'in_db': chk[0]['n'] if chk else None, 'pushq': pq[0]['n'] if pq else None}
+        log['nag231'] = st
+
 if REQ.get('qinfo'):
     NS = set(str(x) for x in REQ['qinfo'])
     def getd2(p):
