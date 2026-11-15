@@ -337,21 +337,61 @@ async function repReply202_(b, y) {
   await run('update reports set reply=?,rdate=?,status=? where id=?', body, now(), b.keep ? r.status : 'done', r.id);
   return { ok: 1 };
 }
+/* v233: مادة الدرجة يجب أن تكون مادة المدرس في شعبة الطالب حسب الجدول.
+   السبب: قائمة «المادة» في بوابة المدرس كانت تعرض كل مواده لكل الشعب، فأُرسلت درجات الخامس الأدبي باسم «اجتماع» (مادة الرابع). */
+async function tgId233_(tkey, label, subj, sk) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(tkey + '|' + label + '|' + subj + '|' + sk)))].slice(0, 12).map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function tsj233_() {
+  let S = null; try { S = await snObj226_(); } catch (e) { S = null; }
+  if (!S || !Array.isArray(S.J.cells) || !Array.isArray(S.J.sid) || !Array.isArray(S.J.subj)) return null;
+  if (S.sj233) return S.sj233;
+  const J = S.J, M = new Map();
+  J.cells.forEach((a, s) => {
+    const by = {}; (a || []).forEach(c => { if (!Array.isArray(c)) return; const t = J.tch[c[1]], sj = String(J.subj[c[0]] || ''); if (!t || !t.k || !sj) return; (by[t.k] = by[t.k] || new Set()).add(sj); });
+    for (const tk in by) for (const sk of (J.sid[s] || [])) if (sk) M.set(tk + '|' + sk, [...by[tk]]);
+  });
+  return S.sj233 = M;
+}
+const fixSj233_ = (M, tkey, sk, subj) => { const L = M && M.get(tkey + '|' + sk); return L && L.length === 1 && L[0] !== subj ? L[0] : subj; };
 async function tgrade202_(b, y) {
   if (y.kind !== 't') return { err: 'role' };
   const P = await private_(), me = (P.t || {})[y.key] || {}, studs = new Set(me.studs || []);
-  const label = String(b.label || '').trim().slice(0, 60), subj = String(b.subj || '').trim().slice(0, 60);
+  const label = String(b.label || '').trim().slice(0, 60), subj0 = String(b.subj || '').trim().slice(0, 60);
   if (!label) return { err: 'text' };
+  const M = await tsj233_();
   const st = [], t = now();
   for (const r of (b.rows || []).slice(0, 600)) {
     const sk = String(r[0] || ''), v = String(r[1] == null ? '' : r[1]).trim().slice(0, 20), nt = String(r[2] || '').slice(0, 200);
     if (!studs.has(sk)) continue;
-    const id = [...new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(y.key + '|' + label + '|' + subj + '|' + sk)))].slice(0, 12).map(x => x.toString(16).padStart(2, '0')).join('');
+    const subj = fixSj233_(M, y.key, sk, subj0);
+    const id = await tgId233_(y.key, label, subj, sk);
     if (v === '' && !nt) st.push(DB.prepare('delete from tgr where id=?').bind(id));
     else st.push(DB.prepare('insert into tgr(id,tkey,tname,subj,label,skey,val,note,date) values(?,?,?,?,?,?,?,?,?) on conflict(id) do update set val=excluded.val,note=excluded.note,date=excluded.date,tname=excluded.tname').bind(id, y.key, y.a.name || me.n || '', subj, label, sk, v, nt, t));
   }
   for (let i = 0; i < st.length; i += 80) await DB.batch(st.slice(i, i + 80));
+  try { gcDel('tgc217'); } catch (e) { }
   return { ok: 1, n: st.length };
+}
+/* تصحيح لمرة واحدة للدرجات المرسلة سابقاً باسم مادة لا يدرّسها المدرس في شعبة الطالب (وله فيها مادة واحدة فقط).
+   الدرجة نفسها لا تتغيّر — اسم المادة فقط. الأصل محفوظ في kv TGR233BK. */
+let E233 = 0;
+async function ens233_() {
+  if (E233) return; E233 = 1;
+  if ((await kvGet('E233')) === '1') return;
+  const M = await tsj233_(); if (!M) { E233 = 0; return; }
+  const R = await all('select id,tkey,subj,label,skey,date from tgr'), bk = [], st = [];
+  const have = new Map(R.map(r => [r.id, r]));
+  for (const r of R) {
+    const sj = fixSj233_(M, r.tkey, r.skey, r.subj); if (sj === r.subj) continue;
+    const id = await tgId233_(r.tkey, r.label, sj, r.skey), o = have.get(id);
+    bk.push([r.id, r.subj, sj]);
+    if (o && String(o.date) >= String(r.date)) { st.push(DB.prepare('delete from tgr where id=?').bind(r.id)); continue; }
+    if (o) st.push(DB.prepare('delete from tgr where id=?').bind(id));
+    st.push(DB.prepare('update tgr set id=?,subj=? where id=?').bind(id, sj, r.id));
+  }
+  if (bk.length) { const full = await all('select * from tgr'), ids = new Set(bk.map(x => x[0])); await kvPut('TGR233BK', JSON.stringify({ at: now(), rows: full.filter(x => ids.has(x.id)) })); }
+  for (let i = 0; i < st.length; i += 80) await DB.batch(st.slice(i, i + 80));
+  await kvPut('E233', '1'); await kvPut('E233N', String(bk.length));
+  try { gcDel('tgc217', 'pull217'); } catch (e) { }
 }
 async function extra202_(o, x) {
   const R = x.kind === 's'
@@ -428,7 +468,7 @@ async function handle(b) {
   /* v222: محاولات دخول غلط كثيرة من نفس العنوان (لأي حساب) — قفل ساعة. يحمي من تجربة أرقام/كلمات مرور على حسابات كثيرة */
   const lg222 = /^(login|reg)$/.test(a) || (a === 'stf' && b.op === 'login') || (a === 'admin' && !String(b.secret || '').startsWith('own:'));
   if (lg222 && RL215IP) { const f = await one('select n,exp from fails where k=?', 'ip_' + RL215IP); if (f && f.exp > Date.now() && f.n >= 120) return { err: 'many' }; }
-  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { }
+  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { } try { await ens233_(); } catch (e) { E233 = 0; }
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
