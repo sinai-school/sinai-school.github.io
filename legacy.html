@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v232-2026-11-15T08:45:00.000Z-v232";
+<script>window.APP_VER = "2k7v233-2026-11-15T19:20:00.000Z-v233";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -29443,11 +29443,22 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       return [];
     }
   }
+  function secSubj233(sec) {
+    try {
+      const ti = SNAP.tch.findIndex((x) => x && x.k == PS.key), s = (SNAP.sn || []).indexOf(sec), S = /* @__PURE__ */ new Set();
+      if (ti >= 0 && s >= 0) (SNAP.cells[s] || []).forEach((c) => {
+        if (c && c[1] == ti) S.add(SNAP.subj[c[0]]);
+      });
+      if (S.size) return [...S];
+    } catch (e) {
+    }
+    return mySubj();
+  }
   function gradesTab() {
     const pv = PS.b && PS.b.private || {}, secs = pv.secs || [], studs = pv.studs2 || [];
     if (!secs.length) return '<div class="box"><p class="muted" style="margin:0">لا توجد شعب مسندة إليك في الجدول.</p></div>';
     if (!secs.includes(G.sec)) G.sec = secs[0];
-    const SJ = mySubj();
+    const SJ = secSubj233(G.sec);
     if (!G.sj || SJ.length && !SJ.includes(G.sj)) G.sj = SJ[0] || "";
     if (!G.rows) setTimeout(() => tgLoad(), 0);
     const L = studs.filter((x) => x[2] == G.sec);
@@ -29461,6 +29472,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   W.v202GLoad = () => tgLoad(1);
   W.v202GSend = async function(one) {
     const pv = PS.b.private || {}, L = (pv.studs2 || []).filter((x) => x[2] == G.sec && (!one || x[0] == one));
+    {
+      const SJ = secSubj233(G.sec);
+      if (SJ.length && !SJ.includes(G.sj)) {
+        G.sj = SJ[0];
+        try {
+          prender();
+        } catch (e) {
+        }
+        return T0("صُحّحت المادة إلى «" + G.sj + "» لهذه الشعبة — راجع الدرجات ثم أرسل", "err");
+      }
+    }
     const rows = L.map((x) => [x[0], ((D.getElementById("gv_" + x[0]) || {}).value || "").trim(), ((D.getElementById("gn_" + x[0]) || {}).value || "").trim()]).filter((r) => one || r[1] !== "" || r[2]);
     rows.forEach((r) => {
       if (/^(غ|غائب|غياب)$/.test(String(r[1]).trim())) r[1] = "غ";
