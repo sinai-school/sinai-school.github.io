@@ -108,6 +108,18 @@ if REQ.get('falias226'):
         except Exception as e:
             o[fid] = 'ERR ' + repr(e)[:80]
     log['falias226'] = o
+# v234: أكثر الاستعلامات قراءةً اليوم (نص الاستعلام فقط مقصوص، بدون بيانات) — لمعرفة سبب ارتفاع القراءات
+if REQ.get('d1top'):
+    try:
+        T = os.environ['CLOUDFLARE_API_TOKEN']; A = os.environ['CLOUDFLARE_ACCOUNT_ID']
+        day = time.strftime('%Y-%m-%d', time.gmtime(time.time() - 86400 * int(REQ.get('d1day') or 0)))
+        gq = '{viewer{accounts(filter:{accountTag:"%s"}){d1QueriesAdaptiveGroups(limit:25,filter:{date:"%s"},orderBy:[sum_rowsRead_DESC]){sum{rowsRead rowsWritten} count dimensions{query databaseId}}}}}' % (A, day)
+        r = urllib.request.Request('https://api.cloudflare.com/client/v4/graphql', data=json.dumps({'query': gq}).encode(), headers={'Authorization': 'Bearer ' + T, 'Content-Type': 'application/json'})
+        d = json.load(urllib.request.urlopen(r, timeout=60))
+        G = (((d.get('data') or {}).get('viewer') or {}).get('accounts') or [{}])[0].get('d1QueriesAdaptiveGroups') or []
+        log['d1top'] = {'day': day, 'errors': str(d.get('errors'))[:300] if d.get('errors') else '', 'rows': [[x['sum']['rowsRead'], x['count'], x['dimensions']['databaseId'][:8], re.sub(r"'[^']{12,}'", "'…'", x['dimensions']['query'])[:220]] for x in G]}
+    except Exception as e:
+        log['d1top'] = 'ERR ' + repr(e)[:300]
 # حجم القاعدة الأساسية حسب نوع الملف
 if REQ.get('dbsz'):
     try:
