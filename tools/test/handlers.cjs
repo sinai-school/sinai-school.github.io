@@ -8,7 +8,7 @@ const L = require('./lib.cjs');
         try { new Function(s); } catch (x) { m.push('SYNTAX ' + s.slice(0, 60)); }
         const re = /(?:^|[;{(\s!&|?:,=])([A-Za-z_$][\w$]*)\s*\(/g; let k; while ((k = re.exec(s))) { const f = k[1]; if (seen.has(f) || /^(if|for|while|return|function|typeof|new|switch|catch|event|this|confirm|alert|prompt|parseInt|parseFloat|Number|String|Boolean|Array|Object|JSON|Math|Date|setTimeout|encodeURIComponent|decodeURIComponent|void)$/.test(f)) continue; seen.add(f);
           let ok = false; try { ok = typeof (0, eval)(f) === 'function'; } catch (x) { } if (!ok) m.push(f + ' ← ' + s.slice(0, 50)); } } });
-      document.querySelectorAll('#app button svg, #app .ic svg, #nav svg').forEach(s => { ic++; const r = s.getBoundingClientRect(); if (s.offsetParent !== null && (r.width < 4 || r.height < 4 || !s.innerHTML.trim())) bad++; });
+      document.querySelectorAll('#app button svg, #app .ic svg, #nav svg').forEach(s => { ic++; const r = s.getBoundingClientRect(); if ((s.parentElement.closest('button,a,.ic') || s.parentElement).offsetParent !== null && (r.width < 4 || r.height < 4 || !s.innerHTML.trim())) bad++; });
       document.querySelectorAll('#app button').forEach(bn => { if (bn.offsetParent !== null && !bn.textContent.trim() && !bn.querySelector('svg,img') && !bn.getAttribute('aria-label') && !bn.title) m.push('EMPTYBTN ' + bn.outerHTML.slice(0, 70)); });
       document.querySelectorAll('#app img').forEach(i => { if (i.complete && i.naturalWidth === 0 && i.getAttribute('src')) m.push('IMG ' + (i.getAttribute('src') || '').slice(0, 50)); });
       return { m, n, ic, bad }; }, id);

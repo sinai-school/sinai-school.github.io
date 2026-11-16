@@ -219,14 +219,28 @@ async function upOne_(b) {
 }
 
 /* ---------- التبليغات ---------- */
+/* v234: قراءة «seen» و«notes» تدريجياً — كانت تُقرأ كاملة (٦ آلاف صف) مئات المرات يومياً وتأكل ثلث حد القراءات المجاني (٥ مليون/يوم).
+   الآن: صف واحد (أكبر رقم) لمعرفة الجديد، ثم الصفوف الجديدة فقط؛ وقراءة كاملة كل ساعة احتياطاً. */
+let G_SE234 = null, G_NT234 = null;
 async function seenAll_() {
   const c = gcGet('seen', 30000); if (c) return c;
-  return gcSet('seen', await all("select id,kind,key from seen where key not like 'tst-%'"));
+  const m = await one('select max(rowid) m from seen'), mx = +(m && m.m || 0);
+  let G = G_SE234;
+  if (!G || mx < G.mx || Date.now() - G.full > 3600e3) G = { mx, full: Date.now(), L: await all("select id,kind,key from seen where key not like 'tst-%' and rowid<=?", mx) };
+  else if (mx > G.mx) { G.L = G.L.concat(await all("select id,kind,key from seen where rowid>? and rowid<=? and key not like 'tst-%'", G.mx, mx)); G.mx = mx; }
+  G_SE234 = G;
+  return gcSet('seen', G.L.slice());
 }
+const notesDel234_ = async () => { MEMO.notes = null; try { gcDel('notes'); } catch (e) { } G_NT234 = null; try { await kvPut('NOTESV', String(Date.now())); } catch (e) { } };
 async function notesAll_() {
   if (MEMO.notes) return MEMO.notes;
   const c = gcGet('notes', 15000); if (c) return MEMO.notes = c;
-  const R = await all('select * from notes order by seq');
+  const m = await one('select max(seq) m from notes'), mx = +(m && m.m || 0), v = String((await kvGet('NOTESV')) || '0');
+  let G = G_NT234;
+  if (!G || G.v !== v || mx < G.mx || Date.now() - G.full > 3600e3) G = { v, mx, full: Date.now(), L: await all('select * from notes where seq<=? order by seq', mx) };
+  else if (mx > G.mx) { G.L = G.L.concat(await all('select * from notes where seq>? and seq<=? order by seq', G.mx, mx)); G.mx = mx; }
+  G_NT234 = G;
+  const R = G.L;
   return MEMO.notes = gcSet('notes', R.map(n => ({ id: String(n.id), scope: n.scope, target: n.target, from: n.frm, title: n.title, body: n.body, date: n.date, cat: n.cat || 'adm', files: fu_(fl_(n.files)) })));
 }
 async function notesFor_(kind, key, secs, pub) {
@@ -373,7 +387,13 @@ async function tgrade202_(b, y) {
 }
 /* تصحيح لمرة واحدة للدرجات المرسلة سابقاً باسم مادة لا يدرّسها المدرس في شعبة الطالب (وله فيها مادة واحدة فقط).
    الدرجة نفسها لا تتغيّر — اسم المادة فقط. الأصل محفوظ في kv TGR233BK. */
-let E233 = 0;
+let E233 = 0, E234 = 0;
+async function ens234_() {
+  if (E234) return; E234 = 1;
+  if ((await kvGet('E234')) === '1') return;
+  for (const q of ['create index if not exists rep_kk on reports(kind,key)', 'create index if not exists rep_tgt on reports(tgt)']) { try { await run(q); } catch (e) { } }
+  await kvPut('E234', '1');
+}
 async function ens233_() {
   if (E233) return; E233 = 1;
   if ((await kvGet('E233')) === '1') return;
@@ -468,7 +488,7 @@ async function handle(b) {
   /* v222: محاولات دخول غلط كثيرة من نفس العنوان (لأي حساب) — قفل ساعة. يحمي من تجربة أرقام/كلمات مرور على حسابات كثيرة */
   const lg222 = /^(login|reg)$/.test(a) || (a === 'stf' && b.op === 'login') || (a === 'admin' && !String(b.secret || '').startsWith('own:'));
   if (lg222 && RL215IP) { const f = await one('select n,exp from fails where k=?', 'ip_' + RL215IP); if (f && f.exp > Date.now() && f.n >= 120) return { err: 'many' }; }
-  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { } try { await ens233_(); } catch (e) { E233 = 0; }
+  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { } try { await ens233_(); } catch (e) { E233 = 0; } try { await ens234_(); } catch (e) { E234 = 0; }
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -642,7 +662,7 @@ async function admin_(b) {
   }
   if (b.op === 'psub') { await ens205_(); return psubPut205_('o', String(b.key || 'own'), b.sub); }
   if (b.op === 'pushTest') { await ens205_(); return pushTo205_(x => x.kind === String(b.kind || 'o')); }
-  if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); MEMO.notes = null; gcDel('notes'); return { ok: 1 }; }
+  if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); await notesDel234_(); return { ok: 1 }; }
   if (b.op === 'osync') return osync_(b);
   if (b.op === 'snapPut') return snapPut_(b);
   if (b.op === 'bkput') return bkput_(b);
@@ -1697,6 +1717,6 @@ async function absN215_(b, a) {
       sent++;
     } else { try { await run('delete from notes where id=?', nid); del++; } catch (e) { } }
   }
-  if (del) { MEMO.notes = null; try { gcDel('notes'); } catch (e) { } }
+  if (del) await notesDel234_();
   return { ok: 1, sent, del };
 }
