@@ -28,21 +28,24 @@
     const arab = t => /[٠-٩]/.test(t);
     /* سنة/شهر/يوم ← يوم/شهر/سنة */
     s = s.replace(new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{4})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{1,2})(?!" + N + ")[⁩]?", "g"),
-      (m, pre, y, mo, d) => { const mm = m.slice(pre.length); return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m; });
+      (m, pre, y, mo, d) => ok(Dg(d), Dg(mo), Dg(y)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m);
     /* يوم/شهر/سنة بعلامات اتجاه أو مسافات → بدونها */
     s = s.replace(new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{1,2})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{4})(?!" + N + ")[⁩]?", "g"),
-      (m, pre, d, mo, y) => { const mm = m.slice(pre.length); return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m; });
+      (m, pre, d, mo, y) => ok(Dg(d), Dg(mo), Dg(y)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m);
+    /* v236 (طلب المستخدم): العام الدراسي/المدة بين سنتين — الأصغر أولاً بالقراءة من اليمين («٢٠٢٥-٢٠٢٦») حتى لو انكتب «2026-2025» */
+    s = s.replace(new RegExp("(^|[^0-9٠-٩۰-۹\\/\\.])[‎‏⁦-⁩]*(" + N + "{4})([\\s]*)[‎‏⁦-⁩]*([-–—\\/])[‎‏⁦-⁩]*([\\s]*)(" + N + "{4})(?![0-9٠-٩۰-۹]|[\\s‎‏]*[\\/\\-\\.][\\s‎‏]*[0-9٠-٩۰-۹])[⁩]?", "g"),
+      (m, pre, a, s1, sep, s2, b) => { const x = Dg(a), y = Dg(b); if (!(x > 1900 && x < 2200 && y > 1900 && y < 2200) || x == y || Math.abs(x - y) > 15) return m; const lo = Math.min(x, y), hi = Math.max(x, y); return pre + AD(lo) + s1 + "\u200f" + sep + "\u200f" + s2 + AD(hi); });
     return s;
   };
   W.dt207 = dt207;
   on(() => { if (typeof dt72 == "function") dt72 = function (v) { return dt207(v); }; });
   /* كل نص معروض بالنظام والمعاينة والطباعة (عدا الحقول وقت الكتابة) */
-  const SKIP = "script,style,textarea,input,select,code,pre,[data-nodate]";
+  const SKIP = "script,style,textarea,input,select,code,pre,a,[dir=ltr],[data-nodate]";
   function fixDom(root) {
     if (!root || !root.querySelectorAll) return;
     const Wk = D.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const L = []; let n;
-    while ((n = Wk.nextNode())) { const v = n.nodeValue; if (v.length > 5 && /[0-9٠-٩]{1,4}[\s‎‏]*[\/\-\.][\s‎‏]*[0-9٠-٩]{1,2}[\s‎‏]*[\/\-\.]/.test(v)) L.push(n); }
+    while ((n = Wk.nextNode())) { const v = n.nodeValue; if (v.length > 5 && /[0-9٠-٩]{1,4}[\s‎‏]*[\/\-\.][\s‎‏]*[0-9٠-٩]{1,2}[\s‎‏]*[\/\-\.]|[0-9٠-٩]{4}[\s‎‏]*[-–—\/][\s‎‏]*[0-9٠-٩]{4}/.test(v)) L.push(n); }
     L.forEach(t => {
       const p = t.parentElement; if (!p || p.closest(SKIP)) return;
       if (p.closest("[contenteditable=true]") && p.closest("[contenteditable=true]").contains(D.activeElement)) return;

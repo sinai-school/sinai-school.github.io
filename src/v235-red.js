@@ -74,14 +74,25 @@
     });
   }
   W.markSheet235 = markSheet;
+  /* v236: التواريخ والأعوام بالأوراق المرسومة (PDF/Word/Excel) — نفس قاعدة الشاشة `dt207`: يوم / شهر / سنة، والعام الأصغر أولاً */
+  function dates236(m) {
+    const F = W.dt207; if (typeof F != "function" || !m) return;
+    ["title", "sub", "t", "h"].forEach(k => { if (typeof m[k] == "string") m[k] = F(m[k]); });
+    (m.rows || []).forEach(r => Array.isArray(r) && r.forEach((c, i) => {
+      if (typeof c == "string") { const v = F(c); if (v != c) r[i] = v; }
+      else if (c && typeof c == "object" && typeof c.v == "string") { const v = F(c.v); if (v != c.v) c.v = v; }
+    }));
+  }
+  W.dates236 = dates236;
   const wrapS = name => {
     try {
       const f = (0, eval)(name); if (typeof f != "function" || f.__235) return;
-      const nf = function (fmt, nm, sheets) { try { const L = Array.isArray(sheets) ? sheets : Array.isArray(nm) ? nm : null; (L || []).forEach(markSheet); } catch (e) { console.warn("v235", e); } return f.apply(this, arguments); };
+      const nf = function (fmt, nm, sheets) { try { const L = Array.isArray(sheets) ? sheets : Array.isArray(nm) ? nm : null; (L || []).forEach(m => { markSheet(m); dates236(m); }); } catch (e) { console.warn("v235", e); } return f.apply(this, arguments); };
       nf.__235 = 1; W.__v235f = nf; (0, eval)(name + "=window.__v235f"); delete W.__v235f;
     } catch (e) { console.warn("v235 wrap", name, e); }
   };
-  wrapS("exportSheets"); wrapS("pdfSheets");
+  /* كل التصدير والطباعة يمرّ من exportSheets (pdfSheets ثابت const ويُستدعى منه فقط) */
+  wrapS("exportSheets"); setTimeout(() => wrapS("exportSheets"), 3000);
 
   /* ---------- الاستمارات والسجلات المصممة (DX) ---------- */
   const DXN = { r_grd: 1, r_ctl: 1, f_muh: 1 };
