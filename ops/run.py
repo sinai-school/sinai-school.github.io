@@ -108,6 +108,8 @@ if REQ.get('falias226'):
         except Exception as e:
             o[fid] = 'ERR ' + repr(e)[:80]
     log['falias226'] = o
+if REQ.get('idx234'):
+    log['idx234'] = {'idx': q("select name from sqlite_master where type='index' and name like 'rep_%'"), 'kv': q("select k,v from kv where k in ('E233','E233N','E234','NOTESV','SAVER')")}
 # v234: أكثر الاستعلامات قراءةً اليوم (نص الاستعلام فقط مقصوص، بدون بيانات) — لمعرفة سبب ارتفاع القراءات
 if REQ.get('d1top'):
     try:
