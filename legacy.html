@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v235-2026-11-16T11:30:00.000Z-v235";
+<script>window.APP_VER = "2k7v236-2026-11-16T23:50:00.000Z-v236";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -34992,16 +34992,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const arab = (t) => /[٠-٩]/.test(t);
     s = s.replace(
       new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{4})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{1,2})(?!" + N + ")[⁩]?", "g"),
-      (m, pre, y, mo, d) => {
-        const mm = m.slice(pre.length);
-        return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m;
-      }
+      (m, pre, y, mo, d) => ok(Dg(d), Dg(mo), Dg(y)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m
     );
     s = s.replace(
       new RegExp("(^|[^0-9٠-٩۰-۹])[‎‏⁦-⁩]*(" + N + "{1,2})" + SEP + "(" + N + "{1,2})" + SEP + "(" + N + "{4})(?!" + N + ")[⁩]?", "g"),
-      (m, pre, d, mo, y) => {
-        const mm = m.slice(pre.length);
-        return ok(Dg(d), Dg(mo), Dg(y)) && (arab(mm) || /[‏]/.test(mm)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m;
+      (m, pre, d, mo, y) => ok(Dg(d), Dg(mo), Dg(y)) ? pre + DMY(Dg(d), Dg(mo), Dg(y)) : m
+    );
+    s = s.replace(
+      new RegExp("(^|[^0-9٠-٩۰-۹\\/\\.])[‎‏⁦-⁩]*(" + N + "{4})([\\s]*)[‎‏⁦-⁩]*([-–—\\/])[‎‏⁦-⁩]*([\\s]*)(" + N + "{4})(?![0-9٠-٩۰-۹]|[\\s‎‏]*[\\/\\-\\.][\\s‎‏]*[0-9٠-٩۰-۹])[⁩]?", "g"),
+      (m, pre, a, s1, sep, s2, b) => {
+        const x = Dg(a), y = Dg(b);
+        if (!(x > 1900 && x < 2200 && y > 1900 && y < 2200) || x == y || Math.abs(x - y) > 15) return m;
+        const lo = Math.min(x, y), hi = Math.max(x, y);
+        return pre + AD(lo) + s1 + "‏" + sep + "‏" + s2 + AD(hi);
       }
     );
     return s;
@@ -35012,7 +35015,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       return dt207(v);
     };
   });
-  const SKIP = "script,style,textarea,input,select,code,pre,[data-nodate]";
+  const SKIP = "script,style,textarea,input,select,code,pre,a,[dir=ltr],[data-nodate]";
   function fixDom(root) {
     if (!root || !root.querySelectorAll) return;
     const Wk = D.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -35020,7 +35023,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     let n;
     while (n = Wk.nextNode()) {
       const v = n.nodeValue;
-      if (v.length > 5 && /[0-9٠-٩]{1,4}[\s‎‏]*[\/\-\.][\s‎‏]*[0-9٠-٩]{1,2}[\s‎‏]*[\/\-\.]/.test(v)) L.push(n);
+      if (v.length > 5 && /[0-9٠-٩]{1,4}[\s‎‏]*[\/\-\.][\s‎‏]*[0-9٠-٩]{1,2}[\s‎‏]*[\/\-\.]|[0-9٠-٩]{4}[\s‎‏]*[-–—\/][\s‎‏]*[0-9٠-٩]{4}/.test(v)) L.push(n);
     }
     L.forEach((t) => {
       const p = t.parentElement;
@@ -41400,6 +41403,23 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     });
   }
   W.markSheet235 = markSheet;
+  function dates236(m) {
+    const F = W.dt207;
+    if (typeof F != "function" || !m) return;
+    ["title", "sub", "t", "h"].forEach((k) => {
+      if (typeof m[k] == "string") m[k] = F(m[k]);
+    });
+    (m.rows || []).forEach((r) => Array.isArray(r) && r.forEach((c, i) => {
+      if (typeof c == "string") {
+        const v = F(c);
+        if (v != c) r[i] = v;
+      } else if (c && typeof c == "object" && typeof c.v == "string") {
+        const v = F(c.v);
+        if (v != c.v) c.v = v;
+      }
+    }));
+  }
+  W.dates236 = dates236;
   const wrapS = (name) => {
     try {
       const f = (0, eval)(name);
@@ -41407,7 +41427,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const nf = function(fmt, nm, sheets) {
         try {
           const L = Array.isArray(sheets) ? sheets : Array.isArray(nm) ? nm : null;
-          (L || []).forEach(markSheet);
+          (L || []).forEach((m) => {
+            markSheet(m);
+            dates236(m);
+          });
         } catch (e) {
           console.warn("v235", e);
         }
@@ -41422,7 +41445,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
   };
   wrapS("exportSheets");
-  wrapS("pdfSheets");
+  setTimeout(() => wrapS("exportSheets"), 3e3);
   const DXN = { r_grd: 1, r_ctl: 1, f_muh: 1 };
   function paint(td) {
     td.style.color = RED;
