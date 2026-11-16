@@ -365,16 +365,14 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
         if (!PS.b || PS.kind != "t" || PS.tab != "d" || !W.G202) return h;
         const G = W.G202, lbl = String(G.lbl || ""), isDay = /^(يومي|امتحان يومي)/.test(lbl);
         /* خيار «درجة يومية بتاريخ» */
-        const dsel = (lbl.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || today();
-        h = h.replace(/(<select onchange="G202\.lbl=this\.value;prender\(\)">)/, `$1<option ${/^يومي — /.test(lbl) ? "selected" : ""} value="يومي — ${dsel}">درجة يومية — ${E(FD(dsel))}</option>`);
-        if (isDay) h = h.replace(/(<label class="wide">نوع الدرجة[\s\S]*?<\/label>)/, `$1<label>تاريخ الدرجة اليومية<input type="date" value="${dsel}" onchange="G202.lbl='يومي — '+this.value;prender()"></label>`);
+        /* v235: «الامتحان اليومي» (التاريخ والدرجة الكلية والموضوع) صار داخل gradesTab نفسه — خيار «درجة يومية» القديم انشال */
         /* السجل: كل الدرجات المرسلة لهذي الشعبة والمادة */
         const pv = PS.b.private || {}, L = (pv.studs2 || []).filter(x => x[2] == G.sec), R = (G.rows || []).filter(r => r.subj == G.sj);
         const labs = [...new Set(R.map(r => r.label))].sort((a, b) => { const da = (a.match(/\d{4}-\d{2}-\d{2}/) || [""])[0], db = (b.match(/\d{4}-\d{2}-\d{2}/) || [""])[0]; return (da ? 1 : 0) - (db ? 1 : 0) || da.localeCompare(db) || a.localeCompare(b, "ar"); });
         if (L.length && labs.length) {
           const v = (sk, l) => { const r = R.find(x => x.skey == sk && x.label == l); return r ? r.val : ""; };
-          const short = l => l.replace(/^يومي — (\d{4}-\d{2}-\d{2})$/, (m, d) => "يومي " + FD(d)).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
-          const tbl = `<div class="box gr204"><h3>${I("sheet") || I("pen")} سجل درجات ${E(G.sec)} — ${E(G.sj)}</h3><p class="muted" style="margin:0 0 6px">جميع الدرجات التي أرسلتها (اليومية والشهرية والفصلية) في جدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(short(l))}</th>`).join("")}</tr>${L.map((x, i) => `<tr><td>${A(i + 1)}</td><td class="l">${E(x[1])}</td>${labs.map(l => { const z = v(x[0], l); return `<td class="${z !== "" && +z < 50 && !/^يومي/.test(l) ? "red" : ""}">${z === "" ? "" : E(A(z))}</td>`; }).join("")}</tr>`).join("")}</table></div></div>`;
+          const short = l => (W.gMax235 && /^امتحان يومي — /.test(l) ? W.gLbl235(l).replace(/^امتحان يومي/, "يومي") + " (من " + A(W.gMax235(l)) + ")" : l).replace(/^يومي — (\d{4}-\d{2}-\d{2})$/, (m, d) => "يومي " + FD(d)).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
+          const tbl = `<div class="box gr204"><h3>${I("sheet") || I("pen")} سجل درجات ${E(G.sec)} — ${E(G.sj)}</h3><p class="muted" style="margin:0 0 6px">جميع الدرجات التي أرسلتها (اليومية والشهرية والفصلية) في جدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(short(l))}</th>`).join("")}</tr>${L.map((x, i) => `<tr><td>${A(i + 1)}</td><td class="l">${E(x[1])}</td>${labs.map(l => { const z = v(x[0], l); return `<td class="${W.gRed235 ? (W.gRed235(z, l) ? "red" : "") : z !== "" && +z < 50 && !/^يومي/.test(l) ? "red" : ""}">${z === "" ? "" : E(A(z))}</td>`; }).join("")}</tr>`).join("")}</table></div></div>`;
           const i = h.indexOf('<div class="box"><h3>' + I("print") + " طباعة طلابي");
           h = i >= 0 ? h.slice(0, i) + tbl + h.slice(i) : h;
         }
