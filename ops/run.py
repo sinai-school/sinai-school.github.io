@@ -432,5 +432,38 @@ if files:
             except Exception as e: r = {'err': str(e)[:200]}; time.sleep(5)
         res.append({'f': os.path.basename(f), 'r': {k_: v for k_, v in (r or {}).items() if k_ in ('ok', 'err', 'log', 'step', 'msg')}})
     log['apply'] = res
+# v238: فحص التخزين لبوابة الأرشفة — R2 مفعّل؟ أحجام قواعد D1، وعدد ملفات الأرشيف حسب القسم (بدون أسماء)
+if REQ.get('r2chk'):
+    def _w(*a):
+        r = subprocess.run(['npx', '-y', 'wrangler@3'] + list(a), cwd='cf', capture_output=True, text=True)
+        return (r.returncode, (r.stdout + r.stderr)[-600:])
+    log['r2_list'] = _w('r2', 'bucket', 'list')
+    if REQ.get('r2create'): log['r2_create'] = _w('r2', 'bucket', 'create', 'sinai-arch')
+    try:
+        T = os.environ['CLOUDFLARE_API_TOKEN']; A = os.environ['CLOUDFLARE_ACCOUNT_ID']
+        d = json.load(urllib.request.urlopen(urllib.request.Request('https://api.cloudflare.com/client/v4/accounts/%s/d1/database?per_page=50' % A, headers={'Authorization': 'Bearer ' + T}), timeout=60))
+        log['d1'] = [[x.get('name'), x.get('file_size')] for x in (d.get('result') or [])]
+        d = json.load(urllib.request.urlopen(urllib.request.Request('https://api.cloudflare.com/client/v4/accounts/%s/r2/buckets' % A, headers={'Authorization': 'Bearer ' + T}), timeout=60))
+        log['r2_api'] = {'ok': d.get('success'), 'err': str(d.get('errors'))[:300], 'n': len(((d.get('result') or {}).get('buckets')) or [])}
+    except Exception as e:
+        log['d1'] = 'ERR ' + repr(e)[:300]
+    try:
+        M = q("select p from docs where p like 'arch/%' and h<>'DEL'")
+        cnt = {}; sz = {}
+        ps = [m['p'] for m in M]
+        for i in range(0, len(ps), 20):
+            inn = ','.join("'d_" + p.replace("'", "''") + "'" for p in ps[i:i+20]); acc = {}
+            for r in q(f"select id,i,d from chunks where id in ({inn}) order by id,i"): acc[r['id']] = acc.get(r['id'], '') + r['d']
+            for v in acc.values():
+                try: o = json.loads(v)
+                except Exception: continue
+                if isinstance(o, dict) and 'json' in o and isinstance(o['json'], str):
+                    try: o = json.loads(o['json'])
+                    except Exception: pass
+                k = str(o.get('sec')) + ':' + str(o.get('src') or 'file') + ':' + str(o.get('type') or '')[:12]
+                cnt[k] = cnt.get(k, 0) + 1; sz[k] = sz.get(k, 0) + int(o.get('size') or 0)
+        log['arch'] = {'n': len(ps), 'by': cnt, 'bytes': sz}
+    except Exception as e:
+        log['arch'] = 'ERR ' + repr(e)[:300]
 os.makedirs(OUT, exist_ok=True); json.dump(log, open(os.path.join(OUT, 'log.json'), 'w'), ensure_ascii=False)
 print(json.dumps(log, ensure_ascii=False)[:3000])
