@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
     paths: ['ops/guard.py', '.github/workflows/guard.yml']
+permissions:
+  actions: write
+  contents: read
 concurrency:
   group: guard
   cancel-in-progress: true
@@ -21,3 +24,15 @@ jobs:
           RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: python3 ops/guard.py
+      # v238: إذا فُعّل R2 بحساب Cloudflare والخادم بعده بدونه — يعيد نشر الخادم وحده حتى ترتبط صور بوابة الأرشفة به
+      - env:
+          RAW_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          R=$(curl -s -m 30 https://sinai.7svyn82yzr.workers.dev/ | python3 -c 'import sys,json;print(json.load(sys.stdin).get("r2",""))' || true)
+          echo "r2-bound=$R"
+          if [ "$R" = "0" ]; then
+            export CLOUDFLARE_API_TOKEN=$(printf %s "$RAW_TOK" | python3 cf/tok.py) CLOUDFLARE_ACCOUNT_ID=$(printf %s "$RAW_ACC" | tr -d '[:space:]"')
+            if (cd cf && npx -y wrangler@3 r2 bucket list 2>&1) | grep -q "enable R2"; then echo "R2 not enabled yet"; else echo "R2 enabled — redeploy"; gh workflow run cloudflare.yml --repo ${{ github.repository }} || true; fi
+          fi

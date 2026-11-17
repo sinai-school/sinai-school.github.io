@@ -926,6 +926,7 @@ async function stf_(b) {
   if (!a || a.on === 0 || a.h !== tv.h) { await run('delete from toks where k=?', String(b.tok)); return { err: 'auth' }; }
   if (tr.exp - Date.now() < 5 * 3600e3) await run('update toks set exp=? where k=?', Date.now() + 6 * 3600e3, String(b.tok));
   const rv = +(await kvGet('DREV')) || 0;
+  if (op === 'ar238') return ar238_(b, a);
   if (op === 'get') {
     if (a.own) await rolesDoc_();
     const since = +b.since || 0;
@@ -1547,7 +1548,7 @@ async function pushNote205_(o) {
 
 /* ---------- الدخول ---------- */
 export default {
-  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { const sv = +(await kvGet('SAVER') || 0), m = new Date(ev.scheduledTime || Date.now()).getUTCMinutes(); if ((sv >= 2 && m % 10) || (sv >= 1 && m % 3)) return; } catch (e) { } try { await mvblob_(6); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
+  async scheduled(ev, env, ctx) { DB = env.DB; ENV = env; MEMO = {}; ORIGIN = ''; try { const sv = +(await kvGet('SAVER') || 0), m = new Date(ev.scheduledTime || Date.now()).getUTCMinutes(); if ((sv >= 2 && m % 10) || (sv >= 1 && m % 3)) return; } catch (e) { } try { await mvblob_(6); } catch (e) { } try { if (env.ARC) await arMv238_(4); } catch (e) { } try { await pushSend205_(40); } catch (e) { } try { await applyAll_(); } catch (e) { } },
   async fetch(req, env) {
     DB = env.DB; ENV = env; MEMO = {}; const u = new URL(req.url); ORIGIN = u.origin; HDR_ORIGIN = req.headers.get('Origin') || ''; RL215IP = req.headers.get('CF-Connecting-IP') || '';
     if (req.method === 'OPTIONS') return new Response(null, { headers: J });
@@ -1571,8 +1572,9 @@ export default {
         if (m) { if (FALIAS226[m[1]]) m[1] = FALIAS226[m[1]]; const f = await one('select * from files where id=?', m[1]), d = f && await blobGet('f_' + m[1]); if (!d) return new Response('not found', { status: 404 }); /* v222: الملفات الخطرة (صفحات/سكربتات) تنزل تنزيل بس وما تنفتح كصفحة — منع سكربت مدسوس بمرفق */ const safe = /^(image\/(jpeg|png|webp|gif)|application\/pdf|audio\/|video\/)/i.test(f.m || ''); return new Response(unb64(d), { headers: { 'Content-Type': safe ? f.m : 'application/octet-stream', 'Content-Disposition': (safe ? 'inline' : 'attachment') + '; filename*=UTF-8\'\'' + encodeURIComponent(f.n), 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff', ...(/pdf/i.test(f.m || '') && safe ? {} : { 'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox" }) } }); }
         m = u.pathname.match(/^\/bk\/([A-Za-z0-9_-]+)$/);
         if (m) { const k = await exK_('mac'); if (!k || u.searchParams.get('k') !== (await hm_(k, 'bk|' + m[1])).slice(0, 22)) return new Response('no', { status: 403 }); const s = await blobGet('bk_' + m[1]); const f = await one('select name from bk where id=?', m[1]); return new Response(s || '', { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(f ? f.name : 'backup.json') } }); }
-        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, v204: 1, ready: (await secret_()) ? 1 : 0 });
+        return out({ ok: 1, service: 'sinai-portal', host: 'cloudflare', v: 5, nid: 1, bk: 1, stf: 1, fast: 1, bridge: 1, files: 1, seen: 1, relay: 1, v6: 1, fget: 1, snap: 1, v7: 1, sent: 1, v8: 1, up: 1, v202: 1, v204: 1, ar238: 1, r2: ENV.ARC ? 1 : 0, ready: (await secret_()) ? 1 : 0 });
       }
+      if (u.pathname === '/ar238' || u.pathname === '/ar238u') { if (RL215_({ a: 'ar238' })) return out({ err: 'many' }); return await arHttp238_(req, u); }
       let b; try { b = JSON.parse(await req.text() || '{}'); } catch (x) { return out({ err: 'action' }); }
       return out(await handle(b));
     } catch (err) { return out({ err: 'server', msg: String(err && err.stack || err).slice(0, 400) }); }
@@ -1719,4 +1721,252 @@ async function absN215_(b, a) {
   }
   if (del) await notesDel234_();
   return { ok: 1, sent, del };
+}
+
+/* =====================================================================
+   v238: بوابة الأرشفة الإلكترونية (لمدير النظام فقط)
+   - سجلات القيد العام (القيود ١–٥٩ وما يُضاف كل عام) + أرشيف السجلات الوسطية.
+   - الفهرس بقاعدة مستقلة sinai_arch (ADB) — جداول صغيرة مفهرسة، لا تمسّ قاعدة النظام.
+   - الصور: R2 (ARC) إذا كان مفعّلاً، وإلا قواعد الملفات (جدول arb، ثنائي) — والنقل إلى R2 تلقائي لاحقاً.
+   - كل استبدال نسخة جديدة؛ القديمة محفوظة وتُسترجع، وسجل عمليات arlog.
+   ===================================================================== */
+const ADB_ = () => (ENV && ENV.ADB) || DB;
+const aAll_ = (q, ...a) => ADB_().prepare(q).bind(...a).all().then(r => r.results || []);
+const aOne_ = (q, ...a) => ADB_().prepare(q).bind(...a).first();
+const aRun_ = (q, ...a) => ADB_().prepare(q).bind(...a).run();
+let EAR238 = 0;
+async function ensAr238_() {
+  if (EAR238) return; const D = ADB_();
+  await D.batch([
+    'create table if not exists arbk(id text primary key, kind text, n integer, p0 text, p1 text, yr text, title text, note text, ord integer, rv integer, del integer default 0, at integer, cls text, rd integer)',
+    'create table if not exists arpg(bk text, pg text, v text, rv integer, at integer, w integer, h integer, sz integer, nv integer, nt text, primary key(bk,pg))',
+    'create index if not exists arpg_rv on arpg(rv)',
+    'create index if not exists arbk_rv on arbk(rv)',
+    'create table if not exists arvr(id text primary key, bk text, pg text, at integer, by text, sz integer, w integer, h integer, nt text, st text, mime text, th text)',
+    'create index if not exists arvr_bp on arvr(bk,pg)',
+    'create index if not exists arvr_st on arvr(st)',
+    'create table if not exists arlog(seq integer primary key autoincrement, at integer, by text, op text, bk text, pg text, x text)',
+    'create table if not exists arkv(k text primary key, v text)'
+  ].map(q => D.prepare(q)));
+  EAR238 = 1;
+}
+async function arRv_() {
+  const r = await aOne_("insert into arkv(k,v) values('rv','1') on conflict(k) do update set v=cast(cast(v as integer)+1 as text) returning v");
+  return +(r && r.v) || 1;
+}
+const arLog_ = (by, op, bk, pg, x) => aRun_('insert into arlog(at,by,op,bk,pg,x) values(?,?,?,?,?,?)', Date.now(), String(by || ''), op, String(bk || ''), String(pg || ''), String(x || '').slice(0, 400));
+/* رقم الصفحة: أرقام لاتينية + حرف عربي اختياري (مثل 2183أ) */
+const arPg_ = v => { const t = ar2en(v).replace(/\s+/g, '').trim(); return /^\d{1,6}[ء-ي]?$/.test(t) ? String(+t.match(/^\d+/)[0]) + t.replace(/^\d+/, '') : ''; };
+const arBk_ = v => { const t = String(v || ''); return /^(q|[wb][a-z0-9]{6,32})$/.test(t) ? t : ''; };
+const AR_CLS = { m3: 'الثالث المتوسط', s6i: 'السادس العلمي', s6a: 'السادس الأدبي' };
+const arTxt_ = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n || 300);
+
+/* ---------- تخزين الصور ---------- */
+const AR_FD = () => { const L = FDBS_(); return L.length > 1 ? L.slice(1).reverse() : L; }; /* sinai_files ممتلئة — نبدأ من الأفرغ */
+const AR_ROW = 1800000;
+async function arBlobPut_(key, bytes, mime) {
+  if (ENV.ARC) { await ENV.ARC.put(key, bytes, { httpMetadata: { contentType: mime || 'application/octet-stream' } }); return 'r2'; }
+  const u8 = new Uint8Array(bytes), all = FDBS_();
+  for (const F of AR_FD()) {
+    try {
+      await F.prepare('create table if not exists arb(id text, i integer, d blob, primary key(id,i))').run();
+      const st = [F.prepare('delete from arb where id=?').bind(key)];
+      for (let i = 0, n = 0; i < u8.length || n === 0; i += AR_ROW, n++) st.push(F.prepare('insert into arb(id,i,d) values(?,?,?)').bind(key, n, u8.slice(i, i + AR_ROW).buffer));
+      await F.batch(st);
+      return 'd1:' + all.indexOf(F);
+    } catch (e) { if (!/maximum DB size|SQLITE_FULL|too big|TOOBIG/i.test(String(e))) throw e; try { await F.prepare('delete from arb where id=?').bind(key).run(); } catch (x) { } }
+  }
+  throw new Error('storage full');
+}
+async function arBlobGet_(st, key) {
+  st = String(st || '');
+  if (st === 'r2') { if (!ENV.ARC) return null; const o = await ENV.ARC.get(key); return o ? { b: await o.arrayBuffer() } : null; }
+  let m = /^d1:(\d+)$/.exec(st);
+  if (m) {
+    const F = FDBS_()[+m[1]]; if (!F) return null;
+    const R = (await F.prepare('select d from arb where id=? order by i').bind(key).all()).results || [];
+    if (!R.length) return null;
+    const parts = R.map(r => r.d instanceof ArrayBuffer ? new Uint8Array(r.d) : ArrayBuffer.isView(r.d) ? new Uint8Array(r.d.buffer, r.d.byteOffset, r.d.byteLength) : Array.isArray(r.d) ? Uint8Array.from(r.d) : new Uint8Array(0));
+    if (parts.length === 1) return { b: parts[0] };
+    const n = parts.reduce((s, p) => s + p.length, 0), o = new Uint8Array(n); let k = 0; for (const p of parts) { o.set(p, k); k += p.length; } return { b: o };
+  }
+  /* صور القيد القديمة (قبل البوابة) — تُرسل base64 كما هي والجهاز يفكّها (أقل جهد على الخادم) */
+  m = /^arch:([A-Za-z0-9_-]+)$/.exec(st);
+  if (m) {
+    const a = await docJ_('arch/' + m[1]); if (!a) return null; const n = +a.parts || 1, P = [];
+    for (let j = 0; j < n; j++) { const d = await docJ_('archpart/' + m[1] + '_' + j); if (!d || !d.d) return null; P.push(String(d.d)); }
+    return { t: P.join('').replace(/^data:[^,]*,/, ''), mime: a.type || 'image/jpeg' };
+  }
+  m = /^qimg:([A-Za-z0-9_-]+)$/.exec(st);
+  if (m) { const d = await docJ_('qaidimg/' + m[1]); if (!d || !d.d) return null; const s = String(d.d), mm = /^data:([^;,]+)/.exec(s); return { t: s.replace(/^data:[^,]*,/, ''), mime: mm ? mm[1] : 'image/jpeg' }; }
+  return null;
+}
+async function arBlobDel_(st, key) {
+  st = String(st || '');
+  try { if (st === 'r2' && ENV.ARC) await ENV.ARC.delete(key); const m = /^d1:(\d+)$/.exec(st); if (m && FDBS_()[+m[1]]) await FDBS_()[+m[1]].prepare('delete from arb where id=?').bind(key).run(); } catch (e) { }
+}
+/* نقل الصور من قواعد الملفات إلى R2 بعد تفعيله (كل دقيقة دفعة صغيرة، يتحقق من الحجم قبل الحذف) */
+async function arMv238_(n) {
+  if (!ENV.ARC) return { ok: 0, err: 'nor2' };
+  await ensAr238_();
+  const d = +(await kvGet('ARMV238') || 0); if (d && Date.now() - d < 6 * 36e5) return { ok: 1, left: 'done' };
+  const L = await aAll_("select id,st,mime,th from arvr where st like 'd1:%' limit ?", n || 4);
+  let moved = 0;
+  for (const v of L) {
+    for (const [k, st] of [['v/' + v.id, v.st], ['t/' + v.id, v.th]]) {
+      if (!/^d1:/.test(String(st || ''))) continue;
+      const g = await arBlobGet_(st, k); if (!g || !g.b) continue;
+      await ENV.ARC.put(k, g.b, { httpMetadata: { contentType: k[0] === 't' ? 'image/webp' : (v.mime || 'image/webp') } });
+      const h = await ENV.ARC.head(k); if (!h || h.size !== g.b.byteLength) throw new Error('verify');
+    }
+    await aRun_("update arvr set st='r2', th=case when th like 'd1:%' then 'r2' else th end where id=?", v.id);
+    await arBlobDel_(v.st, 'v/' + v.id); if (/^d1:/.test(String(v.th || ''))) await arBlobDel_(v.th, 't/' + v.id);
+    moved++;
+  }
+  if (!L.length) await kvPut('ARMV238', String(Date.now()));
+  return { ok: 1, moved };
+}
+
+/* ---------- الدخول (حساب مدير النظام فقط) ---------- */
+async function arAuth238_(tok) {
+  const tr = tok ? await one('select v,exp from toks where k=?', String(tok)) : null;
+  if (!tr || tr.exp < Date.now()) return { err: 'auth' };
+  const tv = JSON.parse(tr.v); let a = null;
+  for (const x of await droles_()) if (x.id === tv.id) a = x;
+  if (!a || a.on === 0 || a.h !== tv.h) return { err: 'auth' };
+  if (!a.own) return { err: 'role' };
+  return { a };
+}
+
+/* ---------- العمليات (JSON عبر stf) ---------- */
+async function ar238_(b, a) {
+  if (!a.own) return { err: 'role' };
+  await ensAr238_();
+  const f = String(b.f || ''), by = 's:' + a.u;
+  if (f === 'idx') {
+    const since = +b.since || 0, rv = +((await aOne_("select v from arkv where k='rv'")) || {}).v || 0;
+    const books = await aAll_('select id,kind,n,p0,p1,yr,title,note,ord,rv,del,at,cls,rd from arbk where rv>?', since);
+    const pages = (await aAll_('select bk,pg,v,rv,at,w,h,sz,nv,nt from arpg where rv>?', since)).map(r => [r.bk, r.pg, r.v || '', r.rv, r.at, r.w || 0, r.h || 0, r.sz || 0, r.nv || 0, r.nt || '']);
+    return { ok: 1, rv, books, pages, store: ENV.ARC ? 'r2' : 'd1', full: since ? 0 : 1 };
+  }
+  if (f === 'books') {
+    /* حفظ تقسيم القيود: [{n,p0,p1,note}] أو كتاب سجل وسطي {id?,yr,title,note} */
+    const L = Array.isArray(b.L) ? b.L.slice(0, 300) : [];
+    const out = [];
+    for (const x of L) {
+      const kind = x.kind === 'w' || x.kind === 'b' ? x.kind : 'q';
+      if (kind === 'q') {
+        const n = Math.floor(+ar2en(x.n)); if (!(n >= 1 && n <= 999)) return { err: 'data', msg: 'رقم القيد غير صحيح' };
+        const p0 = arPg_(x.p0), p1 = arPg_(x.p1); if (!p0 || !p1 || parseInt(p1) < parseInt(p0)) return { err: 'data', msg: 'صفحات القيد ' + n + ' غير صحيحة' };
+        out.push({ id: 'q' + n, kind, n, p0, p1, yr: arTxt_(x.yr, 40), title: arTxt_(x.title, 120), note: arTxt_(x.note, 300), ord: n, del: x.del ? 1 : 0 });
+      } else {
+        const id = new RegExp('^' + kind + '[a-z0-9]{6,32}$').test(String(x.id || '')) ? String(x.id) : kind + uid().slice(0, 14);
+        const yr = arTxt_(x.yr, 20); if (!/^\d{4}-\d{4}$/.test(ar2en(yr))) return { err: 'data', msg: 'العام الدراسي غير صحيح' };
+        let cls = '', rd = 0;
+        if (kind === 'b') { cls = String(x.cls || ''); rd = Math.floor(+x.rd || 0); if (!AR_CLS[cls] || !(rd === 1 || rd === 2)) return { err: 'data', msg: 'اختر الصف والدور' }; }
+        out.push({ id, kind, n: 0, p0: '', p1: '', yr: ar2en(yr), title: arTxt_(x.title, 120), note: arTxt_(x.note, 300), ord: Math.floor(+x.ord || 0), del: x.del ? 1 : 0, cls, rd });
+      }
+    }
+    /* تداخل صفحات القيود */
+    const Q = (await aAll_("select id,n,p0,p1 from arbk where kind='q' and del=0")).filter(r => !out.some(o => o.id === r.id));
+    out.filter(o => o.kind === 'q' && !o.del).forEach(o => Q.push(o));
+    Q.sort((x, y) => parseInt(x.p0) - parseInt(y.p0));
+    for (let i = 1; i < Q.length; i++) if (parseInt(Q[i].p0) <= parseInt(Q[i - 1].p1)) return { err: 'data', msg: 'صفحات القيد ' + Q[i].n + ' تتداخل مع القيد ' + Q[i - 1].n };
+    for (const o of out) {
+      if (o.kind !== 'q' && o.del) { const c = await aOne_("select count(*) n from arpg where bk=? and v<>''", o.id); if (c && c.n && !b.force) return { err: 'notempty', n: c.n }; }
+      const rv = await arRv_();
+      await aRun_('insert into arbk(id,kind,n,p0,p1,yr,title,note,ord,rv,del,at,cls,rd) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) on conflict(id) do update set n=excluded.n,p0=excluded.p0,p1=excluded.p1,yr=excluded.yr,title=excluded.title,note=excluded.note,ord=excluded.ord,rv=excluded.rv,del=excluded.del,at=excluded.at,cls=excluded.cls,rd=excluded.rd',
+        o.id, o.kind, o.n, o.p0, o.p1, o.yr, o.title, o.note, o.ord, rv, o.del, Date.now(), o.cls || '', o.rd || 0);
+      if (o.kind !== 'q' && o.del) { const rv2 = await arRv_(); await aRun_("update arpg set v='',rv=? where bk=?", rv2, o.id); }
+    }
+    if (out.length) await arLog_(by, 'books', out.length === 1 ? out[0].id : '', '', out.map(o => o.id + (o.del ? '-' : '')).join(',').slice(0, 380));
+    return { ok: 1, ids: out.map(o => o.id) };
+  }
+  if (f === 'vers') {
+    const bk = arBk_(b.bk), pg = arPg_(b.pg); if (!bk || !pg) return { err: 'data' };
+    return { ok: 1, L: await aAll_('select id,at,by,sz,w,h,nt,mime from arvr where bk=? and pg=? order by at desc limit 200', bk, pg) };
+  }
+  if (f === 'set') {
+    /* استرجاع نسخة سابقة / تعديل الملاحظة / حذف الصفحة (النسخ تبقى) */
+    const bk = arBk_(b.bk), pg = arPg_(b.pg); if (!bk || !pg) return { err: 'data' };
+    const cur = await aOne_('select * from arpg where bk=? and pg=?', bk, pg);
+    if (b.del) { if (!cur) return { ok: 1 }; const rv = await arRv_(); await aRun_("update arpg set v='',rv=?,at=? where bk=? and pg=?", rv, Date.now(), bk, pg); await arLog_(by, 'del', bk, pg, cur.v); return { ok: 1, rv }; }
+    if (b.v) {
+      const v = await aOne_('select * from arvr where id=? and bk=? and pg=?', String(b.v), bk, pg); if (!v) return { err: 'data' };
+      const rv = await arRv_(), nv = +((await aOne_('select count(*) n from arvr where bk=? and pg=?', bk, pg)) || {}).n || 1;
+      await aRun_('insert into arpg(bk,pg,v,rv,at,w,h,sz,nv,nt) values(?,?,?,?,?,?,?,?,?,?) on conflict(bk,pg) do update set v=excluded.v,rv=excluded.rv,at=excluded.at,w=excluded.w,h=excluded.h,sz=excluded.sz,nv=excluded.nv,nt=excluded.nt', bk, pg, v.id, rv, Date.now(), v.w, v.h, v.sz, nv, v.nt || '');
+      await arLog_(by, 'restore', bk, pg, v.id); return { ok: 1, rv };
+    }
+    if ('nt' in b) {
+      if (!cur || !cur.v) return { err: 'data' };
+      const nt = arTxt_(b.nt, 300), rv = await arRv_();
+      await aRun_('update arvr set nt=? where id=?', nt, cur.v); await aRun_('update arpg set nt=?,rv=? where bk=? and pg=?', nt, rv, bk, pg);
+      await arLog_(by, 'note', bk, pg, nt); return { ok: 1, rv };
+    }
+    return { err: 'op' };
+  }
+  if (f === 'swap') {
+    /* السجل الوسطي: تبديل ترتيب صفحتين (أو نقل صفحة إلى رقم فارغ) */
+    const bk = arBk_(b.bk), p1 = arPg_(b.p1), p2 = arPg_(b.p2); if (!bk || bk === 'q' || !p1 || !p2 || p1 === p2) return { err: 'data' };
+    const A = await aOne_('select * from arpg where bk=? and pg=?', bk, p1), B = await aOne_('select * from arpg where bk=? and pg=?', bk, p2);
+    const rv = await arRv_(), put = (pg, r) => r && r.v ? aRun_('insert into arpg(bk,pg,v,rv,at,w,h,sz,nv,nt) values(?,?,?,?,?,?,?,?,?,?) on conflict(bk,pg) do update set v=excluded.v,rv=excluded.rv,at=excluded.at,w=excluded.w,h=excluded.h,sz=excluded.sz,nv=excluded.nv,nt=excluded.nt', bk, pg, r.v, rv, r.at, r.w, r.h, r.sz, r.nv, r.nt || '') : aRun_("insert into arpg(bk,pg,v,rv,at) values(?,?,'',?,?) on conflict(bk,pg) do update set v='',rv=excluded.rv,at=excluded.at", bk, pg, rv, Date.now());
+    await put(p1, B); await put(p2, A);
+    await aRun_('update arvr set pg=(case when pg=? then ? else ? end) where bk=? and pg in (?,?)', p1, p2, p1, bk, p1, p2);
+    await arLog_(by, 'swap', bk, p1, p2); return { ok: 1, rv };
+  }
+  if (f === 'log') return { ok: 1, L: await aAll_('select at,by,op,bk,pg,x from arlog order by seq desc limit 300') };
+  if (f === 'st') {
+    const c = await aOne_("select count(*) n, sum(sz) b from arpg where v<>''"), v = await aOne_('select count(*) n, sum(sz) b from arvr');
+    const s = await aAll_('select st, count(*) n, sum(sz) b from arvr group by st');
+    return { ok: 1, pages: c && c.n || 0, bytes: c && c.b || 0, vers: v && v.n || 0, vbytes: v && v.b || 0, by: s, r2: ENV.ARC ? 1 : 0, adb: ENV.ADB ? 1 : 0 };
+  }
+  if (f === 'mv' && b.go) return arMv238_(+b.n || 4);
+  return { err: 'op' };
+}
+
+/* ---------- الصور: رفع وتنزيل (ثنائي، بدون base64) ----------
+   POST /ar238  — جسم JSON {tok,id,t} ← الصورة نفسها
+   POST /ar238u — [٤ بايت طول الوصف][الوصف JSON][٤ بايت طول المصغّرة][المصغّرة][الصورة] */
+const AR_IMG_RE = /^(image\/(webp|jpeg|png))$/;
+async function arHttp238_(req, u) {
+  const H = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
+  const jout = o => new Response(JSON.stringify(o), { headers: J });
+  if (u.pathname === '/ar238') {
+    let b; try { b = JSON.parse(await req.text() || '{}'); } catch (e) { return jout({ err: 'data' }); }
+    const y = await arAuth238_(b.tok); if (y.err) return jout(y);
+    await ensAr238_();
+    const id = String(b.id || ''); if (!/^[A-Za-z0-9]{8,40}$/.test(id)) return jout({ err: 'data' });
+    const v = await aOne_('select id,st,mime,th from arvr where id=?', id); if (!v) return jout({ err: 'none' });
+    const thumb = !!b.t && v.th;
+    const g = await arBlobGet_(thumb ? v.th : v.st, (thumb ? 't/' : 'v/') + id); if (!g) return jout({ err: 'none' });
+    if (g.t) return new Response(g.t, { headers: { ...H, 'Content-Type': 'text/plain; charset=utf-8', 'X-B64': g.mime || 'image/jpeg' } });
+    return new Response(g.b, { headers: { ...H, 'Content-Type': thumb ? 'image/webp' : (v.mime || 'image/webp') } });
+  }
+  /* رفع */
+  const buf = new Uint8Array(await req.arrayBuffer());
+  if (buf.length < 12 || buf.length > 40e6) return jout({ err: 'big' });
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength), ml = dv.getUint32(0); if (ml > 8000 || 4 + ml + 4 > buf.length) return jout({ err: 'data' });
+  let m; try { m = JSON.parse(dec.decode(buf.subarray(4, 4 + ml))); } catch (e) { return jout({ err: 'data' }); }
+  const tl = dv.getUint32(4 + ml); if (4 + ml + 4 + tl > buf.length) return jout({ err: 'data' });
+  const th = buf.slice(8 + ml, 8 + ml + tl), im = buf.slice(8 + ml + tl);
+  const y = await arAuth238_(m.tok); if (y.err) return jout(y);
+  await ensAr238_();
+  const bk = arBk_(m.bk), pg = arPg_(m.pg), mime = String(m.mime || ''); if (!bk || !pg || !AR_IMG_RE.test(mime) || im.length < 200) return jout({ err: 'data' });
+  /* فحص بسيط لنوع الملف من أول البايتات */
+  const sig = im[0] === 0xFF && im[1] === 0xD8 ? 'image/jpeg' : im[0] === 0x89 && im[1] === 0x50 ? 'image/png' : (im[8] === 0x57 && im[9] === 0x45 && im[10] === 0x42 && im[11] === 0x50) ? 'image/webp' : '';
+  if (sig !== mime) return jout({ err: 'data', msg: 'type' });
+  if (bk !== 'q') { const B = await aOne_('select id from arbk where id=? and del=0', bk); if (!B) return jout({ err: 'nobook' }); }
+  const cur = await aOne_('select v from arpg where bk=? and pg=?', bk, pg);
+  /* صفحة لها صورة: الاستبدال يحتاج تأكيداً صريحاً (rep) — حتى لا تُستبدل صفحة بالخطأ */
+  if (cur && cur.v && !m.rep) return jout({ err: 'exists', v: cur.v });
+  if (m.cid) { const dup = await aOne_('select id from arvr where id=?', String(m.cid).replace(/[^A-Za-z0-9]/g, '').slice(0, 40)); if (dup) return jout({ ok: 1, dup: 1, id: dup.id }); }
+  const id = (String(m.cid || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40)) || uid();
+  const st = await arBlobPut_('v/' + id, im, mime);
+  const tst = th.length > 100 ? await arBlobPut_('t/' + id, th, 'image/webp') : '';
+  const w = Math.floor(+m.w || 0), h = Math.floor(+m.h || 0), nt = arTxt_(m.nt, 300), at = Date.now();
+  await aRun_('insert into arvr(id,bk,pg,at,by,sz,w,h,nt,st,mime,th) values(?,?,?,?,?,?,?,?,?,?,?,?)', id, bk, pg, at, 's:' + y.a.u, im.length, w, h, nt, st, mime, tst);
+  const nv = +((await aOne_('select count(*) n from arvr where bk=? and pg=?', bk, pg)) || {}).n || 1, rv = await arRv_();
+  await aRun_('insert into arpg(bk,pg,v,rv,at,w,h,sz,nv,nt) values(?,?,?,?,?,?,?,?,?,?) on conflict(bk,pg) do update set v=excluded.v,rv=excluded.rv,at=excluded.at,w=excluded.w,h=excluded.h,sz=excluded.sz,nv=excluded.nv,nt=excluded.nt', bk, pg, id, rv, at, w, h, im.length, nv, nt);
+  await arLog_('s:' + y.a.u, cur && cur.v ? 'replace' : 'add', bk, pg, id + (nt ? ' — ' + nt : ''));
+  return jout({ ok: 1, id, rv, nv, st });
 }
