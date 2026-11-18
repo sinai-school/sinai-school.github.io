@@ -487,5 +487,16 @@ if REQ.get('mvf241'):
             log['mvf241_after'] = {'files': left[0]['n'] if left else None, 'mb': round(left[0]['b'] * 0.75 / 1048576, 1) if left else None}
     except Exception as e:
         log['mvf241_err'] = repr(e)[:300]
+# v242: {"fget242":1} يفتح كل مرفق من الرابط الحي /f/<id> ويقارن الحجم بالمسجّل (بدون أسماء)
+if REQ.get('fget242'):
+    res = {'ok': 0, 'bad': []}
+    for f in q("select id,s,m from files"):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(URL.rstrip('/') + '/f/' + f['id'], headers={'User-Agent': 'sinai-ops'}), timeout=180) as rr: n = len(rr.read())
+            if abs(n - int(f['s'] or 0)) <= 3: res['ok'] += 1
+            else: res['bad'].append({'id': f['id'][:8], 'got': n, 'want': f['s']})
+        except Exception as e: res['bad'].append({'id': f['id'][:8], 'err': repr(e)[:80]})
+    log['fget242'] = res
+    log['main_f_left'] = q("select count(distinct id) n from chunks where id >= 'f_cf' and id < 'f_cg'")
 os.makedirs(OUT, exist_ok=True); json.dump(log, open(os.path.join(OUT, 'log.json'), 'w'), ensure_ascii=False)
 print(json.dumps(log, ensure_ascii=False)[:3000])
