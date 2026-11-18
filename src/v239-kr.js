@@ -222,7 +222,8 @@
   }
   const isTick = k => k.startsWith("x:");
   const NUMK = /^(n|r|f5|jt|ja|nat|ws|ed|sv|ag|tr|ms|st|ni|sum|eq|lib)\.|^b\.(year|plot|dist|r[cot]|extra|[ne]\d)$|^s\.(stat2?|phone|bld|mahalla|zuqaq|founded|[ne]\d)$/;
-  const shown = (k, v) => { if (isTick(k)) return v ? "✓" : ""; if (k == "s.email") return v; return AD(v); };
+  const dtx = t => { try { return typeof dt207 == "function" ? dt207(t) : t; } catch (e) { return t; } };
+  const shown = (k, v) => { if (isTick(k)) return v ? "✓" : ""; if (k == "s.email") return v; return dtx(AD(v)); };
 
   /* مقاس الخط: نفس الحساب للشاشة والطباعة */
   const MC = D0.createElement("canvas").getContext("2d");
@@ -433,7 +434,7 @@
     }
     for (const a of ADD.filter(q => q.p == i && q.t)) {
       const fs = a.fs || 10; x.font = `700 ${fs * S}px ${FF}`; x.direction = "rtl"; x.textAlign = "left"; x.textBaseline = "top";
-      String(a.t).split("\n").forEach((ln, j) => x.fillText(AD(ln), (a.x + 2) * S, (a.y + 2 + j * fs * 1.25) * S));
+      String(a.t).split("\n").forEach((ln, j) => x.fillText(dtx(AD(ln)), (a.x + 2) * S, (a.y + 2 + j * fs * 1.25) * S));
       x.textBaseline = "middle";
     }
     const sg = MAP.P[i].sg;
