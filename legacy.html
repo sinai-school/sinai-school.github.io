@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v241b-2026-11-18T13:45:00.000Z-v241b";
+<script>window.APP_VER = "2k7v242-2026-11-19T00:00:00.000Z-v242";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -44735,10 +44735,21 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     fxBuild._v240 = 1;
     return true;
   }
-  if (!wrap()) {
+  function wrapR() {
+    if (typeof dxRaster != "function") return false;
+    if (dxRaster._v242) return true;
+    const prevR = dxRaster;
+    dxRaster = function(pg) {
+      fix(pg);
+      return prevR.apply(this, arguments);
+    };
+    dxRaster._v242 = 1;
+    return true;
+  }
+  if (!(wrap() & wrapR())) {
     let n = 0;
     const t = setInterval(() => {
-      if (wrap() || ++n > 40) clearInterval(t);
+      if (wrap() & wrapR() || ++n > 40) clearInterval(t);
     }, 250);
   }
   document.addEventListener("focusout", (e) => {
