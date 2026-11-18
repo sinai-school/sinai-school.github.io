@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v240-2026-11-18T10:10:00.000Z-v240";
+<script>window.APP_VER = "2k7v241-2026-11-18T13:40:00.000Z-v241";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -30652,38 +30652,90 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const f = inp.files && inp.files[0];
     if (!f) return;
     if (typeof guard == "function" && guard()) return;
+    const ldImg = (src) => new Promise((ok) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => ok(null);
+      i.src = src;
+    });
+    const pdfLib = () => new Promise((ok, no) => {
+      if (W.pdfjsLib) return ok(W.pdfjsLib);
+      const sc = D.createElement("script");
+      sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      sc.onload = () => {
+        try {
+          W.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        } catch (e) {
+        }
+        ok(W.pdfjsLib);
+      };
+      sc.onerror = no;
+      D.head.appendChild(sc);
+    });
     try {
-      const u = await new Promise((ok) => {
-        const r = new FileReader();
-        r.onload = () => ok(r.result);
-        r.onerror = () => ok(null);
-        r.readAsDataURL(f);
-      });
-      let d = u;
-      if (/^data:image\//.test(u)) {
-        const im = await new Promise((ok) => {
-          const i = new Image();
-          i.onload = () => ok(i);
-          i.onerror = () => ok(null);
-          i.src = u;
-        });
-        if (im) {
-          const sc = Math.min(1, 1800 / Math.max(im.width, im.height));
+      T0("جارٍ تجهيز الصورة…");
+      let src = null, url = null;
+      if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)) {
+        const L = await pdfLib(), doc = await L.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+        const n = Math.min(3, doc.numPages), cs = [];
+        for (let k = 1; k <= n; k++) {
+          const pg = await doc.getPage(k), v0 = pg.getViewport({ scale: 1 }), v = pg.getViewport({ scale: 1800 / Math.max(v0.width, v0.height) });
           const c = D.createElement("canvas");
-          c.width = Math.round(im.width * sc);
-          c.height = Math.round(im.height * sc);
-          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-          d = c.toDataURL("image/jpeg", 0.82);
+          c.width = Math.round(v.width);
+          c.height = Math.round(v.height);
+          const x2 = c.getContext("2d");
+          x2.fillStyle = "#fff";
+          x2.fillRect(0, 0, c.width, c.height);
+          await pg.render({ canvasContext: x2, viewport: v }).promise;
+          cs.push(c);
+        }
+        const w = Math.max(...cs.map((c) => c.width)), h = cs.reduce((t, c) => t + c.height, 0), all = D.createElement("canvas");
+        all.width = w;
+        all.height = h;
+        const x = all.getContext("2d");
+        x.fillStyle = "#fff";
+        x.fillRect(0, 0, w, h);
+        let y = 0;
+        for (const c of cs) {
+          x.drawImage(c, 0, y);
+          y += c.height;
+        }
+        src = all;
+      } else {
+        url = URL.createObjectURL(f);
+        src = await ldImg(url);
+        if (!src) {
+          URL.revokeObjectURL(url);
+          return T0("تعذّر فتح الصورة — اختر صورة بصيغة JPG أو PNG", "err");
         }
       }
-      if (d.length > 36e5) return T0("الملف كبير جداً — التقط صورة أصغر", "err");
+      const W0 = src.naturalWidth || src.width, H0 = src.naturalHeight || src.height;
+      let d = "";
+      for (const [mx, q] of [[2e3, 0.82], [1800, 0.78], [1600, 0.72], [1400, 0.68], [1200, 0.62], [1050, 0.56], [900, 0.5], [800, 0.45], [700, 0.42]]) {
+        const sc = Math.min(1, mx / Math.max(W0, H0)), c = D.createElement("canvas");
+        c.width = Math.max(1, Math.round(W0 * sc));
+        c.height = Math.max(1, Math.round(H0 * sc));
+        const x = c.getContext("2d");
+        x.fillStyle = "#fff";
+        x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(src, 0, 0, c.width, c.height);
+        d = c.toDataURL("image/jpeg", q);
+        if (d.length < 235e3) break;
+      }
+      if (url) URL.revokeObjectURL(url);
+      if (!d || d.length >= 235e3) return T0("تعذّر تصغير الصورة — التقط صورة أوضح وأصغر", "err");
       await DB.doc("staffphoto/ord_" + id).set({ d, n: f.name, at: (/* @__PURE__ */ new Date()).toISOString() });
       ORD[id] = d;
       T0("حُفظت صورة أمر التنسيب ✓");
       redraw();
     } catch (e) {
       console.error(e);
-      T0("تعذّر الحفظ", "err");
+      T0("تعذّر الحفظ" + (e && /big/.test(String(e.message || e)) ? " — الصورة كبيرة" : " — تأكد من الإنترنت"), "err");
+    } finally {
+      try {
+        inp.value = "";
+      } catch (e) {
+      }
     }
   };
   W.v202OrdDel = async function(id) {
