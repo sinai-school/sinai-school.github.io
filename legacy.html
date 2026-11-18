@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v239-2026-11-18T01:30:00.000Z-v239";
+<script>window.APP_VER = "2k7v240-2026-11-18T10:10:00.000Z-v240";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -43989,10 +43989,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   }
   const isTick = (k) => k.startsWith("x:");
   const NUMK = /^(n|r|f5|jt|ja|nat|ws|ed|sv|ag|tr|ms|st|ni|sum|eq|lib)\.|^b\.(year|plot|dist|r[cot]|extra|[ne]\d)$|^s\.(stat2?|phone|bld|mahalla|zuqaq|founded|[ne]\d)$/;
+  const dtx = (t) => {
+    try {
+      return typeof dt207 == "function" ? dt207(t) : t;
+    } catch (e) {
+      return t;
+    }
+  };
   const shown = (k, v) => {
     if (isTick(k)) return v ? "✓" : "";
     if (k == "s.email") return v;
-    return AD(v);
+    return dtx(AD(v));
   };
   const MC = D0.createElement("canvas").getContext("2d");
   function fitFs(w, h, t) {
@@ -44357,7 +44364,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       x.direction = "rtl";
       x.textAlign = "left";
       x.textBaseline = "top";
-      String(a.t).split("\n").forEach((ln, j) => x.fillText(AD(ln), (a.x + 2) * S, (a.y + 2 + j * fs * 1.25) * S));
+      String(a.t).split("\n").forEach((ln, j) => x.fillText(dtx(AD(ln)), (a.x + 2) * S, (a.y + 2 + j * fs * 1.25) * S));
       x.textBaseline = "middle";
     }
     const sg = MAP.P[i].sg;
@@ -44584,6 +44591,46 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   css.id = "css239";
   css.textContent = "\n.krv{overflow-x:auto;overflow-y:visible;padding:2px 0 70px;-webkit-overflow-scrolling:touch}\n.krw{position:relative;margin:0 auto 14px;direction:ltr}\n.krp{position:absolute;left:0;top:0;width:842px;height:595px;transform-origin:0 0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18),0 6px 18px rgba(15,74,60,.08);border-radius:2px;overflow:hidden;user-select:none;-webkit-user-select:none}\n.krbg{position:absolute;left:0;top:0;width:842px;height:595px;pointer-events:none;image-rendering:auto}\n.krn{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:12px;color:var(--muted,#667);direction:rtl}\n.kf{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;font-family:".concat(FF, ";font-weight:700;color:#000;line-height:1;white-space:nowrap;overflow:hidden;direction:rtl;cursor:text;outline:none;border-radius:1px;user-select:text;-webkit-user-select:text;caret-color:#0f4a3c;box-sizing:border-box;padding:0 1px}\n.kf.ltr{direction:ltr}\n.kf:hover{background:rgba(31,107,88,.08)}\n.kf:focus{background:rgba(31,107,88,.13);box-shadow:inset 0 0 0 1.2px #1f6b58}\n.kf.ov{background:rgba(255,214,0,.22)}\n.kf.ov:focus{background:rgba(255,214,0,.3)}\n.kx{cursor:pointer}\n.kx svg{width:84%;height:84%;max-width:15px;max-height:15px}\n.kad{position:absolute;display:flex;align-items:flex-start;gap:1px;font-family:").concat(FF, ";font-weight:700;color:#000;direction:rtl;z-index:2}\n.kat{display:inline-block;min-width:24px;min-height:1.2em;padding:1px 2px;outline:1px dashed rgba(31,107,88,.55);white-space:pre-wrap;user-select:text;-webkit-user-select:text;line-height:1.25}\n.kad .kmv,.kad .kdel{opacity:0;border:0;background:#1f6b58;color:#fff;font-size:9px;line-height:1;width:13px;height:13px;border-radius:3px;padding:0;cursor:pointer;touch-action:none}\n.kad .kdel{background:#b42318}\n.kad:hover .kmv,.kad:hover .kdel,.kad:focus-within .kmv,.kad:focus-within .kdel{opacity:1}\n.kr-nav{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}\n.kr-nav button{flex:0 0 auto;display:grid;justify-items:center;gap:1px;border:1px solid var(--line,#dde);background:var(--surface,#fff);border-radius:10px;padding:5px 9px;font:inherit;font-weight:700;cursor:pointer;color:inherit}\n.kr-nav button small{font-weight:500;font-size:11px;color:var(--muted,#667);white-space:nowrap}\n.kr-nav button:hover{border-color:#1f6b58}\n.kr-zm{display:inline-flex;align-items:center;gap:4px}\n.kr-zm b{min-width:46px;text-align:center}\n.kr-h{margin:2px 0 8px}\n.kr-n ul{margin:6px 0 0;padding-inline-start:20px}\n.kr-bar{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border:1px solid var(--line,#dde);border-radius:14px;padding:6px 10px;box-shadow:0 6px 24px rgba(0,0,0,.16)}\n.kr-bar[hidden]{display:none}\n@media (max-width:900px){.kr-bar{bottom:calc(78px + env(safe-area-inset-bottom));z-index:120}}\n.kr-bar #krbk{font-size:12px;color:var(--muted,#667)}\n.kr-bar *{white-space:nowrap}\n.kr-pk{display:grid;gap:10px;margin:8px 0 12px}\n.kr-pk label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}\n");
   (D0.head || D0.documentElement).appendChild(css);
+})();
+</script>
+<script id="v240">(function() {
+  "use strict";
+  const W = window, on = (f) => {
+    try {
+      return f();
+    } catch (e) {
+      console.warn("v240", e);
+    }
+  };
+  const fix = (el) => on(() => {
+    if (el && typeof W.fixDates207 == "function") W.fixDates207(el);
+  });
+  function wrap() {
+    if (typeof fxBuild != "function" || fxBuild._v240) return !!(typeof fxBuild == "function");
+    const prev = fxBuild;
+    fxBuild = async function() {
+      const B = await prev.apply(this, arguments);
+      on(() => {
+        fix(B && B.out);
+        (B && B.pages || []).forEach(fix);
+      });
+      return B;
+    };
+    fxBuild._v240 = 1;
+    return true;
+  }
+  if (!wrap()) {
+    let n = 0;
+    const t = setInterval(() => {
+      if (wrap() || ++n > 40) clearInterval(t);
+    }, 250);
+  }
+  document.addEventListener("focusout", (e) => {
+    const el = e.target && e.target.closest && e.target.closest('[contenteditable="true"]');
+    if (el && !el.closest(".kf,.kat,input,textarea")) setTimeout(() => {
+      if (!el.contains(document.activeElement)) fix(el);
+    }, 0);
+  });
 })();
 </script>
 </body></html>
