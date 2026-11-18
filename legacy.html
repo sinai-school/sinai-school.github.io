@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v241-2026-11-18T13:40:00.000Z-v241";
+<script>window.APP_VER = "2k7v241b-2026-11-18T13:45:00.000Z-v241b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -30751,18 +30751,82 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   W.v202OrdShow = (id) => {
     const d = ORD[id];
     if (!d) return;
-    if (/^data:image\//.test(d)) {
+    if (!/^data:image\//.test(d)) {
+      const a = D.createElement("a");
+      a.href = d;
+      a.download = "أمر التنسيب.pdf";
+      a.click();
+      return;
+    }
+    const f = (GV("STF") || []).find((x2) => x2.id == id), nm = "أمر التنسيب" + (f && f.name ? " — " + f.name : "");
+    if (typeof W.qz214 != "function") {
       const z = D.createElement("div");
       z.className = "zoom";
       z.onclick = () => z.remove();
       z.innerHTML = '<img src="'.concat(d, '" alt="">');
       D.body.appendChild(z);
-    } else {
-      const a = D.createElement("a");
-      a.href = d;
-      a.download = "أمر التنسيب.pdf";
-      a.click();
+      return;
     }
+    W.qz214(d, nm);
+    const w = D.getElementById("lb206");
+    if (!w) return;
+    const bar = w.querySelector(".qzb"), x = bar.querySelector('[data-z="x"]');
+    const dims = () => new Promise((ok) => {
+      const i = new Image();
+      i.onload = () => ok([i.naturalWidth, i.naturalHeight]);
+      i.onerror = () => ok([1e3, 1414]);
+      i.src = d;
+    });
+    const jpg = () => {
+      const b = atob(d.split(",")[1]), u = new Uint8Array(b.length);
+      for (let k = 0; k < b.length; k++) u[k] = b.charCodeAt(k);
+      return u;
+    };
+    const mk = (t, fn) => {
+      const bt = D.createElement("button");
+      bt.type = "button";
+      bt.textContent = t;
+      bt.onclick = async (e) => {
+        e.stopPropagation();
+        try {
+          await fn();
+        } catch (er) {
+          console.error(er);
+          T0("تعذّر الإتمام", "err");
+        }
+      };
+      bar.insertBefore(bt, x);
+    };
+    mk("طباعة", async () => {
+      const [iw, ih] = await dims(), land = iw > ih, pw = land ? 297 : 210, ph = land ? 210 : 297;
+      if (typeof W.printHere221 == "function") return W.printHere221([{ w: pw, h: ph, html: '<div class="pg221 %SZ%"><img src="'.concat(d, '" alt=""></div>') }], nm);
+      const z = W.open("");
+      if (z) {
+        z.document.write('<img src="'.concat(d, '" style="width:100%">'));
+        z.document.close();
+        z.print();
+      }
+    });
+    mk("PDF", async () => {
+      const [iw, ih] = await dims(), land = iw > ih, wpt = land ? 841.89 : 595.28, hpt = land ? 595.28 : 841.89;
+      const sc = Math.min(wpt / iw, hpt / ih), c = D.createElement("canvas");
+      c.width = Math.round(wpt * 2.5);
+      c.height = Math.round(hpt * 2.5);
+      const im = await new Promise((ok) => {
+        const i = new Image();
+        i.onload = () => ok(i);
+        i.src = d;
+      }), g2 = c.getContext("2d");
+      g2.fillStyle = "#fff";
+      g2.fillRect(0, 0, c.width, c.height);
+      const k = c.width / wpt, dw = iw * sc * k, dh = ih * sc * k;
+      g2.drawImage(im, (c.width - dw) / 2, 0, dw, dh);
+      const u = c.toDataURL("image/jpeg", 0.9), b = atob(u.split(",")[1]), j = new Uint8Array(b.length);
+      for (let q = 0; q < b.length; q++) j[q] = b.charCodeAt(q);
+      const blob = pdfJpegs([{ w: c.width, h: c.height, jpg: j }], wpt, hpt);
+      return saveFile(nm + ".pdf", blob);
+    });
+    mk("حفظ الصورة", async () => saveFile(nm + ".jpg", new Blob([jpg()], { type: "image/jpeg" })));
   };
   async function ordLoad(id) {
     if (id in ORD) return;
