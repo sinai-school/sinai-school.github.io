@@ -13,7 +13,15 @@
     fxBuild = async function () { const B = await prev.apply(this, arguments); on(() => { fix(B && B.out); (B && B.pages || []).forEach(fix); }); return B; };
     fxBuild._v240 = 1; return true;
   }
-  if (!wrap()) { let n = 0; const t = setInterval(() => { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
+  /* v242: كل صفحة تنرسم صورة (الاستمارات، القوالب، خارطة الجلوس، الأوراق المصممة) تمر بـ dxRaster —
+     التواريخ تتصحح بنفس اللحظة قبل الرسم، فما يعتمد أي مسار طباعة على الـ MutationObserver. */
+  function wrapR() {
+    if (typeof dxRaster != "function") return false; if (dxRaster._v242) return true;
+    const prevR = dxRaster;
+    dxRaster = function (pg) { fix(pg); return prevR.apply(this, arguments); };
+    dxRaster._v242 = 1; return true;
+  }
+  if (!(wrap() & wrapR())) { let n = 0; const t = setInterval(() => { if ((wrap() & wrapR()) || ++n > 40) clearInterval(t); }, 250); }
   document.addEventListener("focusout", e => {
     const el = e.target && e.target.closest && e.target.closest('[contenteditable="true"]');
     if (el && !el.closest(".kf,.kat,input,textarea")) setTimeout(() => { if (!el.contains(document.activeElement)) fix(el); }, 0);

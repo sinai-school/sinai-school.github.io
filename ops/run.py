@@ -465,5 +465,27 @@ if REQ.get('r2chk'):
         log['arch'] = {'n': len(ps), 'by': cnt, 'bytes': sz}
     except Exception as e:
         log['arch'] = 'ERR ' + repr(e)[:300]
+# v242: {"mvf241":1} نقل المرفقات القديمة f_cf… من القاعدة الأساسية لقواعد الملفات (نسخ ← تحقق حرف بحرف ← حذف الأصل). {"mvf241":{"dry":1}} يطلع القائمة بس.
+if REQ.get('mvf241'):
+    try:
+        sys.path.insert(0, 'ops'); from mvf241 import move_all
+        M = REQ['mvf241'] if isinstance(REQ['mvf241'], dict) else {}
+        ids = [(r['id'], int(r['n']), int(r['b'])) for r in q("select id, count(*) n, sum(length(d)) b from chunks where id >= 'f_cf' and id < 'f_cg' group by id order by b")]
+        log['mvf241_before'] = {'files': len(ids), 'mb': round(sum(x[2] for x in ids) * 0.75 / 1048576, 1)}
+        if not M.get('dry') and ids:
+            sec = q("select v from kv where k='SECRET'")[0]['v']
+            def _call(b):
+                b = dict(b, a='admin', secret=sec); last = None
+                for t in range(4):
+                    try:
+                        rq = urllib.request.Request(URL, data=json.dumps(b).encode(), headers={'Content-Type': 'text/plain;charset=utf-8', 'User-Agent': 'sinai-ops'})
+                        with urllib.request.urlopen(rq, timeout=120) as rr: return json.loads(rr.read().decode())
+                    except Exception as e: last = e; time.sleep(3 + 3 * t)
+                raise last
+            log['mvf241'] = move_all(_call, ids, budget=int(M.get('budget') or 1400))
+            left = q("select count(distinct id) n, coalesce(sum(length(d)),0) b from chunks where id >= 'f_cf' and id < 'f_cg'")
+            log['mvf241_after'] = {'files': left[0]['n'] if left else None, 'mb': round(left[0]['b'] * 0.75 / 1048576, 1) if left else None}
+    except Exception as e:
+        log['mvf241_err'] = repr(e)[:300]
 os.makedirs(OUT, exist_ok=True); json.dump(log, open(os.path.join(OUT, 'log.json'), 'w'), ensure_ascii=False)
 print(json.dumps(log, ensure_ascii=False)[:3000])

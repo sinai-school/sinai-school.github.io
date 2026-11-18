@@ -72,6 +72,71 @@ async function mvblob_(n, force) {
   return { ok: 1, moved, left: ids.length == (n || 8) ? 'more' : 'done' };
 }
 
+/* v242: حذف التبليغ يحذف مرفقاته — بس إذا ما يستعملها أي شي ثاني (تبليغ/بلاغ/إعدادات/ملف بوابة/ملف نظام)، وإلا تبقى. */
+async function fUsed241_(id) {
+  const x = await one("select (select count(*) from notes where instr(files,?1)>0 or instr(coalesce(title,'')||' '||coalesce(body,''),?1)>0) + (select count(*) from reports where instr(coalesce(files,''),?1)>0 or instr(coalesce(text,'')||' '||coalesce(reply,''),?1)>0) + (select count(*) from kv where instr(v,?1)>0) + (select count(*) from prof where instr(coalesce(json,''),?1)>0) + (select count(*) from ups where id=?1) n", id);
+  if (!x || +x.n) return true;
+  const y = await one("select count(*) n from chunks where id >= 'd_' and id < 'd`' and instr(d,?)>0", '/f/' + id);
+  return !y || +y.n > 0;
+}
+async function fGc241_(ids) {
+  const AL = new Set([...Object.keys(FALIAS226), ...Object.values(FALIAS226)]); let n = 0;
+  for (const id of [...new Set((ids || []).map(String))]) {
+    if (!/^cf[0-9a-zA-Z]{8,40}$/.test(id) || AL.has(id)) continue;
+    try { if (await fUsed241_(id)) continue; await blobDel('f_' + id); await run('delete from files where id=?', id); n++; } catch (e) { }
+  }
+  return n;
+}
+/* v242: نقل المرفقات القديمة (f_cf…) من القاعدة الأساسية لقواعد الملفات بأمان: نسخ قطعة قطعة ← تحقق حرف بحرف ← بعدها بس يُحذف الأصل.
+   طول النقل blobGet يقرأ الأصل أول (للـ f_cf)، فما ينقرأ ملف ناقص أبداً. خطوات صغيرة لكل طلب (حد استعلامات Workers). */
+async function mvf241_(b) {
+  const id = String(b.id || ''); if (!/^f_cf[0-9a-zA-Z]{8,40}$/.test(id)) return { err: 'id' };
+  const FS = FDBS_(); if (!FS.length) return { err: 'nofdb' };
+  const N = (await one('select count(*) n, coalesce(sum(length(d)),0) b from chunks where id=?', id)) || { n: 0, b: 0 };
+  const st = String(b.st || 'copy'), from = Math.max(0, +b.from || 0), K = 6;
+  const tk = 'MVF241_' + id;
+  if (st === 'info') return { ok: 1, n: +N.n, b: +N.b, t: await kvGet(tk) };
+  if (!+N.n) return { ok: 1, gone: 1 };
+  if (st === 'copy') {
+    let ti = +(await kvGet(tk) || -1);
+    if (from === 0 || ti < 0) {
+      /* أول قاعدة ملفات بيها مكان: نجرّب نكتب أول قطعة */
+      ti = -1;
+      for (let k = FS.length - 1; k >= 0; k--) { try { await FS[k].prepare('create table if not exists chunks(id text, i integer, d text, primary key(id,i))').run(); } catch (e) { } }
+      for (let k = 0; k < FS.length; k++) { try { await FS[k].prepare('delete from chunks where id=?').bind(id).run(); const r = await one('select d from chunks where id=? and i=0', id); await FS[k].prepare('insert into chunks(id,i,d) values(?,?,?)').bind(id, 0, r.d).run(); ti = k; break; } catch (e) { if (!/maximum DB size|SQLITE_FULL/i.test(String(e))) return { err: String(e).slice(0, 160) }; try { await FS[k].prepare('delete from chunks where id=?').bind(id).run(); } catch (x) { } } }
+      if (ti < 0) return { err: 'full' };
+      await kvPut(tk, String(ti)); await kvPut('MVF241V_' + id, '0');
+      return { ok: 1, next: 1, n: +N.n, t: ti };
+    }
+    const F = FS[ti]; if (!F) return { err: 'target' };
+    const rows = await all('select i,d from chunks where id=? and i>=? and i<? order by i', id, from, from + K);
+    try { for (const r of rows) await F.prepare('insert into chunks(id,i,d) values(?,?,?) on conflict(id,i) do update set d=excluded.d').bind(id, r.i, r.d).run(); }
+    catch (e) { return { err: /maximum DB size|SQLITE_FULL/i.test(String(e)) ? 'full-mid' : String(e).slice(0, 160) }; }
+    await kvPut('MVF241V_' + id, '0'); const nx = from + K; return { ok: 1, next: nx < +N.n ? nx : -1, n: +N.n, t: ti };
+  }
+  const ti = +(await kvGet(tk) || -1), F = FS[ti]; if (!F) return { err: 'notcopied' };
+  if (st === 'verify') {
+    const vk = 'MVF241V_' + id, done0 = +(await kvGet(vk) || 0);
+    if (from !== 0 && from !== done0) return { ok: 0, why: 'order' };
+    const a = await all('select i,d from chunks where id=? and i>=? and i<? order by i', id, from, from + K);
+    const c = (await F.prepare('select i,d from chunks where id=? and i>=? and i<? order by i').bind(id, from, from + K).all()).results || [];
+    if (a.length !== c.length) return { ok: 0, bad: from, why: 'count' };
+    for (let j = 0; j < a.length; j++) if (+a[j].i !== +c[j].i || a[j].d !== c[j].d) return { ok: 0, bad: +a[j].i, why: 'data' };
+    const nx = from + K; await kvPut(vk, String(Math.min(nx, +N.n))); return { ok: 1, next: nx < +N.n ? nx : -1, n: +N.n };
+  }
+  if (st === 'fin') {
+    if (+(await kvGet('MVF241V_' + id) || 0) < +N.n) return { ok: 0, why: 'notverified' };
+    /* فحص أخير بالعدد والطول قبل الحذف (التحقق حرف بحرف انسوى بخطوة verify) */
+    const C = (await F.prepare('select count(*) n, coalesce(sum(length(d)),0) b from chunks where id=?').bind(id).first()) || {};
+    if (+C.n !== +N.n || +C.b !== +N.b || !b.verified) return { ok: 0, why: 'mismatch', n: +N.n, b: +N.b, fn: +C.n, fb: +C.b };
+    for (const G of FS) if (G !== F) { try { await G.prepare('delete from chunks where id=?').bind(id).run(); } catch (e) { } }
+    await run('delete from chunks where id=?', id); await run('delete from kv where k in (?,?)', tk, 'MVF241V_' + id);
+    const L = (await F.prepare('select count(*) n from chunks where id=?').bind(id).first()) || {}, M0 = await one('select count(*) n from chunks where id=?', id);
+    return { ok: +L.n === +N.n && !+(M0 && M0.n) ? 1 : 0, moved: 1, b: +N.b };
+  }
+  return { err: 'st' };
+}
+
 /* ---------- أدوات ---------- */
 const ar2en = x => String(x || '').replace(/[٠-٩]/g, c => c.charCodeAt(0) - 1632);
 function phone_(x) { let d = ar2en(x).replace(/\D/g, '').slice(-10); return d.length === 10 && d[0] === '7' ? '0' + d : ''; }
@@ -662,7 +727,8 @@ async function admin_(b) {
   }
   if (b.op === 'psub') { await ens205_(); return psubPut205_('o', String(b.key || 'own'), b.sub); }
   if (b.op === 'pushTest') { await ens205_(); return pushTo205_(x => x.kind === String(b.kind || 'o')); }
-  if (b.op === 'delNote') { await run('delete from notes where id=?', String(b.id)); await notesDel234_(); return { ok: 1 }; }
+  if (b.op === 'delNote') { const n0 = await one('select files from notes where id=?', String(b.id)); await run('delete from notes where id=?', String(b.id)); await notesDel234_(); let fg = 0; try { fg = await fGc241_(fl_(n0 && n0.files).map(z => z && z.id)); } catch (e) { } return { ok: 1, fg }; }
+  if (b.op === 'mvf241') { if (String(b.secret || '') !== String(await secret_())) return { err: 'auth' }; return mvf241_(b); }
   if (b.op === 'osync') return osync_(b);
   if (b.op === 'snapPut') return snapPut_(b);
   if (b.op === 'bkput') return bkput_(b);
