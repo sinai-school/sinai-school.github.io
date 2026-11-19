@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v243-2026-11-19T12:30:00.000Z-v243";
+<script>window.APP_VER = "2k7v243b-2026-11-19T13:20:00.000Z-v243b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -3953,13 +3953,17 @@ V.q = () => {
   if (QSEL) return qDetail();
   const yrs = qYears(), imgs = QD.filter((r) => r.im).length;
   return '<div class="vh"><h2>القيد العام</h2><span class="sub">'.concat(toAr(QD.length), " اسم — ").concat(toAr(yrs.length), " سنة دراسية").concat(imgs ? " — " + toAr(imgs) + " مرتبط بصورة" : "", "</span></div>").concat(!QREADY ? '<div class="banner">جارٍ تحميل سجل القيد…</div>' : "", '\n  <div class="qsearch"><span class="qs-i">').concat(ic("search"), '</span><input id="qq" type="search" autocomplete="off" enterkeyhint="search" placeholder="بحث سريع: اكتب أي جزء من الاسم، أو رقم الصفحة، أو رقم القيد" value="').concat(esc(QQ), '" oninput="qType(this.value)"><select id="qy" onchange="QY=this.value;QPG=0;qRes()" aria-label="السنة"><option value="">كل السنوات</option>').concat(opts(yrs, QY), '</select></div>\n  <p class="muted" style="margin:-4px 0 10px">تظهر النتائج أثناء الكتابة. الكلمات بأي ترتيب، ولا فرق بين أ وا، ة وه، ى وي، ولا بين «عبد الحسين» و«عبدالحسين».</p>\n  <div class="tools"><button class="btn" onclick="QADD=1;HOLD=1;render()">').concat(ic("plus"), ' إضافة اسم</button><label class="btn ghost" for="qf">').concat(ic("upload"), ' رفع ملف Excel</label><input type="file" id="qf" hidden accept=".xlsx,.csv" onchange="qRead(this.files[0])"></div>\n  ').concat(QADD ? '<div class="box hl"><h3>إضافة اسم إلى القيد العام</h3><div class="fgrid"><label class="wide">اسم الطالب<input id="qa_n"></label><label>رقم الصفحة<input id="qa_pg" dir="ltr" inputmode="numeric" value="'.concat(Math.max(0, ...QD.map((r) => +r.pg || 0)) + 1, '"></label><label>رقم القيد<input id="qa_r" dir="ltr" value="').concat(esc((QD[QD.length - 1] || {}).r || ""), '"></label><label>السنة<input id="qa_y" value="').concat(esc((() => {
-    try {
-      const m = String(yrSlash()).match(/(\d{4})\D+(\d{4})/);
-      if (m) return Math.max(+m[1], +m[2]) + "/" + Math.min(+m[1], +m[2]);
-    } catch (e) {
-    }
-    return "";
-  })() || yrs.filter((y) => /^\d{4}\/\d{4}$/.test(y)).pop() || ""), '" placeholder="2027/2026"></label><label class="wide">ملاحظات<input id="qa_nt"></label></div><div class="tools"><button class="btn" onclick="qAdd()">').concat(ic("ok"), ' حفظ</button><button class="btn ghost" onclick="QADD=0;HOLD=0;render()">إلغاء</button></div></div>') : "", '\n  <div id="qres">').concat(qResHTML(), "</div>");
+    const C2 = {};
+    QD.forEach((r) => {
+      const y = r.y || "";
+      if (/^\d{4}\D\d{4}$/.test(y)) C2[y] = (C2[y] || 0) + 1;
+    });
+    const L = Object.keys(C2);
+    if (!L.length) return "";
+    const top = (y) => Math.max(...y.match(/\d{4}/g).map(Number));
+    L.sort((a, b) => top(b) - top(a) || C2[b] - C2[a]);
+    return L[0];
+  })()), '" placeholder="2027/2026"></label><label class="wide">ملاحظات<input id="qa_nt"></label></div><div class="tools"><button class="btn" onclick="qAdd()">').concat(ic("ok"), ' حفظ</button><button class="btn ghost" onclick="QADD=0;HOLD=0;render()">إلغاء</button></div></div>') : "", '\n  <div id="qres">').concat(qResHTML(), "</div>");
 };
 function qAdd() {
   if (guard()) return;
@@ -35573,19 +35577,60 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
   };
   const allSt = () => (typeof ST != "undefined" ? ST : []).filter((s) => !s.x && s.ss != "مفصول");
+  let NQ = { k: "", v: null }, QX = { n: -1, q: null, m: null };
+  function qIdx(sig) {
+    if (QX.q === QD && QX.n === sig && QX.m) return QX.m;
+    const m = /* @__PURE__ */ new Map();
+    QD.forEach((r) => {
+      const z = NZ(r.n);
+      m.set(r, { z, t: z.split(" ").filter(Boolean), k: pgK(r.pg) });
+    });
+    QX = { n: sig, q: QD, m };
+    return m;
+  }
+  const near2 = (x, y) => {
+    if (x.length < 2 || y.length < 2) return false;
+    const d0 = lev(x[0], y[0]);
+    if (d0 > 1) return false;
+    const d1 = lev(x[1], y[1]);
+    if (d1 > 1 || d0 + d1 > 2) return false;
+    if (x.length >= 3 && y.length >= 3 && lev(x[2], y[2]) > 2) return false;
+    return true;
+  };
   function noQaid() {
     if (typeof QD == "undefined" || !QD.length) return null;
-    const used = new Set(allSt().map((s) => pgK(s.pg)).filter(Boolean));
-    const free = QD.filter((r) => !used.has(pgK(r.pg)));
+    const S = allSt();
+    const qsig = QD.map((r) => r.pg + ":" + r.n).join("¦");
+    const key = qsig + "|" + S.map((s) => s.id + ":" + (s.pg || "") + ":" + s.n).join("¦") + "|" + (typeof INF != "undefined" && INF ? Object.keys(INF).length : 0);
+    if (NQ.k === key && NQ.v) return NQ.v;
+    const M = qIdx(qsig);
+    const used = new Set(S.map((s) => pgK(s.pg)).filter(Boolean));
+    const qk = /* @__PURE__ */ new Set();
+    QD.forEach((r) => qk.add(M.get(r).k));
+    const free = QD.filter((r) => !used.has(M.get(r).k));
+    const byLen = /* @__PURE__ */ new Map();
+    free.forEach((r) => {
+      const t = M.get(r).t;
+      if (t.length < 2) return;
+      const L = t[0].length;
+      (byLen.get(L) || byLen.set(L, []).get(L)).push(r);
+    });
+    const cand = (t) => t.length < 2 ? [] : [...byLen.get(t[0].length - 1) || [], ...byLen.get(t[0].length) || [], ...byLen.get(t[0].length + 1) || []];
     const out = [];
-    allSt().forEach((s) => {
+    S.forEach((s) => {
       const k = pgK(s.pg);
-      if (k && QD.some((r) => pgK(r.pg) == k)) return;
-      const pn = portalName(s);
-      const ex = free.filter((r) => NZ(r.n) == NZ(s.n) || pn && NZ(r.n) == NZ(pn));
-      const near = free.filter((r) => !ex.includes(r) && (samePerson(s.n, r.n) || pn && samePerson(pn, r.n))).sort((a, b) => +pgK(b.pg) - +pgK(a.pg)).slice(0, 4);
+      if (k && qk.has(k)) return;
+      const pn = portalName(s), zs = NZ(s.n), zp = pn ? NZ(pn) : "";
+      const ex = free.filter((r) => {
+        const z = M.get(r).z;
+        return z == zs || zp && z == zp;
+      });
+      const ts = zs.split(" ").filter(Boolean), tp = zp ? zp.split(" ").filter(Boolean) : [];
+      const pool = /* @__PURE__ */ new Set([...cand(ts), ...cand(tp)]);
+      const near = [...pool].filter((r) => !ex.includes(r) && (near2(ts, M.get(r).t) || tp.length && near2(tp, M.get(r).t))).sort((a, b) => +pgK(b.pg) - +pgK(a.pg)).slice(0, 4);
       out.push({ s, pn, ex, near, bad: !!k });
     });
+    NQ = { k: key, v: out };
     return out;
   }
   W.noQaid207 = noQaid;
