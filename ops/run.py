@@ -404,17 +404,34 @@ def restore205(m):
 
 
 files = [] if REQ.get('noapply') else sorted(glob.glob('ops/in/*.json'))
+# v243: {"fset243":{"staff/st040":{"edu":"ابتدائية"}}} — تعديل حقول معيّنة بملف موجود (يقرا النسخة الحالية، put205 بـ h0 حتى ما يكتب فوق تعديل أحدث)
+FSET = []
+if REQ.get('fset243'):
+    out = {}; lg = []
+    for p_, flds in REQ['fset243'].items():
+        e_ = q("select h from docs where p='" + p_.replace("'", "''") + "'")
+        t_ = ''.join(r['d'] for r in q("select d from chunks where id='d_" + p_.replace("'", "''") + "' order by i"))
+        if not t_ or not e_: lg.append({p_: 'missing'}); continue
+        d_ = json.loads(t_); J_ = json.loads(d_['json']) if isinstance(d_.get('json'), str) else d_
+        old_ = {k_: J_.get(k_) for k_ in flds}; J_.update(flds)
+        if isinstance(d_.get('json'), str): d_ = dict(d_); d_['json'] = json.dumps(J_, ensure_ascii=False)
+        else: d_ = J_
+        out[p_] = {'d': json.dumps(d_, ensure_ascii=False), 'h0': e_[0]['h']}; lg.append({p_: {'old': old_, 'new': flds}})
+    log['fset243'] = lg
+    if out: FSET.append({'step': 'put205', 'docs': out})
 if REQ.get('only'): files = [f for f in files if os.path.basename(f) in REQ['only']]
-if files:
+if files or FSET:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
     pk = json.loads(kv['PK']); sec = kv['SECRET']; j = pk['prv']
     prv = rsa.RSAPrivateNumbers(int_(j['p']), int_(j['q']), int_(j['d']), int_(j['dp']), int_(j['dq']), int_(j['qi']), rsa.RSAPublicNumbers(int_(j['e']), int_(j['n']))).private_key()
     pubS = prv.public_key()
     res = []
-    for f in files:
-        bx = json.load(open(f))
-        k = prv.decrypt(base64.b64decode(bx['ek']), oaep)
-        m = json.loads(AESGCM(k).decrypt(base64.b64decode(bx['iv']), base64.b64decode(bx['ct']), None))
+    for f in files + FSET:
+        if isinstance(f, dict): m = f; f = 'fset243'
+        else:
+            bx = json.load(open(f))
+            k = prv.decrypt(base64.b64decode(bx['ek']), oaep)
+            m = json.loads(AESGCM(k).decrypt(base64.b64decode(bx['iv']), base64.b64decode(bx['ct']), None))
         if m.get('step') == 'restore205':
             m = restore205(m)
             if not m: res.append({'f': os.path.basename(f), 'r': {'err': 'restore-empty'}}); continue
