@@ -419,6 +419,19 @@ if REQ.get('fset243'):
         out[p_] = {'d': json.dumps(d_, ensure_ascii=False), 'h0': e_[0]['h']}; lg.append({p_: {'old': old_, 'new': flds}})
     log['fset243'] = lg
     if out: FSET.append({'step': 'put205', 'docs': out})
+# v243b: {"qset243":{"<معرّف سجل القيد i>":{"y":"2027-2026"}}} — تعديل حقول سجل بالقيد العام (يدوّر عليه بكل قطع qaid)
+if REQ.get('qset243'):
+    want = dict(REQ['qset243']); out = {}; lg = []
+    for r0 in q("select p,h from docs where p like 'qaid/c%' and h<>'DEL'"):
+        p_ = r0['p']; t_ = ''.join(r['d'] for r in q("select d from chunks where id='d_" + p_.replace("'", "''") + "' order by i"))
+        if not t_: continue
+        d_ = json.loads(t_); ch = 0
+        for it in (d_.get('list') or []):
+            if it.get('i') in want:
+                lg.append({'i': it.get('i'), 'pg': it.get('pg'), 'old': {k_: it.get(k_) for k_ in want[it['i']]}, 'new': want[it['i']]}); it.update(want[it['i']]); ch = 1
+        if ch: out[p_] = {'d': json.dumps(d_, ensure_ascii=False), 'h0': r0['h']}
+    log['qset243'] = lg
+    if out: FSET.append({'step': 'put205', 'docs': out})
 if REQ.get('only'): files = [f for f in files if os.path.basename(f) in REQ['only']]
 if files or FSET:
     kv = {r['k']: r['v'] for r in q("select k,v from kv where k in ('PK','SECRET')")}
