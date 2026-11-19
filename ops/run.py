@@ -93,6 +93,7 @@ if REQ.get('tgrchk'):
     log['tgr_cols'] = [r.get('name') for r in q("pragma table_info(tgr)")]
     log['tgr_by_t'] = q("select tkey,count(*) n,max(date) d from tgr group by tkey")
     log['e246'] = q("select v from kv where k='E246'")
+    log['tgr_recent'] = q("select tkey,subj,label,skey,val,x,substr(note,1,20) note,date from tgr where date>'2026-11-19T18:00' order by date desc limit 120")
 # v226: فحص حي للخادم — النسخة العامة بدون أسماء للصفحة الجديدة (بدون ما يطبع أي اسم)
 if REQ.get('chk226'):
     import urllib.request as _u, gzip as _gz, base64 as _b
