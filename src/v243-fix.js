@@ -92,7 +92,22 @@
      - تعديل رقم الصفحة للطالب بالقوائم (أ ← ب): إذا ماكو سجل بالصفحة ب، سجله القديم (أ) ينتقل لـ ب بشرط ما مربوط بطالب ثاني.
      - تعديل رقم الصفحة بسجل القيد (أ ← ب): الطالب المربوط بـ أ يصير ب. */
   const SNAP243 = new Map();
-  const snap = () => { try { (typeof ST != "undefined" ? ST : []).forEach(x => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg) })); } catch (e) { } };
+  const snap = () => { try { (typeof ST != "undefined" ? ST : []).forEach(x => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg), raw: x.pg })); } catch (e) { } };
+  /* v243d: تنبيه قبل ربط طالب برقم صفحة مربوط بطالب ثاني (أو صفحة قيد باسم شخص ثاني) — يجوز انكتب بالغلط */
+  const tok2 = n => NZ(n).split(" ").slice(0, 2).join(" ");
+  function pgWarn(x, pg) {
+    try {
+      const others = (ST || []).filter(y => y.id != x.id && !y.x && pgK(y.pg) == pg);
+      const AR = v => typeof toAr == "function" ? toAr(v) : v;
+      if (others.length) return "رقم الصفحة " + AR(pg) + " في القيد العام مرتبط بالطالب " + others.map(y => "«" + y.n + "» (" + (y.s || "") + ")").join("، ");
+      if (typeof QD != "undefined" && QD.length) {
+        const r = QD.filter(r => pgK(r.pg) == pg);
+        const bad = r.filter(r => tok2(r.n) != tok2(x.n) && !(pName(x) && tok2(r.n) == tok2(pName(x))));
+        if (r.length && bad.length == r.length) return "رقم الصفحة " + AR(pg) + " في القيد العام مرتبط باسم " + bad.map(r => "«" + r.n + "»" + (r.y ? " (" + AR(r.y) + ")" : "")).join("، ");
+      }
+    } catch (e) { }
+    return "";
+  }
   const PEND = [];
   const qReady = () => typeof QD != "undefined" && QD.length && (typeof QREADY == "undefined" || QREADY);
   function applyQ() {
@@ -125,6 +140,19 @@
     if (P.st._v243) return true;
     const _st = P.st;
     P.st = function () {
+      on(() => {
+        if (!SNAP243.size) return;
+        (ST || []).forEach(x => {
+          const o = SNAP243.get(x.id); if (!o) return; const pg = pgK(x.pg);
+          if (!pg || pg == o.pg) return;
+          const w = pgWarn(x, pg); if (!w) return;
+          /* طلب المستخدم: ما يقبل يحفظ أبداً — يرجع الرقم السابق ويبيّن لمن الصفحة */
+          if (o.raw) x.pg = o.raw; else delete x.pg;
+          const msg = "لا يمكن حفظ رقم الصفحة للطالب «" + x.n + "»: " + w + ".";
+          try { toast(msg, "err"); } catch (e) { }
+          try { setTimeout(() => alert(msg + "\n\nأُعيد رقم الصفحة السابق، وحُفظت باقي التعديلات."), 50); } catch (e) { }
+        });
+      });
       on(() => {
         if (!SNAP243.size) return;
         (ST || []).forEach(x => {
