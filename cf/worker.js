@@ -459,7 +459,7 @@ async function tgrade202_(b, y) {
   for (const r of (b.rows || []).slice(0, 600)) {
     const sk = String(r[0] || ''), v = String(r[1] == null ? '' : r[1]).trim().slice(0, 20), nt = String(r[2] || '').slice(0, 200);
     /* v246: تفصيل الشهري (تحريري/شفهي) «تحريري/من+شفهي/من» مثل «30/70+22/30» */
-    const xx = /^[0-9.غم]{0,6}\/\d{1,3}\+[0-9.غم]{0,6}\/\d{1,3}$/.test(String(r[3] || '')) ? String(r[3]) : '';
+    const x0 = String(r[3] || ''), xx = x0.length <= 240 && (/^[0-9.غم]{0,6}\/\d{1,3}\+[0-9.غم]{0,6}\/\d{1,3}$/.test(x0) || /^b(\|[^|:\/]{1,20}:[0-9.غم]{0,6}\/\d{1,3}){1,10}$/.test(x0)) ? x0 : '';
     if (!studs.has(sk)) continue;
     const subj = fixSj233_(M, y.key, sk, subj0);
     const id = await tgId233_(y.key, label, subj, sk);
