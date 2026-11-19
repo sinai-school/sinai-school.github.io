@@ -88,6 +88,11 @@ if isinstance(REQ.get('ga244'), list):
     q("insert into kv(k,v) values('GA244','%s') on conflict(k) do update set v=excluded.v" % _v)
     q("insert into kv(k,v) values('PRIVV','ga%d') on conflict(k) do update set v=excluded.v" % int(time.time()))
     log['ga244'] = _ga
+# v247: فحص جدول درجات المدرسين (الأعمدة وعدد الصفوف لكل مدرس) — بدون أسماء طلاب
+if REQ.get('tgrchk'):
+    log['tgr_cols'] = [r.get('name') for r in q("pragma table_info(tgr)")]
+    log['tgr_by_t'] = q("select tkey,count(*) n,max(date) d from tgr group by tkey")
+    log['e246'] = q("select v from kv where k='E246'")
 # v226: فحص حي للخادم — النسخة العامة بدون أسماء للصفحة الجديدة (بدون ما يطبع أي اسم)
 if REQ.get('chk226'):
     import urllib.request as _u, gzip as _gz, base64 as _b
