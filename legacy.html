@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v247-2026-11-19T21:40:00.000Z-v247";
+<script>window.APP_VER = "2k7v248-2026-11-19T21:45:00.000Z-v248";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -29502,6 +29502,14 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         return;
       }
     }
+    {
+      const b = D.getElementById("gb_" + sk);
+      if (b) {
+        b.value = v;
+        W.v247Sum(sk);
+        return;
+      }
+    }
     g2.value = v;
     g2.classList.toggle("red235", W.gRed235(v, G.lbl));
     const c = D.getElementById("gq_" + sk);
@@ -29611,7 +29619,29 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     });
     return L.length ? L : secs;
   }
-  const OR246 = /اسلام|إسلام|عربي|عربية|انكليز|إنكليز|انجليز|إنجليز/;
+  const OR246 = /انكليز|إنكليز|انجليز|إنجليز/;
+  const AR247 = /عربي|عربية/;
+  const xb247 = (x) => {
+    if (!/^b\|/.test(String(x || ""))) return null;
+    return String(x).slice(2).split("|").map((p) => {
+      const m = /^(.+):([^\/]*)\/(\d+)$/.exec(p);
+      return m ? { n: m[1], v: m[2], m: +m[3] } : null;
+    }).filter(Boolean);
+  };
+  const xbEnc247 = (L) => L.length ? "b|" + L.map((o) => String(o.n).replace(/[|:\/]/g, " ").trim().slice(0, 20) + ":" + o.v + "/" + o.m).join("|") : "";
+  const xbSum247 = (L) => {
+    let S = 0, M = 0, mm = 0, gg = 0, n = 0;
+    L.forEach((o) => {
+      const v = String(o.v);
+      if (v === "") return;
+      n++;
+      M += o.m;
+      if (v === "م") mm++;
+      else if (v === "غ") gg++;
+      else S += +v || 0;
+    });
+    return { S: Math.round(S * 100) / 100, M, mm, gg, n };
+  };
   const n246 = (v) => String(v == null ? "" : v).trim().replace(/[٠-٩]/g, (c) => c.charCodeAt(0) - 1632).replace(",", ".").replace(/^(غائب|غياب)$/, "غ").replace(/^(مؤجل|موجل)$/, "م");
   const xp246 = (x) => {
     const m = /^([^\/+]*)\/(\d+)\+([^\/+]*)\/(\d+)$/.exec(String(x || ""));
@@ -29657,11 +29687,83 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const q = g2("gq_");
     if (q) q.hidden = !!(a || b);
   };
+  const brList247 = () => ["القواعد", "الأدب", .../^السادس الأدبي/.test(G.sec || "") ? ["النقد"] : [], "الإنشاء"];
+  const brKey247 = () => "ar247_" + (PS.key || "") + "|" + (G.sj || "") + "|" + (G.sec || "") + "|" + (G.lbl || "") + "|" + (G.br || "");
+  function brMax247() {
+    let v = null;
+    try {
+      v = localStorage.getItem(brKey247());
+    } catch (e) {
+    }
+    if (v && +v > 0 && +v <= 100) return +v;
+    const st2 = new Set(((PS.b && PS.b.private || {}).studs2 || []).filter((x) => x[2] == G.sec).map((x) => x[0]));
+    for (const r of G.rows || []) {
+      if (r.label != G.lbl || r.subj != G.sj || !st2.has(r.skey)) continue;
+      const L = xb247(r.x);
+      const o = L && L.find((o2) => o2.n == G.br);
+      if (o) return o.m;
+    }
+    return 0;
+  }
+  W.v247Br = (v) => {
+    if (v == "__o") {
+      const n = (prompt("اكتب اسم الفرع (مثلاً: الإملاء)") || "").replace(/[|:\/]/g, " ").trim().slice(0, 20);
+      if (!n) {
+        prender();
+        return;
+      }
+      G.br = n;
+    } else G.br = v;
+    prender();
+  };
+  W.v247Mx = (v) => {
+    const n = +String(v || "").replace(/[٠-٩]/g, (c) => c.charCodeAt(0) - 1632);
+    if (!(n > 0 && n <= 100)) {
+      T0("درجة الفرع بين ١ و١٠٠", "err");
+      prender();
+      return;
+    }
+    try {
+      localStorage.setItem(brKey247(), String(n));
+    } catch (e) {
+    }
+    prender();
+  };
+  const brMerge247 = (sk, val) => {
+    const L = (xb247(tgVal(sk).x) || []).filter((o) => o.n != G.br);
+    if (val !== "") L.push({ n: G.br, v: val, m: brMax247() });
+    const K = brList247();
+    L.sort((a, b) => (K.indexOf(a.n) + 1 || 99) - (K.indexOf(b.n) + 1 || 99));
+    return L;
+  };
+  W.v247Sum = (sk) => {
+    const b = D.getElementById("gb_" + sk), t = D.getElementById("gv_" + sk), m = D.getElementById("gm_" + sk);
+    if (!b || !t) return;
+    const v = n246(b.value), X = brMax247();
+    b.classList.toggle("red235", red246(v, X || 100));
+    const s = xbSum247(brMerge247(sk, v));
+    t.value = s.n ? s.mm ? "م" : s.gg == s.n ? "غ" : String(s.S) : "";
+    t.classList.toggle("red235", s.n && s.M ? s.gg == s.n || s.S < s.M / 2 : false);
+    if (m) m.textContent = s.M ? "من " + A(s.M) : "";
+    const q = D.getElementById("gq_" + sk);
+    if (q) q.hidden = !!b.value.trim();
+  };
   W.gX246 = (x) => {
+    {
+      const L = xb247(x);
+      if (L) return L.map((o) => o.n + " " + A(o.v === "" ? "—" : o.v) + " من " + A(o.m)).join(" + ");
+    }
     const p = xp246(x);
     return p ? "تحريري " + A(p.w || "—") + " من " + A(p.X) + (p.o === "" ? " (الشفهي لم يُرسل بعد)" : " + شفهي " + A(p.o) + " من " + A(p.O)) : "";
   };
   W.gShow246 = (v, x, l) => {
+    {
+      const L = xb247(x);
+      if (L && (v === "" || v == null)) {
+        const s = xbSum247(L);
+        return s.n ? { t: (s.gg == s.n ? "غ" : A(s.S)) + " من " + A(s.M), red: s.gg == s.n || s.S < s.M / 2 } : { t: "", red: false };
+      }
+    }
     const p = xp246(x);
     if ((v === "" || v == null) && p && p.w !== "") return { t: A(p.w) + " من " + A(p.X), red: red246(p.w, p.X) };
     return { t: W.gVal235(v, l), red: W.gRed235(v, l) };
@@ -29684,19 +29786,26 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const lblOpts = LBL.map((l) => '<option value="'.concat(E(l), '" ').concat(l == G.lbl || isEx && l == "امتحان يومي" ? "selected" : "", ">").concat(E(l == "امتحان يومي" ? "امتحان يومي (تحدد درجته الكلية — منفصل لا يدخل بأي معدل)" : /^الشهر الثالث/.test(l) ? l + " (اختياري)" : /^معدل الفصل/.test(l) ? l + " (يُحسب تلقائياً)" : W.gLbl235(l)), "</option>")).join("");
     const sem244 = /الفصل الأول/.test(G.lbl) ? "a" : /الفصل الثاني/.test(G.lbl) ? "b" : "";
     const mF = sem244 && /^(الشهر الثالث|معدل الفصل)/.test(G.lbl) ? '<label class="wide">معدل الفصل إذا أُرسل شهر ثالث<select onchange="v244Meth(\''.concat(sem244, '\',this.value)"><option value="3" ').concat(W.tgMeth244(sem244) == "3" ? "selected" : "", '>مجموع الأشهر الثلاثة ÷ ٣</option><option value="2" ').concat(W.tgMeth244(sem244) == "2" ? "selected" : "", ">أعلى درجتين من الثلاثة ÷ ٢</option></select></label>") : "";
+    const arb = /^الشهر/.test(G.lbl) && AR247.test(G.sj || ""), BRL = arb ? brList247() : [];
+    if (arb && !G.br) G.br = BRL[0];
+    const BX = arb ? brMax247() : 0;
+    const brF = arb ? '<label>فرع المادة<select onchange="v247Br(this.value)">'.concat([...BRL, ...BRL.includes(G.br) ? [] : [G.br]].map((b) => '<option value="'.concat(E(b), '" ').concat(b == G.br ? "selected" : "", ">").concat(E(b), "</option>")).join(""), '<option value="__o">فرع آخر (اكتبه)…</option></select></label><label>درجة الفرع من<input inputmode="decimal" placeholder="مثلاً ٣٠" value="').concat(BX ? E(A(BX)) : "", '" onchange="v247Mx(this.value)"></label>') : "";
     const oral = /^الشهر/.test(G.lbl) && OR246.test(G.sj || ""), OX = oral ? ox246() : 100, OO = 100 - OX, split = oral && OX < 100;
     const oxF = oral ? '<label>الامتحان التحريري من<select onchange="v246Ox(this.value)">'.concat([100, 95, 90, 85, 80, 75, 70, 65, 60, 50].map((n) => '<option value="'.concat(n, '" ').concat(n == OX ? "selected" : "", ">").concat(A(n)).concat(n == 100 ? " (بدون شفهي)" : " — والشفهي من " + A(100 - n), "</option>")).join(""), "</select></label>") : "";
     const exF = isEx ? '<label>تاريخ الامتحان<input type="date" value="'.concat(E(DX.d), '" onchange="G202.dx.d=this.value||G202.dx.d;prender()"></label><label>الدرجة الكلية (من)<input inputmode="decimal" value="').concat(E(A(DX.m)), '" onchange="v235Max(this.value)"></label><label class="wide">موضوع الامتحان (اختياري)<input value="').concat(E(DX.t), '" maxlength="25" placeholder="مثلاً: الفصل الثاني" onchange="G202.dx.t=this.value.replace(/—/g,\'-\').trim().slice(0,25);prender()"></label>') : "";
     const rows = L.map((x, i) => {
       const v = tgVal(x[0]), au = !v.v && W.tgAuto219 ? W.tgAuto219(x[0]) : "";
-      return "<tr><td>".concat(A(i + 1), '</td><td class="l">').concat(E(x[1]), "</td><td>").concat(split ? (() => {
+      return "<tr><td>".concat(A(i + 1), '</td><td class="l">').concat(E(x[1]), "</td><td>").concat(arb ? (() => {
+        const L2 = xb247(v.x) || [], o = L2.find((o2) => o2.n == G.br), cur = o ? o.v : "", s = xbSum247(L2);
+        return '<span class="sp246"><label>'.concat(E(G.br), '<input id="gb_').concat(E(x[0]), '" inputmode="decimal" maxlength="5" value="').concat(E(cur), '" oninput="v247Sum(\'').concat(E(x[0]), '\')" class="').concat(red246(cur, BX || 100) ? "red235" : "", '"><small>من ').concat(BX ? A(BX) : "؟", '</small></label><label>المجموع<input id="gv_').concat(E(x[0]), '" readonly tabindex="-1" value="').concat(s.n ? E(s.mm ? "م" : s.gg == s.n ? "غ" : String(s.S)) : "", '" class="tot246').concat(s.n && s.M && (s.gg == s.n || s.S < s.M / 2) ? " red235" : "", '"><small id="gm_').concat(E(x[0]), '">').concat(s.M ? "من " + A(s.M) : "", "</small></label></span>");
+      })() : split ? (() => {
         const px = xp246(v.x), w = px && px.X == OX ? px.w : "", o = px && px.X == OX ? px.o : "";
         return '<span class="sp246"><label>تحريري<input id="gw_'.concat(E(x[0]), '" inputmode="decimal" maxlength="5" value="').concat(E(w), '" oninput="v246Sum(\'').concat(E(x[0]), '\')" class="').concat(red246(w, OX) ? "red235" : "", '"><small>من ').concat(A(OX), '</small></label><label>شفهي<input id="go_').concat(E(x[0]), '" inputmode="decimal" maxlength="5" value="').concat(E(o), '" oninput="v246Sum(\'').concat(E(x[0]), '\')" class="').concat(red246(o, OO) ? "red235" : "", '"><small>من ').concat(A(OO), '</small></label><label>المجموع<input id="gv_').concat(E(x[0]), '" readonly tabindex="-1" value="').concat(E(v.v), '" class="tot246').concat(W.gRed235(v.v, G.lbl) ? " red235" : "", '"><small>من ١٠٠</small></label></span>');
       })() : '<input id="gv_'.concat(E(x[0]), '" inputmode="').concat(/امتحان/.test(G.lbl) ? "text" : "decimal", '" value="').concat(E(v.v || au), '" maxlength="6" oninput="this.classList.toggle(\'red235\',gRed235(this.value,G202.lbl));var q=document.getElementById(\'gq_').concat(E(x[0]), '\');if(q)q.hidden=!!this.value.trim()" class="').concat(au ? "au219" : "").concat(W.gRed235(v.v || au, G.lbl) ? " red235" : "", '"').concat(au ? ' title="محسوبة تلقائياً — راجعها واضغط إرسال"' : "", ">").concat(isEx ? ' <span class="sub">من '.concat(A(DX.m), "</span>") : ""), '</td><td class="nt244"><span id="gq_').concat(E(x[0]), '" class="q244"').concat(v.v || au ? " hidden" : "", '><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), '\',\'غ\')">غ غائب</button><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), "','م')\">م مؤجل</button></span><input id=\"gn_").concat(E(x[0]), '" value="').concat(E(v.n), '" placeholder="ملاحظة… (أحسنت)" maxlength="100" style="text-align:right"></td><td><button class="btn ghost sm" onclick="v202GSend(\'').concat(E(x[0]), "')\">إرسال</button></td></tr>");
     }).join("");
     const sjSel = SJ.length ? "<label>١ — المادة<select onchange=\"G202.sj=this.value;G202.sec='';prender()\">".concat(SJ.length > 1 ? '<option value="" '.concat(G.sj ? "" : "selected", ">— اختر المادة —</option>") : "").concat(SJ.map((s) => "<option ".concat(s == G.sj ? "selected" : "", ">").concat(E(s), "</option>")).join(""), "</select></label>") : "";
     const secSel = "<label>".concat(SJ.length ? "٢ — " : "", "الصف والشعبة<select ").concat(SS.length ? "" : "disabled", ' onchange="G202.sec=this.value;prender()">').concat(SS.length == 1 ? "" : '<option value="" '.concat(G.sec ? "" : "selected", ">").concat(SS.length ? "— اختر الصف والشعبة —" : "اختر المادة أولاً", "</option>")).concat(SS.map((s) => "<option ".concat(s == G.sec ? "selected" : "", ">").concat(E(s), "</option>")).join(""), "</select></label>");
-    return '<div class="box g202"><h3>'.concat(I("pen"), ' درجات طلابي</h3><p class="muted" style="margin:0 0 8px">تصل الدرجة إلى صفحة الطالب فوراً. يمكنك إرسالها لطالب واحد (زر «إرسال» بجانب اسمه) أو للشعبة كلها دفعة واحدة، وتعديلها في أي وقت وإرسالها مجدداً.</p>\n    <div class="fgrid">').concat(sjSel).concat(secSel, '\n    <label class="wide">نوع الدرجة<select onchange="G202.lbl=this.value;prender()">').concat(lblOpts, "</select></label>").concat(exF).concat(mF).concat(oxF, "</div>").concat(split ? '<p class="muted" style="margin:6px 0 0">اكتب درجة <b>التحريري (من '.concat(A(OX), ")</b> ودرجة <b>الشفهي (من ").concat(A(OO), ")</b>، ويُحسب المجموع (من ١٠٠) تلقائياً. التحريري أقل من ").concat(A(OX / 2), " يظهر بالأحمر. يمكنك إرسال التحريري وحده الآن، وإضافة الشفهي لاحقاً وإرساله فيكتمل المجموع.</p>") : "", '<p class="muted" style="margin:6px 0 0;font-size:12px">امتحان نصف السنة وامتحان آخر السنة والدرجة النهائية والدور الثاني تُدخلها الإدارة.</p>').concat(ready ? '<p class="g234" style="margin:8px 0;padding:8px 10px;border:1px solid #c9a44c;border-radius:10px;background:#fbf7ea"><b>تُدخل الآن درجات: '.concat(G.sj ? "مادة «" + E(G.sj) + "» — " : "").concat(E(G.sec), " — ").concat(E(W.gLbl235(G.lbl))).concat(isEx ? " (من " + A(DX.m) + ")" : "", '</b></p><p class="muted g219">اكتب <b>غ</b> للغائب (يُحسب صفر) و<b>م</b> للمؤجل.').concat(W.tgIsAuto219 && W.tgIsAuto219() ? " هذه الدرجة تُحسب تلقائياً من الدرجات التي أرسلتها (الخضراء محسوبة) — راجعها واضغط «إرسال»." : "", '</p>\n    <div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th><th>').concat(split ? "الدرجة (تحريري + شفهي = المجموع)" : "الدرجة", "</th><th>ملاحظات</th><th></th></tr>").concat(rows || '<tr><td colspan="5" class="muted">لا يوجد طلاب في هذه الشعبة</td></tr>', '</table></div>\n    <div class="tools"><button class="btn" id="gs_all" onclick="v202GSend()">').concat(I("upload"), ' إرسال درجات الشعبة كلها</button><button class="btn ghost sm" onclick="v202GLoad()">').concat(I("rld"), " تحديث</button></div>") : '<p class="muted" style="margin:10px 0 0"><b>'.concat(!G.sj && SJ.length ? "اختر المادة أولاً، ثم الصف والشعبة" : "اختر الصف والشعبة", "</b> لتظهر قائمة الطلاب وتُدخل الدرجات.</p>"), '</div>\n    <div class="box"><h3>').concat(I("print"), ' طباعة طلابي</h3><p class="muted" style="margin:0 0 8px">لكل شعبة ورقة. اختر نوع السجل والصيغة:</p>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'n\',\'pdf\')">أسماء الطلاب PDF</button><button class="btn ghost sm" onclick="v202TP(\'n\',\'docx\')">أسماء الطلاب Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'a\',\'pdf\')">سجل الحضور PDF</button><button class="btn ghost sm" onclick="v202TP(\'a\',\'docx\')">سجل الحضور Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'g\',\'pdf\')">سجل الدرجات (القالب المعتمد) PDF</button><button class="btn ghost sm" onclick="v202TP(\'g\',\'docx\')">سجل الدرجات Word</button></div></div>');
+    return '<div class="box g202"><h3>'.concat(I("pen"), ' درجات طلابي</h3><p class="muted" style="margin:0 0 8px">تصل الدرجة إلى صفحة الطالب فوراً. يمكنك إرسالها لطالب واحد (زر «إرسال» بجانب اسمه) أو للشعبة كلها دفعة واحدة، وتعديلها في أي وقت وإرسالها مجدداً.</p>\n    <div class="fgrid">').concat(sjSel).concat(secSel, '\n    <label class="wide">نوع الدرجة<select onchange="G202.lbl=this.value;prender()">').concat(lblOpts, "</select></label>").concat(exF).concat(mF).concat(oxF).concat(brF, "</div>").concat(arb ? '<p class="muted" style="margin:6px 0 0">اختر الفرع واكتب درجته الكلية (من كم امتحنتهم)، ثم أدخل الدرجات وأرسلها. كرّر ذلك لكل فرع، ويُجمع الشهري من الفروع تلقائياً، ويكتمل عندما يصبح مجموع درجات الفروع ١٠٠.'.concat(BX ? "" : " <b>اكتب درجة الفرع أولاً.</b>", "</p>") : "").concat(split ? '<p class="muted" style="margin:6px 0 0">اكتب درجة <b>التحريري (من '.concat(A(OX), ")</b> ودرجة <b>الشفهي (من ").concat(A(OO), ")</b>، ويُحسب المجموع (من ١٠٠) تلقائياً. التحريري أقل من ").concat(A(OX / 2), " يظهر بالأحمر. يمكنك إرسال التحريري وحده الآن، وإضافة الشفهي لاحقاً وإرساله فيكتمل المجموع.</p>") : "", '<p class="muted" style="margin:6px 0 0;font-size:12px">امتحان نصف السنة وامتحان آخر السنة والدرجة النهائية والدور الثاني تُدخلها الإدارة.</p>').concat(ready ? '<p class="g234" style="margin:8px 0;padding:8px 10px;border:1px solid #c9a44c;border-radius:10px;background:#fbf7ea"><b>تُدخل الآن درجات: '.concat(G.sj ? "مادة «" + E(G.sj) + "» — " : "").concat(E(G.sec), " — ").concat(E(W.gLbl235(G.lbl))).concat(isEx ? " (من " + A(DX.m) + ")" : "", '</b></p><p class="muted g219">اكتب <b>غ</b> للغائب (يُحسب صفر) و<b>م</b> للمؤجل.').concat(W.tgIsAuto219 && W.tgIsAuto219() ? " هذه الدرجة تُحسب تلقائياً من الدرجات التي أرسلتها (الخضراء محسوبة) — راجعها واضغط «إرسال»." : "", '</p>\n    <div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th><th>').concat(arb ? "درجة الفرع والمجموع" : split ? "الدرجة (تحريري + شفهي = المجموع)" : "الدرجة", "</th><th>ملاحظات</th><th></th></tr>").concat(rows || '<tr><td colspan="5" class="muted">لا يوجد طلاب في هذه الشعبة</td></tr>', '</table></div>\n    <div class="tools"><button class="btn" id="gs_all" onclick="v202GSend()">').concat(I("upload"), ' إرسال درجات الشعبة كلها</button><button class="btn ghost sm" onclick="v202GLoad()">').concat(I("rld"), " تحديث</button></div>") : '<p class="muted" style="margin:10px 0 0"><b>'.concat(!G.sj && SJ.length ? "اختر المادة أولاً، ثم الصف والشعبة" : "اختر الصف والشعبة", "</b> لتظهر قائمة الطلاب وتُدخل الدرجات.</p>"), '</div>\n    <div class="box"><h3>').concat(I("print"), ' طباعة طلابي</h3><p class="muted" style="margin:0 0 8px">لكل شعبة ورقة. اختر نوع السجل والصيغة:</p>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'n\',\'pdf\')">أسماء الطلاب PDF</button><button class="btn ghost sm" onclick="v202TP(\'n\',\'docx\')">أسماء الطلاب Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'a\',\'pdf\')">سجل الحضور PDF</button><button class="btn ghost sm" onclick="v202TP(\'a\',\'docx\')">سجل الحضور Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'g\',\'pdf\')">سجل الدرجات (القالب المعتمد) PDF</button><button class="btn ghost sm" onclick="v202TP(\'g\',\'docx\')">سجل الدرجات Word</button></div></div>');
   }
   W.v202GLoad = () => tgLoad(1);
   W.v202GSend = async function(one) {
@@ -29713,7 +29822,18 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         return T0("هذه المادة ليست لهذه الشعبة — اختر الصف والشعبة من جديد", "err");
       }
     }
-    const rows = L.map((x) => [x[0], ((D.getElementById("gv_" + x[0]) || {}).value || "").trim(), ((D.getElementById("gn_" + x[0]) || {}).value || "").trim()]).filter((r) => one || r[1] !== "" || r[2] || ((D.getElementById("gw_" + r[0]) || {}).value || "").trim());
+    const rows = L.map((x) => [x[0], ((D.getElementById("gv_" + x[0]) || {}).value || "").trim(), ((D.getElementById("gn_" + x[0]) || {}).value || "").trim()]).filter((r) => one || r[1] !== "" || r[2] || ((D.getElementById("gw_" + r[0]) || {}).value || "").trim() || ((D.getElementById("gb_" + r[0]) || {}).value || "").trim());
+    if (/^الشهر/.test(G.lbl) && AR247.test(G.sj || "")) {
+      const X = brMax247();
+      if (!X) return T0("اكتب درجة الفرع (من كم) أولاً", "err");
+      for (const r of rows) {
+        const v = n246((D.getElementById("gb_" + r[0]) || {}).value), nm = (L.find((x) => x[0] == r[0]) || [])[1] || "";
+        if (v !== "" && v !== "غ" && v !== "م" && !(/^\d{1,3}(\.\d{1,2})?$/.test(v) && +v <= X)) return T0("درجة " + G.br + " أكبر من " + A(X) + " أو غير صحيحة: " + nm, "err");
+        const BL = brMerge247(r[0], v), s = xbSum247(BL);
+        r[3] = xbEnc247(BL);
+        r[1] = s.n && s.M == 100 ? s.mm ? "م" : s.gg == s.n ? "غ" : String(s.S) : "";
+      }
+    }
     {
       const X = /^الشهر/.test(G.lbl) && OR246.test(G.sj || "") ? ox246() : 100;
       if (X < 100) for (const r of rows) {
