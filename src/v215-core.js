@@ -403,15 +403,66 @@ input,select,textarea{max-width:100%;min-width:0}
     }
     redraw();
   };
+  /* v247 (طلب المستخدم: «فرّقلي درجات المدرسين لا تسويهن هوسة»):
+     أيقونات المدرسين ← المادة والصف (جغرافية — الرابع الأدبي) ← الشعب (أ، ب) ← جدول الدرجات.
+     النقر يحدّث هذا الصندوق فقط (بدون إعادة رسم الصفحة) فما ترجع الصفحة لبدايتها وما يصير تعليق. */
+  W.TG247 = 1;
+  const S247 = W.S247 = W.S247 || { t: "", g: "", s: "" }, R247 = {};
+  const LORD = ["الشهر الأول — الفصل الأول", "الشهر الثاني — الفصل الأول", "الشهر الثالث — الفصل الأول", "معدل الفصل الأول", "امتحان نصف السنة", "الشهر الأول — الفصل الثاني", "الشهر الثاني — الفصل الثاني", "الشهر الثالث — الفصل الثاني", "معدل الفصل الثاني", "السعي السنوي", "امتحان آخر السنة", "الدرجة النهائية", "امتحان الإكمال (الدور الثاني)"];
+  let STIX = null, STIXn = -1;
+  const stuOf = k => { on(() => { const L = typeof ST != "undefined" ? ST : []; if (!STIX || STIXn !== L.length) { STIX = {}; L.forEach(x => { STIX[x.id] = x; }); STIXn = L.length; } }); return (STIX || {})[k] || null; };
+  const unitsOf = f => { const o = []; on(() => { FSD.units(f).forEach(u => (u.secs || []).forEach(si => { const sec = (typeof SN != "undefined" ? SN : [])[si]; if (sec && u.sj) o.push([u.sj, sec]); })); }); return o; };
+  const gradeOf = sec => String(sec || "").replace(/\s+\S$/, "");
+  const secLetter = sec => { const m = String(sec || "").match(/\s(\S)$/); return m ? m[1] : sec; };
+  const box247 = () => { const el = D.querySelector(".tg247"); if (!el) { redraw(); return; } const y = el.getBoundingClientRect().top; let h = ""; on(() => { h = grBox((typeof APID != "undefined" && APID) || {}); }); const t = D.createElement("div"); t.innerHTML = h; const nb = t.firstElementChild; if (nb) el.replaceWith(nb); else redraw(); on(() => { const n2 = D.querySelector(".tg247"); if (!n2) return; let sc = n2.parentElement; while (sc && sc !== D.body && !(/(auto|scroll)/.test(getComputedStyle(sc).overflowY) && sc.scrollHeight > sc.clientHeight)) sc = sc.parentElement; if (!sc || sc === D.body) sc = D.scrollingElement; const top = sc === D.scrollingElement ? 0 : sc.getBoundingClientRect().top, d = n2.getBoundingClientRect().top - Math.max(0, top); if (d < 8) sc.scrollTop += d - 8; }); };
+  const load247 = async (t, n) => {
+    R247[t] = "…"; box247();
+    for (let k = 0; k < 2; k++) {
+      try { const x = await api({ a: "admin", secret: APIK.secret, op: "tgrT", tkey: t }, APIK.url); if (x && x.ok) { R247[t] = x.rows || []; break; } R247[t] = "err"; } catch (e) { R247[t] = "err"; }
+      if (k == 0) await new Promise(r => setTimeout(r, 1200));
+    }
+    if (S247.t == t) box247();
+  };
+  W.tg247 = (t, g, s) => { S247.t = t || ""; S247.g = g || ""; S247.s = s || ""; if (S247.t && (R247[S247.t] == null || R247[S247.t] == "err")) load247(S247.t); else box247(); };
+  W.tg247R = () => { if (S247.t) load247(S247.t); };
+  const shortL = l => (W.gLbl235 ? W.gLbl235(l) : l).replace(/ — الفصل الأول/, " (ف١)").replace(/ — الفصل الثاني/, " (ف٢)").replace(/^امتحان يومي/, "يومي");
+  const lOrd = l => { const i = LORD.indexOf(l); if (i >= 0) return [0, i, ""]; const d = (String(l).match(/\d{4}-\d{2}-\d{2}/) || [""])[0]; return [d ? 1 : 2, 0, d + l]; };
+  const cmpL = (a, b) => { const A1 = lOrd(a), B1 = lOrd(b); return A1[0] - B1[0] || A1[1] - B1[1] || A1[2].localeCompare(B1[2]); };
+  const q = s => E(s).replace(/'/g, "&#39;");
   function grBox(D0) {
-    const L = D0.tgc || [];
-    if (!L.length) return "";
-    return `<div class="box tg215"><h3>${I("pen")} تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال لعرض أسماء الطلاب ودرجاتهم.</p>${L.map((r, i) => {
-      const k = kOf(r), op = OPEN[k], d = DET[k];
-      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>'
-        : `<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>${sortD243(d).map((x, j) => `<tr><td>${AD(j + 1)}</td><td class="l">${E(sName(x.skey))}</td><td class="${W.gShow246 ? (W.gShow246(x.val, x.x, r.label).red ? "red" : "") : W.gRed235 && W.gRed235(x.val, r.label) ? "red" : ""}"><b>${E(x.val === "" && x.x && W.gShow246 ? W.gShow246(x.val, x.x, r.label).t : AD(x.val))}${W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : ""}</b></td><td class="l">${x.x && W.gX246 ? `<small class="muted">${E(W.gX246(x.x))}</small>${x.note ? "<br>" : ""}` : ""}${E(x.note || "")}</td><td>${E(FD(x.date))}</td></tr>`).join("")}</table></div>`;
-      return `<div class="tg215r"><button type="button" class="tg215h" onclick="tg215(${i})"><span><b>${E(r.tname || tName(r.tkey))}</b><small>${E(r.subj)} — ${E(W.gLbl235 ? W.gLbl235(r.label) : r.label)}</small></span><span class="chip">${AD(r.n)} طالب</span><span class="chip">${E(FD(r.d))}</span><span class="tg215c">${op ? "▲" : "▼"}</span></button>${body}</div>`;
-    }).join("")}</div>`;
+    const tgc = D0.tgc || [];
+    const by = {}; tgc.forEach(r => { if (!r.tkey) return; const o = by[r.tkey] = by[r.tkey] || { n: 0, d: "", name: r.tname }; o.n += +r.n || 0; if (String(r.d) > o.d) o.d = String(r.d); });
+    let staff = []; on(() => { staff = (typeof sortStf == "function" ? sortStf() : STF || []).filter(f => f && ((f.status || "مستمر") == "مستمر" && unitsOf(f).length || by[f.id])); });
+    const ids = new Set(staff.map(f => f.id)); Object.keys(by).forEach(k => { if (!ids.has(k)) staff.push({ id: k, name: by[k].name || k }); });
+    const head = t => `<div class="box tg215 tg247"><h3>${I("pen")} درجات المدرسين</h3>${t}</div>`;
+    /* (١) أيقونات المدرسين */
+    if (!S247.t) return head(`<p class="muted" style="margin:0 0 8px">اضغط على اسم المدرس لتظهر المواد والصفوف التي يدرّسها.</p><div class="g247">${staff.map(f => { const o = by[f.id]; return `<button type="button" class="c247${o ? "" : " z247"}" onclick="tg247('${q(f.id)}')"><b>${E(f.name)}</b><small>${o ? AD(o.n) + " درجة مرسلة — آخر إرسال " + E(FD(o.d)) : "لم يُرسل درجات بعد"}</small></button>`; }).join("")}</div>`);
+    const f = staff.find(x => x.id == S247.t) || { id: S247.t, name: (by[S247.t] || {}).name || tName(S247.t) || S247.t };
+    const R = R247[S247.t];
+    const nav = (...b) => `<div class="tools n247">${b.join("")}</div>`;
+    const bAll = `<button class="btn ghost sm" onclick="tg247('')">→ كل المدرسين</button>`, bRef = `<button class="btn ghost sm" onclick="tg247R()">تحديث</button>`;
+    if (R == "…" || R == null) return head(nav(bAll) + `<h4 class="h247">${E(f.name)}</h4><p class="muted">جارٍ التحميل…</p>`);
+    if (R == "err") return head(nav(bAll, bRef) + `<h4 class="h247">${E(f.name)}</h4><p class="muted">تعذّر التحميل — تأكد من الإنترنت ثم اضغط «تحديث».</p>`);
+    /* تجميع: المادة + الصف ← الشعب */
+    const G = {};
+    const add = (sj, sec, r) => { const k = sj + "|" + gradeOf(sec); const g = G[k] = G[k] || { k, sj, gr: gradeOf(sec), secs: {} }; const S = g.secs[sec] = g.secs[sec] || []; if (r) S.push(r); };
+    unitsOf(f).forEach(([sj, sec]) => add(sj, sec));
+    R.forEach(r => { const st = stuOf(r.skey); add(r.subj || "—", st ? st.s : "طلاب خارج القوائم", r); });
+    let SNx = []; on(() => { SNx = typeof SN != "undefined" ? SN : []; });
+    const sIx = sec => SNx.indexOf(sec) + 1 || 999;
+    const GL = Object.values(G).sort((a, b) => Math.min(...Object.keys(a.secs).map(sIx)) - Math.min(...Object.keys(b.secs).map(sIx)) || a.sj.localeCompare(b.sj, "ar"));
+    /* (٢) المادة والصف */
+    if (!S247.g || !G[S247.g]) return head(nav(bAll, bRef) + `<h4 class="h247">${E(f.name)}</h4><div class="g247">${GL.map(g => { const ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b)), n = ss.reduce((a, s) => a + g.secs[s].length, 0); return `<button type="button" class="c247${n ? "" : " z247"}" onclick="tg247('${q(S247.t)}','${q(g.k)}')"><b>${E(g.sj)} — ${E(g.gr)}</b><small>الشعب: ${ss.map(s => E(secLetter(s))).join("، ")} — ${n ? AD(n) + " درجة" : "لا توجد درجات بعد"}</small></button>`; }).join("") || '<p class="muted">لا توجد شعب.</p>'}</div>`);
+    /* (٣) الشعب + جدول الدرجات */
+    const g = G[S247.g], ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b));
+    const sec = ss.includes(S247.s) ? S247.s : ss[0], rows = g.secs[sec] || [];
+    const tabs = `<div class="s247">${ss.map(s => `<button type="button" class="${s == sec ? "on" : ""}" onclick="tg247('${q(S247.t)}','${q(g.k)}','${q(s)}')">شعبة ${E(secLetter(s))}<small>${AD(g.secs[s].length)}</small></button>`).join("")}</div>`;
+    const labs = [...new Set(rows.map(r => r.label))].sort(cmpL);
+    let studs = []; on(() => { studs = (typeof STA == "function" ? STA() : ST || []).filter(x => x.s == sec); });
+    const have = new Set(studs.map(x => x.id)); rows.forEach(r => { if (!have.has(r.skey)) { have.add(r.skey); studs.push(stuOf(r.skey) || { id: r.skey, n: r.skey }); } });
+    const M = {}; rows.forEach(r => { M[r.skey + "|" + r.label] = r; });
+    const cell = (sk, l) => { const r = M[sk + "|" + l]; if (!r) return "<td></td>"; const sh = W.gShow246 ? W.gShow246(r.val, r.x, l) : { t: AD(r.val), red: W.gRed235 && W.gRed235(r.val, l) }; const sub = [r.x && W.gX246 ? W.gX246(r.x) : "", r.note || ""].filter(Boolean).join(" — "); return `<td class="${sh.red ? "red" : ""}"><b>${E(sh.t)}</b>${sub ? `<br><small class="muted">${E(sub)}</small>` : ""}</td>`; };
+    return head(nav(`<button class="btn ghost sm" onclick="tg247('${q(S247.t)}')">→ مواد ${E(f.name)}</button>`, bAll, bRef) + `<h4 class="h247">${E(f.name)} — ${E(g.sj)} — ${E(g.gr)}</h4>${tabs}${labs.length ? `<div class="tw"><table class="t247"><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(shortL(l))}</th>`).join("")}</tr>${studs.map((x, i) => `<tr><td>${AD(i + 1)}</td><td class="l">${E(x.n)}</td>${labs.map(l => cell(x.id, l)).join("")}</tr>`).join("")}</table></div>` : '<p class="muted">لم يُرسل المدرس درجات لهذه الشعبة بعد.</p>'}`);
   }
   function attHTML(files) {
     let F = []; try { F = typeof files == "string" ? JSON.parse(files || "[]") : (files || []); } catch (e) { F = []; }
@@ -441,6 +492,7 @@ input,select,textarea{max-width:100%;min-width:0}
 .tg215h>span:first-child{flex:1 1 180px;display:grid;gap:2px}.tg215h small{color:var(--muted);font-size:12.5px}.tg215c{color:var(--muted);font-size:12px}
 .tg215r .tw{margin:0 10px 10px}
 .tg215n{border-top:1px solid var(--line);padding:10px 0}.tg215n:first-of-type{border-top:0}.tg215nh{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.h247{margin:6px 0 8px}.z247{opacity:.6}.s247{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.s247 button{all:unset;cursor:pointer;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:700;display:flex;gap:6px;align-items:center}.s247 button.on{background:var(--accent,#1e5a46);color:#fff;border-color:transparent}.s247 small{font-weight:400;opacity:.8}.g247{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.c247{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}.c247:hover{border-color:var(--accent,#1e5a46)}.c247 small{color:var(--muted);font-size:12.5px}.t247 td,.t247 th{text-align:center;white-space:nowrap}.t247 td.l{text-align:right;white-space:normal}.t247 td small{white-space:normal}
 .tg215f{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.tg215im img{width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}`;
   (D.head || D.documentElement).appendChild(st);
 })();

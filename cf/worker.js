@@ -770,6 +770,8 @@ async function admin_(b) {
   if (b.op === 'exPub') return exPub204_(b);
   /* v215b: تفاصيل الدرجات اللي أرسلها المدرس (لكل طالب) */
   if (b.op === 'ga244') { if ('ga' in b) { const P0 = await kvJ('priv', { t: {} }), L = (Array.isArray(b.ga) ? b.ga : []).filter(r => Array.isArray(r) && P0.t && P0.t[String(r[0])] && String(r[1] || '').trim() && String(r[2] || '').trim()).slice(0, 200).map(r => [String(r[0]), String(r[1]).trim().slice(0, 60), String(r[2]).trim().slice(0, 60)]); await kvPut('GA244', L); await privBump_(); if (G_SN226) G_SN226.sj233 = null; return { ok: 1, ga: L }; } return { ok: 1, ga: await ga244_() }; }
+  /* v247: كل درجات مدرس واحد (لعرض «درجات المدرسين» حسب المدرس ← المادة والشعبة) */
+  if (b.op === 'tgrT') return { ok: 1, rows: await all('select subj,label,skey,val,note,date,x from tgr where tkey=? order by date desc limit 6000', String(b.tkey || '')) };
   if (b.op === 'tgrDet') return { ok: 1, rows: await all('select skey,val,note,date,x from tgr where tkey=? and subj=? and label=? order by date desc limit 400', String(b.tkey || ''), String(b.subj || ''), String(b.label || '')) };
   if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
   if (b.op === 'tstGet') return { ok: 1, x: await kvJ('TST206', {}), ps: await tstPS206_(), pt: await tstPT206_() };
