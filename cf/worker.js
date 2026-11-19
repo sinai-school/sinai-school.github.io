@@ -1815,14 +1815,17 @@ async function absN215_(b, a) {
   const [y, m, dd] = d.split('-'), dt = [+dd, +m, +y].join('/').replace(/[0-9]/g, k => '٠١٢٣٤٥٦٧٨٩'[k]);
   const ar = n => String(n).replace(/[0-9]/g, k => '٠١٢٣٤٥٦٧٨٩'[k]);
   let sent = 0, del = 0;
+  /* v243c: التبليغ بيه اسم الطالب وشعبته (طلب المستخدم) */
+  let PV = null; try { PV = await kvJ('priv', null); } catch (e) { }
   for (const x of L) {
     if (!Array.isArray(x)) continue;
     const id = String(x[0] || '').slice(0, 60); if (!/^[A-Za-z0-9_\-]+$/.test(id)) continue;
     const nid = ('ab' + d.replace(/-/g, '') + id).slice(0, 80);
+    const ps = PV && PV.s && PV.s[id], who = ps && ps.n ? 'الطالب: ' + ps.n + (ps.s ? ' — ' + ps.s : '') + '\n' : '';
     if (+x[2] === 1) {
       if (await noteHas_(nid)) continue;
       const n = Math.max(0, +x[1] || 0);
-      await noteAdd_({ id: nid, scope: 'one', target: 's:' + id, from: 'إدارة المدرسة', title: 'تم تسجيل غيابك — ' + dt, body: 'تم تسجيل غيابك يوم ' + dt + '.\nمجموع أيام غيابك حتى الآن: ' + ar(n) + ' يوم.\nإن كان لديك عذر فراجع إدارة المدرسة.', date: now(), cat: 'abs', files: '' });
+      await noteAdd_({ id: nid, scope: 'one', target: 's:' + id, from: 'إدارة المدرسة', title: 'تم تسجيل غيابك — ' + dt, body: who + 'تم تسجيل غيابك يوم ' + dt + '.\nمجموع أيام غيابك حتى الآن: ' + ar(n) + ' يوم.\nإن كان لديك عذر فراجع إدارة المدرسة.', date: now(), cat: 'abs', files: '' });
       sent++;
     } else { try { await run('delete from notes where id=?', nid); del++; } catch (e) { } }
   }

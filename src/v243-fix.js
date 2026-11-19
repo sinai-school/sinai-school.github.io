@@ -86,4 +86,79 @@
   });
   /* ---------- ٥) الدرجة أقل من النصف حمراء فعلاً (تنسيق الجداول كان يغلب لون .red) ---------- */
   on(() => { const st = document.createElement("style"); st.id = "css243"; st.textContent = "td.red,td.red b,td.red span,.tw td.red,.tw td.red b,input.red235{color:#c62828!important}"; document.head.appendChild(st); });
+
+  /* ---------- ٦) v243c: الاسم ورقم الصفحة بين قوائم الطلاب والقيد العام (طلب المستخدم) ----------
+     - تعديل اسم طالب بالقوائم ← اسمه بسجل القيد المربوط (نفس رقم الصفحة، سجل واحد) يتعدل فوراً (قرار «اسم الصف» حتى الخادم ما يرجّعه).
+     - تعديل رقم الصفحة للطالب بالقوائم (أ ← ب): إذا ماكو سجل بالصفحة ب، سجله القديم (أ) ينتقل لـ ب بشرط ما مربوط بطالب ثاني.
+     - تعديل رقم الصفحة بسجل القيد (أ ← ب): الطالب المربوط بـ أ يصير ب. */
+  const SNAP243 = new Map();
+  const snap = () => { try { (typeof ST != "undefined" ? ST : []).forEach(x => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg) })); } catch (e) { } };
+  const PEND = [];
+  const qReady = () => typeof QD != "undefined" && QD.length && (typeof QREADY == "undefined" || QREADY);
+  function applyQ() {
+    if (!PEND.length) return;
+    if (!qReady()) { try { if (typeof qSub == "function") qSub(); } catch (e) { } return setTimeout(applyQ, 1500); }
+    const touched = new Set(), log = [];
+    while (PEND.length) {
+      const c = PEND.shift(); const st = (ST || []).find(x => x.id == c.id); if (!st) continue;
+      if (c.n && c.pg) {
+        const L = QD.filter(r => pgK(r.pg) == c.pg); if (L.length != 1) continue;
+        const r = L[0]; if (r.n == st.n) continue;
+        log.push({ i: r.i, pg: r.pg, old: r.n, nw: st.n, sid: st.id, at: new Date().toISOString(), why: "اسم الصف" });
+        r.n = st.n; r.lk = "اسم الصف"; r.lkt = Date.now(); delete r._k; touched.add(r.c);
+      }
+      if (c.from && c.to) {
+        if (QD.some(r => pgK(r.pg) == c.to)) continue;
+        if ((ST || []).some(x => x.id != st.id && pgK(x.pg) == c.from)) continue;
+        const L = QD.filter(r => pgK(r.pg) == c.from); if (L.length != 1) continue;
+        L[0].pg = c.to; delete L[0]._k; touched.add(L[0].c);
+      }
+    }
+    if (!touched.size) return;
+    try { if (typeof qSort == "function") qSort(); } catch (e) { }
+    touched.forEach(c => { try { qSaveChunk(c); } catch (e) { } });
+    if (log.length) on(async () => { try { const ref = DB.doc("school/qfix205"); const d = await ref.get(); const L = (d.exists ? (d.data() || {}).list : []) || []; await ref.set({ list: L.concat(log).slice(-2000) }); } catch (e) { } });
+    try { toast("تحدّث القيد العام تلقائياً (" + (typeof toAr == "function" ? toAr(touched.size) : touched.size) + ")"); } catch (e) { }
+  }
+  function wrapSt() {
+    if (typeof P == "undefined" || !P || typeof P.st != "function") return false;
+    if (P.st._v243) return true;
+    const _st = P.st;
+    P.st = function () {
+      on(() => {
+        if (!SNAP243.size) return;
+        (ST || []).forEach(x => {
+          const o = SNAP243.get(x.id); if (!o) return;
+          const pg = pgK(x.pg), c = { id: x.id };
+          if (o.n != x.n && pg && pg == o.pg) { c.n = 1; c.pg = pg; }
+          if (o.pg && pg && o.pg != pg) { c.from = o.pg; c.to = pg; }
+          if (c.n || c.from) PEND.push(c);
+        });
+      });
+      const r = _st.apply(this, arguments);
+      snap(); if (PEND.length) setTimeout(applyQ, 300);
+      return r;
+    };
+    P.st._v243 = 1; return true;
+  }
+  setInterval(() => { if (!SNAP243.size && typeof ST != "undefined" && ST.length) snap(); wrapSt(); }, 2000);
+  /* البيانات توصل من جهاز ثاني: نحدّث الصورة المحفوظة حتى ما نحسبها تعديل محلي */
+  on(() => { if (typeof refresh == "function") { const _r = refresh; refresh = function () { const r = _r.apply(this, arguments); try { if (!PEND.length) snap(); } catch (e) { } return r; }; } });
+  on(() => {
+    if (typeof qSave != "function") return;
+    const _q = qSave;
+    qSave = function (id) {
+      let old = ""; on(() => { const r = QD.find(x => x.i == id); if (r) old = pgK(r.pg); });
+      const r0 = _q.apply(this, arguments);
+      on(() => {
+        const r = QD.find(x => x.i == id); const nw = r ? pgK(r.pg) : "";
+        if (!old || !nw || old == nw) return;
+        const L = (ST || []).filter(x => pgK(x.pg) == old); if (!L.length) return;
+        L.forEach(x => { x.pg = nw; }); try { if (typeof STV != "undefined") STV++; } catch (e) { }
+        snap(); try { P.st(); } catch (e) { }
+        try { toast("تحدّث رقم الصفحة بقوائم الطلاب (" + L.map(x => x.n).join("، ") + ")"); } catch (e) { }
+      });
+      return r0;
+    };
+  });
 })();
