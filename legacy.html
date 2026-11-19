@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v243b-2026-11-19T13:20:00.000Z-v243b";
+<script>window.APP_VER = "2k7v243c-2026-11-19T13:40:00.000Z-v243c";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -8090,7 +8090,7 @@ function holDel(d) {
 }
 function awLetter(s, n, l) {
   const yr2 = yrSlash().replace("/", "-"), lv = AWL[l];
-  return { greet: L_GREET, close: "مع التقدير ....", sig: L_SIG, toP: "إلى/", to: "ولي أمر الطالب (" + s.n + ") المحترم", subj: "تبليغ " + lv + " بالغياب", body: "نود إعلامكم أن ولدكم الطالب (" + s.n + ") في الصف (" + ((n2) => String(n2 || "").replace(/\s+[\u0621-\u064A]\s*$/, "").trim())(s.s) + ") قد بلغ مجموع غياباته (" + toAr(n) + ") يوماً بدون عذر مشروع للعام الدراسي (" + yr2 + ")، عدا أيام الجمعة والسبت والعطل الرسمية والطارئة، وعليه وُجِّه إليه (" + lv + ").\n" + (l < 3 ? "يرجى مراجعة إدارة المدرسة خلال مدة أقصاها ثلاثة أيام من تاريخ هذا التبليغ لغرض متابعة دوام ولدكم، علماً أن استمرار الغياب يعرّضه إلى الإنذار " + (l == 1 ? "النهائي" : "بالفصل") + " وفق التعليمات النافذة." : "يرجى مراجعة إدارة المدرسة فوراً لغرض النظر في وضع ولدكم واتخاذ ما يلزم وفق التعليمات النافذة."), sig2: "تبلّغت بمضمونه\nاسم وتوقيع ولي الأمر: ....................\nالتاريخ:     /     /" };
+  return { greet: L_GREET, close: "مع التقدير ....", sig: L_SIG, toP: "إلى/", to: "ولي أمر الطالب (" + s.n + ") المحترم", subj: "تبليغ " + lv + " بالغياب", body: "نود إعلامكم أن ولدكم الطالب (" + s.n + ") في الصف (" + s.s + ") قد بلغ مجموع غياباته (" + toAr(n) + ") يوماً بدون عذر مشروع للعام الدراسي (" + yr2 + ")، عدا أيام الجمعة والسبت والعطل الرسمية والطارئة، وعليه وُجِّه إليه (" + lv + ").\n" + (l < 3 ? "يرجى مراجعة إدارة المدرسة خلال مدة أقصاها ثلاثة أيام من تاريخ هذا التبليغ لغرض متابعة دوام ولدكم، علماً أن استمرار الغياب يعرّضه إلى الإنذار " + (l == 1 ? "النهائي" : "بالفصل") + " وفق التعليمات النافذة." : "يرجى مراجعة إدارة المدرسة فوراً لغرض النظر في وضع ولدكم واتخاذ ما يلزم وفق التعليمات النافذة."), sig2: "تبلّغت بمضمونه\nاسم وتوقيع ولي الأمر: ....................\nالتاريخ:     /     /" };
 }
 function awOpen(id) {
   const s = ST.find((x) => x.id == id);
@@ -45072,6 +45072,159 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     st.id = "css243";
     st.textContent = "td.red,td.red b,td.red span,.tw td.red,.tw td.red b,input.red235{color:#c62828!important}";
     document.head.appendChild(st);
+  });
+  const SNAP243 = /* @__PURE__ */ new Map();
+  const snap = () => {
+    try {
+      (typeof ST != "undefined" ? ST : []).forEach((x) => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg) }));
+    } catch (e) {
+    }
+  };
+  const PEND = [];
+  const qReady = () => typeof QD != "undefined" && QD.length && (typeof QREADY == "undefined" || QREADY);
+  function applyQ() {
+    if (!PEND.length) return;
+    if (!qReady()) {
+      try {
+        if (typeof qSub == "function") qSub();
+      } catch (e) {
+      }
+      return setTimeout(applyQ, 1500);
+    }
+    const touched = /* @__PURE__ */ new Set(), log = [];
+    while (PEND.length) {
+      const c = PEND.shift();
+      const st = (ST || []).find((x) => x.id == c.id);
+      if (!st) continue;
+      if (c.n && c.pg) {
+        const L = QD.filter((r2) => pgK(r2.pg) == c.pg);
+        if (L.length != 1) continue;
+        const r = L[0];
+        if (r.n == st.n) continue;
+        log.push({ i: r.i, pg: r.pg, old: r.n, nw: st.n, sid: st.id, at: (/* @__PURE__ */ new Date()).toISOString(), why: "اسم الصف" });
+        r.n = st.n;
+        r.lk = "اسم الصف";
+        r.lkt = Date.now();
+        delete r._k;
+        touched.add(r.c);
+      }
+      if (c.from && c.to) {
+        if (QD.some((r) => pgK(r.pg) == c.to)) continue;
+        if ((ST || []).some((x) => x.id != st.id && pgK(x.pg) == c.from)) continue;
+        const L = QD.filter((r) => pgK(r.pg) == c.from);
+        if (L.length != 1) continue;
+        L[0].pg = c.to;
+        delete L[0]._k;
+        touched.add(L[0].c);
+      }
+    }
+    if (!touched.size) return;
+    try {
+      if (typeof qSort == "function") qSort();
+    } catch (e) {
+    }
+    touched.forEach((c) => {
+      try {
+        qSaveChunk(c);
+      } catch (e) {
+      }
+    });
+    if (log.length) on(async () => {
+      try {
+        const ref = DB.doc("school/qfix205");
+        const d = await ref.get();
+        const L = (d.exists ? (d.data() || {}).list : []) || [];
+        await ref.set({ list: L.concat(log).slice(-2e3) });
+      } catch (e) {
+      }
+    });
+    try {
+      toast("تحدّث القيد العام تلقائياً (" + (typeof toAr == "function" ? toAr(touched.size) : touched.size) + ")");
+    } catch (e) {
+    }
+  }
+  function wrapSt() {
+    if (typeof P == "undefined" || !P || typeof P.st != "function") return false;
+    if (P.st._v243) return true;
+    const _st = P.st;
+    P.st = function() {
+      on(() => {
+        if (!SNAP243.size) return;
+        (ST || []).forEach((x) => {
+          const o = SNAP243.get(x.id);
+          if (!o) return;
+          const pg = pgK(x.pg), c = { id: x.id };
+          if (o.n != x.n && pg && pg == o.pg) {
+            c.n = 1;
+            c.pg = pg;
+          }
+          if (o.pg && pg && o.pg != pg) {
+            c.from = o.pg;
+            c.to = pg;
+          }
+          if (c.n || c.from) PEND.push(c);
+        });
+      });
+      const r = _st.apply(this, arguments);
+      snap();
+      if (PEND.length) setTimeout(applyQ, 300);
+      return r;
+    };
+    P.st._v243 = 1;
+    return true;
+  }
+  setInterval(() => {
+    if (!SNAP243.size && typeof ST != "undefined" && ST.length) snap();
+    wrapSt();
+  }, 2e3);
+  on(() => {
+    if (typeof refresh == "function") {
+      const _r = refresh;
+      refresh = function() {
+        const r = _r.apply(this, arguments);
+        try {
+          if (!PEND.length) snap();
+        } catch (e) {
+        }
+        return r;
+      };
+    }
+  });
+  on(() => {
+    if (typeof qSave != "function") return;
+    const _q = qSave;
+    qSave = function(id) {
+      let old = "";
+      on(() => {
+        const r = QD.find((x) => x.i == id);
+        if (r) old = pgK(r.pg);
+      });
+      const r0 = _q.apply(this, arguments);
+      on(() => {
+        const r = QD.find((x) => x.i == id);
+        const nw = r ? pgK(r.pg) : "";
+        if (!old || !nw || old == nw) return;
+        const L = (ST || []).filter((x) => pgK(x.pg) == old);
+        if (!L.length) return;
+        L.forEach((x) => {
+          x.pg = nw;
+        });
+        try {
+          if (typeof STV != "undefined") STV++;
+        } catch (e) {
+        }
+        snap();
+        try {
+          P.st();
+        } catch (e) {
+        }
+        try {
+          toast("تحدّث رقم الصفحة بقوائم الطلاب (" + L.map((x) => x.n).join("، ") + ")");
+        } catch (e) {
+        }
+      });
+      return r0;
+    };
   });
 })();
 </script>
