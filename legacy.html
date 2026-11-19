@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v242b-2026-11-19T01:00:00.000Z-v242b";
+<script>window.APP_VER = "2k7v243-2026-11-19T12:30:00.000Z-v243";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -3952,7 +3952,14 @@ V.q = () => {
   if (QIMP) return qImport();
   if (QSEL) return qDetail();
   const yrs = qYears(), imgs = QD.filter((r) => r.im).length;
-  return '<div class="vh"><h2>القيد العام</h2><span class="sub">'.concat(toAr(QD.length), " اسم — ").concat(toAr(yrs.length), " سنة دراسية").concat(imgs ? " — " + toAr(imgs) + " مرتبط بصورة" : "", "</span></div>").concat(!QREADY ? '<div class="banner">جارٍ تحميل سجل القيد…</div>' : "", '\n  <div class="qsearch"><span class="qs-i">').concat(ic("search"), '</span><input id="qq" type="search" autocomplete="off" enterkeyhint="search" placeholder="بحث سريع: اكتب أي جزء من الاسم، أو رقم الصفحة، أو رقم القيد" value="').concat(esc(QQ), '" oninput="qType(this.value)"><select id="qy" onchange="QY=this.value;QPG=0;qRes()" aria-label="السنة"><option value="">كل السنوات</option>').concat(opts(yrs, QY), '</select></div>\n  <p class="muted" style="margin:-4px 0 10px">تظهر النتائج أثناء الكتابة. الكلمات بأي ترتيب، ولا فرق بين أ وا، ة وه، ى وي، ولا بين «عبد الحسين» و«عبدالحسين».</p>\n  <div class="tools"><button class="btn" onclick="QADD=1;HOLD=1;render()">').concat(ic("plus"), ' إضافة اسم</button><label class="btn ghost" for="qf">').concat(ic("upload"), ' رفع ملف Excel</label><input type="file" id="qf" hidden accept=".xlsx,.csv" onchange="qRead(this.files[0])"></div>\n  ').concat(QADD ? '<div class="box hl"><h3>إضافة اسم إلى القيد العام</h3><div class="fgrid"><label class="wide">اسم الطالب<input id="qa_n"></label><label>رقم الصفحة<input id="qa_pg" dir="ltr" inputmode="numeric" value="'.concat(Math.max(0, ...QD.map((r) => +r.pg || 0)) + 1, '"></label><label>رقم القيد<input id="qa_r" dir="ltr" value="').concat(esc((QD[QD.length - 1] || {}).r || ""), '"></label><label>السنة<input id="qa_y" value="').concat(esc(yrs[yrs.length - 1] || ""), '" placeholder="2027/2026"></label><label class="wide">ملاحظات<input id="qa_nt"></label></div><div class="tools"><button class="btn" onclick="qAdd()">').concat(ic("ok"), ' حفظ</button><button class="btn ghost" onclick="QADD=0;HOLD=0;render()">إلغاء</button></div></div>') : "", '\n  <div id="qres">').concat(qResHTML(), "</div>");
+  return '<div class="vh"><h2>القيد العام</h2><span class="sub">'.concat(toAr(QD.length), " اسم — ").concat(toAr(yrs.length), " سنة دراسية").concat(imgs ? " — " + toAr(imgs) + " مرتبط بصورة" : "", "</span></div>").concat(!QREADY ? '<div class="banner">جارٍ تحميل سجل القيد…</div>' : "", '\n  <div class="qsearch"><span class="qs-i">').concat(ic("search"), '</span><input id="qq" type="search" autocomplete="off" enterkeyhint="search" placeholder="بحث سريع: اكتب أي جزء من الاسم، أو رقم الصفحة، أو رقم القيد" value="').concat(esc(QQ), '" oninput="qType(this.value)"><select id="qy" onchange="QY=this.value;QPG=0;qRes()" aria-label="السنة"><option value="">كل السنوات</option>').concat(opts(yrs, QY), '</select></div>\n  <p class="muted" style="margin:-4px 0 10px">تظهر النتائج أثناء الكتابة. الكلمات بأي ترتيب، ولا فرق بين أ وا، ة وه، ى وي، ولا بين «عبد الحسين» و«عبدالحسين».</p>\n  <div class="tools"><button class="btn" onclick="QADD=1;HOLD=1;render()">').concat(ic("plus"), ' إضافة اسم</button><label class="btn ghost" for="qf">').concat(ic("upload"), ' رفع ملف Excel</label><input type="file" id="qf" hidden accept=".xlsx,.csv" onchange="qRead(this.files[0])"></div>\n  ').concat(QADD ? '<div class="box hl"><h3>إضافة اسم إلى القيد العام</h3><div class="fgrid"><label class="wide">اسم الطالب<input id="qa_n"></label><label>رقم الصفحة<input id="qa_pg" dir="ltr" inputmode="numeric" value="'.concat(Math.max(0, ...QD.map((r) => +r.pg || 0)) + 1, '"></label><label>رقم القيد<input id="qa_r" dir="ltr" value="').concat(esc((QD[QD.length - 1] || {}).r || ""), '"></label><label>السنة<input id="qa_y" value="').concat(esc((() => {
+    try {
+      const m = String(yrSlash()).match(/(\d{4})\D+(\d{4})/);
+      if (m) return Math.max(+m[1], +m[2]) + "/" + Math.min(+m[1], +m[2]);
+    } catch (e) {
+    }
+    return "";
+  })() || yrs.filter((y) => /^\d{4}\/\d{4}$/.test(y)).pop() || ""), '" placeholder="2027/2026"></label><label class="wide">ملاحظات<input id="qa_nt"></label></div><div class="tools"><button class="btn" onclick="qAdd()">').concat(ic("ok"), ' حفظ</button><button class="btn ghost" onclick="QADD=0;HOLD=0;render()">إلغاء</button></div></div>') : "", '\n  <div id="qres">').concat(qResHTML(), "</div>");
 };
 function qAdd() {
   if (guard()) return;
@@ -4220,9 +4227,11 @@ const eduK = (e) => {
   if (/بكالور|بكلور/.test(e)) return "بكالوريوس";
   if (/دبلوم/.test(e)) return "دبلوم";
   if (/اعداد/.test(e)) return "إعدادية";
+  if (/متوسط/.test(e)) return "متوسطة";
+  if (/ابتدا/.test(e)) return "ابتدائية";
   return "أخرى";
 };
-const EDU = ["دكتوراه", "ماجستير", "دبلوم عالي", "بكالوريوس", "دبلوم", "إعدادية", "أخرى", "غير محدد"];
+const EDU = ["دكتوراه", "ماجستير", "دبلوم عالي", "بكالوريوس", "دبلوم", "إعدادية", "متوسطة", "ابتدائية", "أخرى", "غير محدد"];
 const isTeach = (f) => /مدرس|معلم/.test(f.job || "");
 const stOf = (f) => f.status || "مستمر";
 const mvMin = (f) => /وزار|مديري|ديوان|قسم /.test(f.mvSchool || "");
@@ -5664,6 +5673,7 @@ async function pHtml(D, html) {
   await walk(box);
 }
 async function pLetter(D, L) {
+  var _a;
   const x = D.x, paras = String(L.body || "").split(/\n+/).filter((s) => s.trim()), cc = String(L.cc || "").split("\n").map((s) => s.trim()).filter(Boolean), lm = D.L + 10 * PXM, rm = D.R - 10 * PXM;
   const logo = await pImg(LOGO_S);
   if (logo) {
@@ -5712,9 +5722,13 @@ async function pLetter(D, L) {
   D.text(L.close || "مع التقدير", { sz: 14, b: 1, al: "c" });
   D.gap(10);
   const sw = 70 * PXM;
-  D.text("التوقيع", { sz: 13, b: 1, al: "c", x0: D.L, x1: D.L + sw });
-  D.gap(2);
-  D.text("المدير: فراس حسن كاظم", { sz: 13, b: 1, al: "c", x0: D.L, x1: D.L + sw });
+  {
+    const _sg = String((_a = L.sig) != null ? _a : L_SIG).split("\n").filter((x2) => x2.trim());
+    (_sg.length ? _sg : ["التوقيع"]).forEach((t, i) => {
+      if (i) D.gap(2);
+      D.text(t, { sz: 13, b: 1, al: "c", x0: D.L, x1: D.L + sw });
+    });
+  }
   if (cc.length) {
     D.gap(8);
     D.text("نسخة منه إلى:", { sz: 11, b: 1, x0: lm, x1: rm });
@@ -7484,7 +7498,7 @@ function tplFill(L, { s, t }) {
   const rep = {};
   if (s) {
     rep["«الطالب»"] = s.n;
-    rep["«الصف»"] = s.s;
+    rep["«الصف»"] = ((n) => String(n || "").replace(/\s+[\u0621-\u064A]\s*$/, "").trim())(s.s);
     rep["«العام»"] = yrSlash().replace("/", "-");
     rep["«المواليد»"] = s.by ? toAr(s.by) : "";
     try {
@@ -7590,7 +7604,7 @@ function lPick(kind, v2) {
     if (kind == "s") {
       const s = STA().find((x) => x.id == v2);
       if (!s) return;
-      LDRAFT = lInsert(L, "الطالب (" + s.n + ") في الصف (" + s.s + ")");
+      LDRAFT = lInsert(L, "الطالب (" + s.n + ") في الصف (" + ((n) => String(n || "").replace(/\s+[\u0621-\u064A]\s*$/, "").trim())(s.s) + ")");
     } else {
       const f = STF.find((x) => x.id == v2);
       if (!f) return;
@@ -7638,7 +7652,7 @@ function letterHTML(L) {
     const h = thd && i == 0;
     return '<td style="border:1px solid #000;padding:1.3mm 2mm;text-align:'.concat(!thd && j == 1 ? "right" : "center", ";font-weight:").concat(h || !thd && j == 1 ? 700 : 600, ";").concat(h ? "background:#eef2ef;" : "", '">').concat(esc(c), "</td>");
   }).join(""), "</tr>")).join(""), "</table>") : "";
-  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: ".concat(esc(toAr(L.no || "")), "<br>التاريخ: ").concat(L.date ? fmtD(L.date) : ""), "</div>\n    ").concat(L.photo ? '<div style="width:28mm;height:36mm;border:1px dashed #555;display:grid;place-items:center;font-size:9pt;color:#555;flex:none">الصورة</div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(L.greet ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm">'.concat(esc(L.greet), "</p>") : "", "\n   ").concat(paras.map(para).join(""), "\n   ").concat(tbl, "\n   ").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join(""), "\n   ").concat(L.close ? '<p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0">'.concat(esc(L.close), "</p>") : "", "\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p>'.concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join("")) : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(sig22.map(lP).join("<br>"), '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0">'.concat(esc(L.note), "</p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p>'.concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join("")) : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
+  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: ".concat(esc(toAr(L.no || "")), "<br>التاريخ: ").concat(L.date ? fmtD(L.date) : ""), "</div>\n    ").concat(L.photo ? '<div style="width:28mm;height:36mm;border:1px dashed #555;display:grid;place-items:center;font-size:9pt;color:#555;flex:none">الصورة</div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(L.greet ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm">'.concat(esc(L.greet), "</p>") : "", "\n   ").concat(paras.map(para).join(""), "\n   ").concat(tbl, "\n   ").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join(""), "\n   ").concat(L.close ? '<p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0">'.concat(esc(L.close), "</p>") : "", "\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p>'.concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join("")) : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(sig22.map(lP).join("<br>"), '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(window.sig243 ? sig243(sigL, L) : stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0">'.concat(esc(L.note), "</p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p>'.concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join("")) : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
 }
 async function pLetterK(D, L, k2) {
   var _a, _b;
@@ -8072,7 +8086,7 @@ function holDel(d) {
 }
 function awLetter(s, n, l) {
   const yr2 = yrSlash().replace("/", "-"), lv = AWL[l];
-  return { greet: L_GREET, close: "مع التقدير ....", sig: L_SIG, toP: "إلى/", to: "ولي أمر الطالب (" + s.n + ") المحترم", subj: "تبليغ " + lv + " بالغياب", body: "نود إعلامكم أن ولدكم الطالب (" + s.n + ") في الصف (" + s.s + ") قد بلغ مجموع غياباته (" + toAr(n) + ") يوماً بدون عذر مشروع للعام الدراسي (" + yr2 + ")، عدا أيام الجمعة والسبت والعطل الرسمية والطارئة، وعليه وُجِّه إليه (" + lv + ").\n" + (l < 3 ? "يرجى مراجعة إدارة المدرسة خلال مدة أقصاها ثلاثة أيام من تاريخ هذا التبليغ لغرض متابعة دوام ولدكم، علماً أن استمرار الغياب يعرّضه إلى الإنذار " + (l == 1 ? "النهائي" : "بالفصل") + " وفق التعليمات النافذة." : "يرجى مراجعة إدارة المدرسة فوراً لغرض النظر في وضع ولدكم واتخاذ ما يلزم وفق التعليمات النافذة."), sig2: "تبلّغت بمضمونه\nاسم وتوقيع ولي الأمر: ....................\nالتاريخ:     /     /" };
+  return { greet: L_GREET, close: "مع التقدير ....", sig: L_SIG, toP: "إلى/", to: "ولي أمر الطالب (" + s.n + ") المحترم", subj: "تبليغ " + lv + " بالغياب", body: "نود إعلامكم أن ولدكم الطالب (" + s.n + ") في الصف (" + ((n2) => String(n2 || "").replace(/\s+[\u0621-\u064A]\s*$/, "").trim())(s.s) + ") قد بلغ مجموع غياباته (" + toAr(n) + ") يوماً بدون عذر مشروع للعام الدراسي (" + yr2 + ")، عدا أيام الجمعة والسبت والعطل الرسمية والطارئة، وعليه وُجِّه إليه (" + lv + ").\n" + (l < 3 ? "يرجى مراجعة إدارة المدرسة خلال مدة أقصاها ثلاثة أيام من تاريخ هذا التبليغ لغرض متابعة دوام ولدكم، علماً أن استمرار الغياب يعرّضه إلى الإنذار " + (l == 1 ? "النهائي" : "بالفصل") + " وفق التعليمات النافذة." : "يرجى مراجعة إدارة المدرسة فوراً لغرض النظر في وضع ولدكم واتخاذ ما يلزم وفق التعليمات النافذة."), sig2: "تبلّغت بمضمونه\nاسم وتوقيع ولي الأمر: ....................\nالتاريخ:     /     /" };
 }
 function awOpen(id) {
   const s = ST.find((x) => x.id == id);
@@ -11178,7 +11192,10 @@ render = function() {
   $("main").innerHTML = m;
   try {
     const a = document.querySelector('#nav [aria-current="page"]');
-    if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest" });
+    if (a && a.scrollIntoView && window.__siv243 !== a.textContent) {
+      window.__siv243 = a.textContent;
+      a.scrollIntoView({ block: "nearest" });
+    }
   } catch (e) {
   }
   bindDrop();
@@ -13238,7 +13255,7 @@ function tdLetterHTML(L) {
     const h = thd && i == 0;
     return '<td style="border:1px solid #000;padding:1.3mm 2mm;text-align:'.concat(!thd && j == 1 ? "right" : "center", ";font-weight:").concat(h || !thd && j == 1 ? 700 : 600, ";").concat(h ? "background:#eef2ef;" : "", '">').concat(esc(c), "</td>");
   }).join(""), "</tr>")).join(""), "</table>") : "";
-  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: <span ".concat(CE("no"), ">").concat(esc(toAr(L.no || "")), "</span><br>التاريـخ: <span ").concat(CE("date"), ">").concat(L.date ? fmtD(L.date) : "", "</span>"), "</div>\n    ").concat(L.photo ? '<div style="width:30mm;height:38mm;border:1.2px solid #000;flex:none;margin-bottom:-27mm"></div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(L.greet ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm"><span '.concat(CE("greet"), ">").concat(esc(L.greet), "</span></p>") : "", "\n   <div ").concat(CE("body"), ">").concat(paras.map(para).join(""), "</div>\n   ").concat(tdTblHTML(L), "\n   ").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join(""), "\n   ").concat(L.close ? '<p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0">'.concat(esc(L.close), "</p>") : "", "\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p>'.concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join("")) : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(tdSigR(L), '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0">'.concat(esc(L.note), "</p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p>'.concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join("")) : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
+  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: <span ".concat(CE("no"), ">").concat(esc(toAr(L.no || "")), "</span><br>التاريـخ: <span ").concat(CE("date"), ">").concat(L.date ? fmtD(L.date) : "", "</span>"), "</div>\n    ").concat(L.photo ? '<div style="width:30mm;height:38mm;border:1.2px solid #000;flex:none;margin-bottom:-27mm"></div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(L.greet ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm"><span '.concat(CE("greet"), ">").concat(esc(L.greet), "</span></p>") : "", "\n   <div ").concat(CE("body"), ">").concat(paras.map(para).join(""), "</div>\n   ").concat(tdTblHTML(L), "\n   ").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join(""), "\n   ").concat(L.close ? '<p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0">'.concat(esc(L.close), "</p>") : "", "\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p>'.concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join("")) : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(tdSigR(L), '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(window.sig243 ? sig243(sigL, L) : stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0">'.concat(esc(L.note), "</p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p>'.concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join("")) : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
 }
 async function pLetterTD(D, L, k2) {
   var _a, _b;
@@ -13802,7 +13819,7 @@ function eLetterHTML(L) {
     const h = thd && i == 0;
     return '<td style="border:1px solid #000;padding:1.3mm 2mm;text-align:'.concat(!thd && j == 1 ? "right" : "center", ";font-weight:").concat(h || !thd && j == 1 ? 700 : 600, ";").concat(h ? "background:#eef2ef;" : "", '" ').concat(CE("t:" + i + ":" + j), ">").concat(esc(c), "</td>");
   }).join(""), "</tr>")).join(""), "</table>") : "";
-  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: <span ".concat(CE("no"), ">").concat(esc(toAr(L.no || "")), "</span><br>التاريخ: <span ").concat(CE("date"), ">").concat(L.date ? fmtD(L.date) : "", "</span>"), "</div>\n    ").concat(L.photo ? '<div style="width:28mm;height:36mm;border:1px dashed #555;display:grid;place-items:center;font-size:9pt;color:#555;flex:none">الصورة</div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(1 ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm"><span '.concat(CE("greet"), ' data-ph="تحية طيبة ...">').concat(esc(L.greet), "</span></p>") : "", "\n   <div ").concat(CE("body"), ' data-ph="اكتب نص الكتاب هنا…" style="min-height:12mm">').concat(paras.map(para).join(""), "</div>\n   ").concat(tbl, "\n   ").concat(after.some((x) => x.trim()) ? "<div ".concat(CE("after"), ">") : "").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join("")).concat(after.some((x) => x.trim()) ? "</div>" : "", '\n   <p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0"><span ').concat(CE("close"), ' data-ph="الختام">').concat(esc(L.close || ""), "</span></p>\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p><div '.concat(CE("att"), ">").concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join(""), "</div>") : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(sig22.length ? "<div ".concat(CE("sig2"), ">").concat(sig22.map(lP).join("<br>"), "</div>") : "", '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0"><span '.concat(CE("note"), ">").concat(esc(L.note), "</span></p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p><div '.concat(CE("cc"), ">").concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join(""), "</div>") : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
+  return '<div class="lpage" style="position:relative;width:210mm;height:297mm;margin:0 auto;padding:0;box-sizing:border-box;font-family:'.concat(LFF, ';color:#000;background:#fff;direction:rtl;overflow:hidden">\n  ').concat(bk ? '<img src="'.concat(BKURL || "", '" alt="" style="position:absolute;left:0;top:0;width:210mm;height:297mm;pointer-events:none">') : '<div style="position:absolute;inset:7mm;border:3px double #000;pointer-events:none"></div>\n  <img src="'.concat(LOGO_S, '" alt="" style="position:absolute;left:50%;top:55%;width:115mm;transform:translate(-50%,-50%);opacity:.06;pointer-events:none">'), '\n  <div style="position:relative;padding:').concat(bk ? "53.5mm 13mm 0" : "11mm 15mm 0", '">\n   ').concat(bk ? "" : '<table style="width:100%;border-collapse:collapse"><tr>\n    <td style="width:38%;border:none;text-align:center;vertical-align:top"><div style="transform:translateX(5mm)"><img src="'.concat(LOGO_CAL, '" alt="جمهورية العراق - وزارة التربية" style="height:16mm;display:block;margin:0 auto 1mm"><div style="font-weight:700;font-size:10.5pt;line-height:1.6">').concat(LH_AR.map(esc).join("<br>"), '</div></div></td>\n    <td style="border:none;text-align:center;vertical-align:middle"><img src="').concat(LOGO_S, '" alt="شعار إعدادية سيناء للبنين" style="height:29mm"></td>\n    <td style="width:34%;border:none;text-align:center;vertical-align:top;direction:ltr;font-family:\'Times New Roman\',serif;font-weight:700;font-size:10.5pt;line-height:1.45;padding-top:2mm">').concat(LH_EN.map(esc).join("<br>"), '</td></tr></table>\n   <div style="height:1.6px;background:#000;margin:2mm 0 3mm"></div>'), '\n   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm">\n    <div style="font-weight:700;font-size:12.5pt;line-height:1.85">').concat(L.nonum ? "" : "العــدد: <span ".concat(CE("no"), ">").concat(esc(toAr(L.no || "")), "</span><br>التاريخ: <span ").concat(CE("date"), ">").concat(L.date ? fmtD(L.date) : "", "</span>"), "</div>\n    ").concat(L.photo ? '<div style="width:28mm;height:36mm;border:1px dashed #555;display:grid;place-items:center;font-size:9pt;color:#555;flex:none">الصورة</div>' : "", "</div>\n   ").concat(L.subjFirst ? subj + to : to + subj, "\n   ").concat(1 ? '<p style="font-weight:700;font-size:14pt;margin:0 0 3mm"><span '.concat(CE("greet"), ' data-ph="تحية طيبة ...">').concat(esc(L.greet), "</span></p>") : "", "\n   <div ").concat(CE("body"), ' data-ph="اكتب نص الكتاب هنا…" style="min-height:12mm">').concat(paras.map(para).join(""), "</div>\n   ").concat(tbl, "\n   ").concat(after.some((x) => x.trim()) ? "<div ".concat(CE("after"), ">") : "").concat(after.map((p) => p.trim() ? isBul(p) ? para(p) : '<p style="line-height:1.9;font-size:13pt;font-weight:'.concat(/:\s*$/.test(p) ? 700 : 600, ';margin:0 0 1mm;text-align:justify">').concat(lP(p), "</p>") : '<div style="height:3mm"></div>').join("")).concat(after.some((x) => x.trim()) ? "</div>" : "", '\n   <p style="text-align:center;font-weight:700;font-size:14pt;margin:7mm 0 0"><span ').concat(CE("close"), ' data-ph="الختام">').concat(esc(L.close || ""), "</span></p>\n   ").concat(att.length ? '<p style="font-weight:700;font-size:12pt;margin:5mm 0 0">المرفقات:</p><div '.concat(CE("att"), ">").concat(att.map((a) => '<p style="font-size:12pt;margin:0;font-weight:600;padding-right:6mm">- '.concat(esc(a), "</p>")).join(""), "</div>") : "", '\n   <table style="width:100%;border-collapse:collapse;margin-top:13mm"><tr><td style="border:none;width:70%;vertical-align:top;font-weight:700;font-size:12.5pt;line-height:2.1">').concat(sig22.length ? "<div ".concat(CE("sig2"), ">").concat(sig22.map(lP).join("<br>"), "</div>") : "", '</td><td style="border:none;width:30%;vertical-align:top;text-align:right;white-space:nowrap;font-weight:700;font-size:13pt;line-height:2.1;position:relative">').concat(window.sig243 ? sig243(sigL, L) : stIns(sigL).map((t) => t ? esc(t) : "&nbsp;").join("<br>")).concat(stampsHTML(sigL), "</td></tr></table>\n   ").concat(L.note ? '<p style="font-size:11pt;font-weight:700;margin:4mm 0 0"><span '.concat(CE("note"), ">").concat(esc(L.note), "</span></p>") : "", "\n   ").concat(cc.length ? '<p style="font-weight:700;font-size:11.5pt;margin:5mm 0 0">نسخة منه إلى:</p><div '.concat(CE("cc"), ">").concat(cc.map((c) => '<p style="font-size:11pt;margin:0">– '.concat(esc(c), "</p>")).join(""), "</div>") : "", "\n  </div>\n  ").concat(bk ? "" : '<div style="position:absolute;left:12mm;right:12mm;bottom:10mm;border-top:1.2px solid #000;padding-top:1.5mm;text-align:center;font-weight:600;font-size:9pt;white-space:pre-wrap">'.concat(esc(LH_FOOT), "</div>"), "</div>");
 }
 function eLines(t) {
   return String(t).split(/\n/).map((x) => x.trim());
@@ -34534,6 +34551,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1)) && lenOk(c.d, a);
   const purge207 = (a) => {
     try {
+      W.pf243Mark && W.pf243Mark(a, 0);
+    } catch (e) {
+    }
+    try {
       for (const k of [...MEM.keys()]) if (k.startsWith(a.id + ":")) MEM.delete(k);
     } catch (e) {
     }
@@ -34563,6 +34584,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           MEM.set(k, c.d);
           return c.d;
         }
+        W.pf243Mark && W.pf243Mark(a, 0);
       } catch (e) {
       }
       if (navigator.onLine === false) throw "offline";
@@ -34594,7 +34616,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       MEM.set(k, s);
       if (MEM.size > 12) MEM.delete(MEM.keys().next().value);
       try {
-        if (IDB()) IDB().put("ab_" + a.id, { k, d: s, at: Date.now() });
+        if (IDB()) Promise.resolve(IDB().put("ab_" + a.id, { k, d: s, at: Date.now() })).then(() => W.pf243Mark && W.pf243Mark(a, 1)).catch(() => {
+        });
       } catch (e) {
       }
       return s;
@@ -34607,10 +34630,43 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
   }
   W.blob207 = blob207;
+  const PFK = "pf243";
+  let PFM = null;
+  const pfm = () => {
+    if (!PFM) {
+      try {
+        PFM = JSON.parse(localStorage.getItem(PFK) || "{}") || {};
+      } catch (e) {
+        PFM = {};
+      }
+    }
+    return PFM;
+  };
+  let pfT = 0;
+  const pfSave = () => {
+    clearTimeout(pfT);
+    pfT = setTimeout(() => {
+      try {
+        localStorage.setItem(PFK, JSON.stringify(pfm()));
+      } catch (e) {
+      }
+    }, 1500);
+  };
+  W.pf243Mark = (a, ok) => {
+    try {
+      if (ok) pfm()[a.id] = ver(a);
+      else delete pfm()[a.id];
+      pfSave();
+    } catch (e) {
+    }
+  };
   W.has207 = async (a) => {
     if (MEM.has(ver(a))) return true;
+    if (pfm()[a.id] === ver(a)) return true;
     try {
-      return okC(IDB() && await IDB().get("ab_" + a.id), a);
+      const ok = okC(IDB() && await IDB().get("ab_" + a.id), a);
+      if (ok) W.pf243Mark(a, 1);
+      return ok;
     } catch (e) {
       return false;
     }
@@ -36640,30 +36696,45 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     paint();
     let i = 0;
+    const calm = async () => {
+      for (; ; ) {
+        const busy = Date.now() - ACT243 < 8e3 || D.hidden || navigator.onLine === false;
+        if (!busy) return;
+        await new Promise((r) => setTimeout(r, 4e3));
+      }
+    };
     const work = async () => {
       while (i < todo.length) {
-        if (navigator.onLine === false) {
-          await new Promise((r) => setTimeout(r, 15e3));
+        await calm();
+        const a = todo[i++];
+        if ((FAIL243[a.id] || 0) >= 2) {
+          PF.fail++;
           continue;
         }
-        const a = todo[i++];
         try {
           await W.blob207(a);
           PF.ok++;
         } catch (e) {
           PF.fail++;
+          FAIL243[a.id] = (FAIL243[a.id] || 0) + 1;
         }
         paint();
+        await new Promise((r) => setTimeout(r, 300));
       }
     };
-    await Promise.all([work(), work(), work()]);
+    await work();
     PF.run = 0;
     paint();
-    if (PF.fail) {
+    if (PF.fail && ++RETRY243 <= 2) {
       PF.fail = 0;
-      setTimeout(prefetch, 12e4);
+      setTimeout(prefetch, 3e5);
     }
   }
+  let ACT243 = Date.now(), RETRY243 = 0;
+  const FAIL243 = {};
+  ["pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach((e) => D.addEventListener(e, () => {
+    ACT243 = Date.now();
+  }, { capture: true, passive: true }));
   let pT = 0;
   function paint() {
     clearTimeout(pT);
@@ -36688,7 +36759,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         if (typeof AREADY != "undefined" && AREADY && arc().some(isF)) {
           clearInterval(tick);
           migrate();
-          setTimeout(prefetch, 4e3);
+          setTimeout(prefetch, 9e4);
         }
       } catch (e) {
       }
@@ -39173,6 +39244,28 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     return n;
   };
   const kOf = (r) => [r.tkey, r.subj, r.label].join("|");
+  const sortD243 = (d) => {
+    const L = (d || []).slice();
+    let SNx = [];
+    on(() => {
+      SNx = typeof SN != "undefined" && SN ? SN : [];
+    });
+    const S = {};
+    on(() => {
+      (typeof ST != "undefined" ? ST : []).forEach((x) => {
+        S[x.id] = x;
+      });
+    });
+    const k = (x) => {
+      const s = S[x.skey];
+      const i = s ? SNx.indexOf(s.s) : -1;
+      return [i < 0 ? 999 : i, s ? s.n : String(x.skey)];
+    };
+    return L.sort((a, b) => {
+      const A1 = k(a), B1 = k(b);
+      return A1[0] - B1[0] || String(A1[1]).localeCompare(String(B1[1]), "ar");
+    });
+  };
   const redraw = () => on(() => {
     const y = scrollY;
     render();
@@ -39201,7 +39294,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     if (!L.length) return "";
     return '<div class="box tg215"><h3>'.concat(I("pen"), ' تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال لعرض أسماء الطلاب ودرجاتهم.</p>').concat(L.map((r, i) => {
       const k = kOf(r), op = OPEN[k], d = DET[k];
-      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>' : '<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>'.concat((d || []).map((x, j) => "<tr><td>".concat(AD(j + 1), '</td><td class="l">').concat(E(sName(x.skey)), '</td><td class="').concat(W.gRed235 && W.gRed235(x.val, r.label) ? "red" : "", '"><b>').concat(E(AD(x.val))).concat(W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : "", '</b></td><td class="l">').concat(E(x.note || ""), "</td><td>").concat(E(FD(x.date)), "</td></tr>")).join(""), "</table></div>");
+      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>' : '<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>'.concat(sortD243(d).map((x, j) => "<tr><td>".concat(AD(j + 1), '</td><td class="l">').concat(E(sName(x.skey)), '</td><td class="').concat(W.gRed235 && W.gRed235(x.val, r.label) ? "red" : "", '"><b>').concat(E(AD(x.val))).concat(W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : "", '</b></td><td class="l">').concat(E(x.note || ""), "</td><td>").concat(E(FD(x.date)), "</td></tr>")).join(""), "</table></div>");
       return '<div class="tg215r"><button type="button" class="tg215h" onclick="tg215('.concat(i, ')"><span><b>').concat(E(r.tname || tName(r.tkey)), "</b><small>").concat(E(r.subj), " — ").concat(E(W.gLbl235 ? W.gLbl235(r.label) : r.label), '</small></span><span class="chip">').concat(AD(r.n), ' طالب</span><span class="chip">').concat(E(FD(r.d)), '</span><span class="tg215c">').concat(op ? "▲" : "▼", "</span></button>").concat(body, "</div>");
     }).join(""), "</div>");
   }
@@ -44803,6 +44896,137 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (wrap() && inPortal() && Date.now() - last > 3e3) W.v202Inbox(1);
     } catch (e) {
     }
+  });
+})();
+</script>
+<script id="v243">(function() {
+  "use strict";
+  const W = window;
+  const on = (fn) => {
+    try {
+      return fn();
+    } catch (e) {
+      console.warn("v243", e);
+    }
+  };
+  const E = (s) => typeof esc == "function" ? esc(s) : String(s == null ? "" : s);
+  W.sig243 = function(sigL, L) {
+    try {
+      const lines = typeof stIns == "function" ? stIns(sigL) : sigL;
+      const src = L && L.sig != null ? L.sig : typeof L_SIG != "undefined" ? L_SIG : "";
+      const n = String(src || "").split("\n").filter((x) => x.trim()).length;
+      const ins = lines.length > sigL.length ? 1 : 0;
+      const k = Math.min(lines.length, n + (n >= 2 ? ins : 0));
+      const h = (t) => t ? E(t) : "&nbsp;";
+      const head = lines.slice(0, k).map(h).join("<br>"), tail = lines.slice(k).map(h).join("<br>");
+      return '<span contenteditable="true" data-k="sig" spellcheck="false" title="اضغط لتعديل اسم الموقِّع (مثلاً: المدير وكالةً)">'.concat(head, "</span>").concat(tail ? "<br>" + tail : "");
+    } catch (e) {
+      return (sigL || []).map((t) => t ? E(t) : "&nbsp;").join("<br>");
+    }
+  };
+  on(() => {
+    if (typeof eIn != "function") return;
+    const _e = eIn;
+    eIn = function(el) {
+      try {
+        if (el && el.dataset && el.dataset.k == "sig" && typeof LDRAFT != "undefined" && LDRAFT && !LDRAFT.td) {
+          const t = el.innerText.replace(/‏/g, "").replace(/ /g, " ");
+          const v = t.split(/\n/).map((x) => x.trim()).filter(Boolean).join("\n");
+          LDRAFT.sig = v || " ";
+          return;
+        }
+      } catch (e) {
+      }
+      return _e.apply(this, arguments);
+    };
+  });
+  document.addEventListener("keydown", (e) => {
+    const el = e.target && e.target.closest ? e.target.closest('#lprev [data-k="sig"]') : null;
+    if (el && e.key == "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      try {
+        document.execCommand("insertLineBreak");
+      } catch (x) {
+      }
+      try {
+        eIn(el);
+      } catch (x) {
+      }
+    }
+  }, true);
+  const NZ = (s) => String(s || "").replace(/[ًٌٍَُِّْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim().replace(/(^|\s)(عبد|ابو)\s+/g, "$1$2");
+  const pgK = (v) => String(v == null ? "" : v).replace(/[٠-٩]/g, (c) => "٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g, "");
+  const pName = (s) => {
+    try {
+      const x = typeof INF != "undefined" && INF && INF[s.id] && INF[s.id].x || null;
+      return x ? [x.n1, x.n2, x.n3, x.n4].filter(Boolean).join(" ") : "";
+    } catch (e) {
+      return "";
+    }
+  };
+  function link243(r) {
+    if (!r || !r.pg || typeof ST == "undefined" || typeof QD == "undefined") return 0;
+    const k = pgK(r.pg);
+    if (ST.some((s) => pgK(s.pg) == k)) return 0;
+    const have = new Set(QD.map((x) => pgK(x.pg)));
+    const free = ST.filter((s) => !s.x && s.ss != "مفصول" && !(pgK(s.pg) && have.has(pgK(s.pg)) && pgK(s.pg) != k));
+    const ex = free.filter((s) => NZ(s.n) == NZ(r.n) || pName(s) && NZ(pName(s)) == NZ(r.n));
+    if (ex.length == 1) {
+      ex[0].pg = String(r.pg);
+      try {
+        if (typeof STV != "undefined") STV++;
+      } catch (e) {
+      }
+      try {
+        P.st();
+      } catch (e) {
+      }
+      try {
+        toast("رُبط بالطالب «" + ex[0].n + "» — " + ex[0].s + " (رقم الصفحة " + (typeof toAr == "function" ? toAr(r.pg) : r.pg) + ")");
+      } catch (e) {
+      }
+      return 1;
+    }
+    if (ex.length > 1) {
+      try {
+        toast("يوجد أكثر من طالب بهذا الاسم في القوائم — اربطه يدوياً من «طلاب بدون صفحة قيد»", "err");
+      } catch (e) {
+      }
+    }
+    return 0;
+  }
+  W.link243 = link243;
+  on(() => {
+    if (typeof qAdd == "function") {
+      const _a = qAdd;
+      qAdd = function() {
+        const before = typeof QD != "undefined" ? new Set(QD.map((x) => x.i)) : null;
+        const r0 = _a.apply(this, arguments);
+        on(() => {
+          if (!before) return;
+          const nw = QD.filter((x) => !before.has(x.i));
+          nw.forEach(link243);
+        });
+        return r0;
+      };
+    }
+    if (typeof qSave == "function") {
+      const _s = qSave;
+      qSave = function(id) {
+        const r0 = _s.apply(this, arguments);
+        on(() => {
+          const r = QD.find((x) => x.i == id);
+          if (r) link243(r);
+        });
+        return r0;
+      };
+    }
+  });
+  on(() => {
+    const st = document.createElement("style");
+    st.id = "css243";
+    st.textContent = "td.red,td.red b,td.red span,.tw td.red,.tw td.red b,input.red235{color:#c62828!important}";
+    document.head.appendChild(st);
   });
 })();
 </script>
