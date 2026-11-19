@@ -45,18 +45,25 @@
     for (const a of L) { if (await W.has207(a)) PF.ok++; else todo.push(a); }
     paint();
     let i = 0;
+    /* v243: ملف واحد بالمرة (چان ٣ بالتوازي)، ويوقف وقت ما المستخدم يشتغل بالنظام أو الصفحة مخفية — ما يثقّل ولا يعلّك */
+    const calm = async () => { for (; ;) { const busy = Date.now() - ACT243 < 8000 || D.hidden || navigator.onLine === false; if (!busy) return; await new Promise(r => setTimeout(r, 4000)); } };
     const work = async () => {
       while (i < todo.length) {
-        if (navigator.onLine === false) { await new Promise(r => setTimeout(r, 15000)); continue; }
+        await calm();
         const a = todo[i++];
-        try { await W.blob207(a); PF.ok++; } catch (e) { PF.fail++; }
+        if ((FAIL243[a.id] || 0) >= 2) { PF.fail++; continue; }
+        try { await W.blob207(a); PF.ok++; } catch (e) { PF.fail++; FAIL243[a.id] = (FAIL243[a.id] || 0) + 1; }
         paint();
+        await new Promise(r => setTimeout(r, 300));
       }
     };
-    await Promise.all([work(), work(), work()]);
+    await work();
     PF.run = 0; paint();
-    if (PF.fail) { PF.fail = 0; setTimeout(prefetch, 120000); }
+    /* الملف اللي يفشل مرتين ما ينعاد بهاي الجلسة (قبل: يعيد الأرشيف كله كل دقيقتين للأبد) */
+    if (PF.fail && ++RETRY243 <= 2) { PF.fail = 0; setTimeout(prefetch, 300000); }
   }
+  let ACT243 = Date.now(), RETRY243 = 0; const FAIL243 = {};
+  ["pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach(e => D.addEventListener(e, () => { ACT243 = Date.now(); }, { capture: true, passive: true }));
   let pT = 0;
   function paint() { clearTimeout(pT); pT = setTimeout(() => { const e = D.getElementById("pf207"); if (e) e.outerHTML = chip(); }, 400); }
   const chip = () => !PF.n ? `<span id="pf207"></span>` : PF.ok >= PF.n
@@ -77,7 +84,7 @@
         if (!(typeof OWN != "undefined" && OWN) && !W.GXOWN) return;
         restoreArc();
         if (typeof aSub == "function" && typeof DB != "undefined" && DB) aSub();
-        if (typeof AREADY != "undefined" && AREADY && arc().some(isF)) { clearInterval(tick); migrate(); setTimeout(prefetch, 4000); }
+        if (typeof AREADY != "undefined" && AREADY && arc().some(isF)) { clearInterval(tick); migrate(); setTimeout(prefetch, 90000); }
       } catch (e) { }
     }, 2500);
   });

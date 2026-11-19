@@ -16,7 +16,7 @@
   /* v209: نسخة سليمة؟ (طول الملف يطابق حجمه) — نسخ حُفظت ناقصة وقت توقف الخادم تنمسح وتنجاب من جديد */
   const lenOk = (d, a) => { if (!d || typeof d != "string") return false; if (!a.size) return d.length > 16; const L = d.replace(/=+$/, "").length, exp = Math.ceil(a.size * 4 / 3); return Math.abs(L - exp) <= 4; };
   const okC = (c, a) => c && c.d && (c.k == ver(a) || String(c.k || "").split(":").pop() == String(a.parts || 1)) && lenOk(c.d, a);
-  const purge207 = a => { try { for (const k of [...MEM.keys()]) if (k.startsWith(a.id + ":")) MEM.delete(k); } catch (e) { } try { IDB() && IDB().del && IDB().del("ab_" + a.id); } catch (e) { } try { IDB() && IDB().put("ab_" + a.id, { k: "x", d: "", at: 0 }); } catch (e) { } try { IDB() && IDB().put("pr_" + a.id, { k: "x", b: null, at: 0 }); } catch (e) { } };
+  const purge207 = a => { try { W.pf243Mark && W.pf243Mark(a, 0); } catch (e) { } try { for (const k of [...MEM.keys()]) if (k.startsWith(a.id + ":")) MEM.delete(k); } catch (e) { } try { IDB() && IDB().del && IDB().del("ab_" + a.id); } catch (e) { } try { IDB() && IDB().put("ab_" + a.id, { k: "x", d: "", at: 0 }); } catch (e) { } try { IDB() && IDB().put("pr_" + a.id, { k: "x", b: null, at: 0 }); } catch (e) { } };
   W.purge207 = purge207;
   async function blob207(a) {
     if (a._b) return a._b;
@@ -24,7 +24,7 @@
     if (MEM.has(k)) return MEM.get(k);
     if (PEND.has(k)) return PEND.get(k);
     const p = (async () => {
-      try { const c = IDB() && await IDB().get("ab_" + a.id); if (okC(c, a)) { MEM.set(k, c.d); return c.d; } } catch (e) { }
+      try { const c = IDB() && await IDB().get("ab_" + a.id); if (okC(c, a)) { MEM.set(k, c.d); return c.d; } W.pf243Mark && W.pf243Mark(a, 0); } catch (e) { }
       if (navigator.onLine === false) throw "offline";
       const n = a.parts || 1, out = new Array(n); let i = 0;
       const worker = async () => { while (i < n) { const j = i++; let t = 0; for (; ;) { try { const d = await DB.doc("archpart/" + a.id + "_" + j).get(); if (!d.exists) throw "missing"; const v = (d.data() || {}).d; if (!v) throw "empty"; out[j] = v; break; } catch (e) { if (e === "missing" && t >= 1) throw e; if (++t > 3) throw e; await new Promise(r => setTimeout(r, 600 * t)); } } } };
@@ -32,7 +32,7 @@
       const s = out.join("");
       if (!lenOk(s, a)) throw "corrupt";
       MEM.set(k, s); if (MEM.size > 12) MEM.delete(MEM.keys().next().value);
-      try { if (IDB()) IDB().put("ab_" + a.id, { k, d: s, at: Date.now() }); } catch (e) { }
+      try { if (IDB()) Promise.resolve(IDB().put("ab_" + a.id, { k, d: s, at: Date.now() })).then(() => W.pf243Mark && W.pf243Mark(a, 1)).catch(() => { }); } catch (e) { }
       return s;
     })();
     PEND.set(k, p);
@@ -40,7 +40,17 @@
   }
   W.blob207 = blob207;
   /* محفوظ بالجهاز؟ (بدون تحميل) */
-  W.has207 = async a => { if (MEM.has(ver(a))) return true; try { return okC(IDB() && await IDB().get("ab_" + a.id), a); } catch (e) { return false; } };
+  /* v243: «محفوظ؟» چان يقرا الملف كامل من IndexedDB (مئات الميغات لكل الأرشيف بكل دخول وكل دقيقتين) — سبب ثقل وتعليق.
+     هسه قائمة صغيرة بالجهاز (localStorage pf243: id → نسخة الملف) تنكتب بعد كل حفظ متحقق، والقراءة الكاملة بس إذا الملف مو بالقائمة. */
+  const PFK = "pf243"; let PFM = null;
+  const pfm = () => { if (!PFM) { try { PFM = JSON.parse(localStorage.getItem(PFK) || "{}") || {}; } catch (e) { PFM = {}; } } return PFM; };
+  let pfT = 0; const pfSave = () => { clearTimeout(pfT); pfT = setTimeout(() => { try { localStorage.setItem(PFK, JSON.stringify(pfm())); } catch (e) { } }, 1500); };
+  W.pf243Mark = (a, ok) => { try { if (ok) pfm()[a.id] = ver(a); else delete pfm()[a.id]; pfSave(); } catch (e) { } };
+  W.has207 = async a => {
+    if (MEM.has(ver(a))) return true;
+    if (pfm()[a.id] === ver(a)) return true;
+    try { const ok = okC(IDB() && await IDB().get("ab_" + a.id), a); if (ok) W.pf243Mark(a, 1); return ok; } catch (e) { return false; }
+  };
   /* رابط داخلي للصورة (Blob) — أسرع بكثير من data: ويتفك بالخلفية */
   const URLS = new Map(), DEC = new Map();
   async function url207(a) {

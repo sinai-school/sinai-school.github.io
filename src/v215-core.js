@@ -391,6 +391,8 @@ input,select,textarea{max-width:100%;min-width:0}
   const sName = k => { let n = ""; on(() => { const s = (typeof ST != "undefined" ? ST : []).find(x => x.id == k); if (s) n = s.n + " — " + s.s; }); return n || k; };
   const tName = k => { let n = ""; on(() => { const f = (typeof STF != "undefined" ? STF : []).find(x => x.id == k); if (f) n = f.name; }); return n; };
   const kOf = r => [r.tkey, r.subj, r.label].join("|");
+  /* v243: الطلاب مرتبين حسب الشعبة (ترتيب شعب المدرسة) ثم الاسم */
+  const sortD243 = d => { const L = (d || []).slice(); let SNx = []; on(() => { SNx = typeof SN != "undefined" && SN ? SN : []; }); const S = {}; on(() => { (typeof ST != "undefined" ? ST : []).forEach(x => { S[x.id] = x; }); }); const k = x => { const s = S[x.skey]; const i = s ? SNx.indexOf(s.s) : -1; return [i < 0 ? 999 : i, s ? s.n : String(x.skey)]; }; return L.sort((a, b) => { const A1 = k(a), B1 = k(b); return A1[0] - B1[0] || String(A1[1]).localeCompare(String(B1[1]), "ar"); }); };
   const redraw = () => on(() => { const y = scrollY; render(); scrollTo(0, y); });
   W.tg215 = async i => {
     const D0 = (typeof APID != "undefined" && APID) || {}; const r = (D0.tgc || [])[i]; if (!r) return;
@@ -407,7 +409,7 @@ input,select,textarea{max-width:100%;min-width:0}
     return `<div class="box tg215"><h3>${I("pen")} تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال لعرض أسماء الطلاب ودرجاتهم.</p>${L.map((r, i) => {
       const k = kOf(r), op = OPEN[k], d = DET[k];
       const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>'
-        : `<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>${(d || []).map((x, j) => `<tr><td>${AD(j + 1)}</td><td class="l">${E(sName(x.skey))}</td><td class="${W.gRed235 && W.gRed235(x.val, r.label) ? "red" : ""}"><b>${E(AD(x.val))}${W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : ""}</b></td><td class="l">${E(x.note || "")}</td><td>${E(FD(x.date))}</td></tr>`).join("")}</table></div>`;
+        : `<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>${sortD243(d).map((x, j) => `<tr><td>${AD(j + 1)}</td><td class="l">${E(sName(x.skey))}</td><td class="${W.gRed235 && W.gRed235(x.val, r.label) ? "red" : ""}"><b>${E(AD(x.val))}${W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : ""}</b></td><td class="l">${E(x.note || "")}</td><td>${E(FD(x.date))}</td></tr>`).join("")}</table></div>`;
       return `<div class="tg215r"><button type="button" class="tg215h" onclick="tg215(${i})"><span><b>${E(r.tname || tName(r.tkey))}</b><small>${E(r.subj)} — ${E(W.gLbl235 ? W.gLbl235(r.label) : r.label)}</small></span><span class="chip">${AD(r.n)} طالب</span><span class="chip">${E(FD(r.d))}</span><span class="tg215c">${op ? "▲" : "▼"}</span></button>${body}</div>`;
     }).join("")}</div>`;
   }
