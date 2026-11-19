@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v242-2026-11-19T00:00:00.000Z-v242";
+<script>window.APP_VER = "2k7v242b-2026-11-19T01:00:00.000Z-v242b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -44757,6 +44757,52 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     if (el && !el.closest(".kf,.kat,input,textarea")) setTimeout(() => {
       if (!el.contains(document.activeElement)) fix(el);
     }, 0);
+  });
+})();
+</script>
+<script id="v242">(function() {
+  "use strict";
+  const W = window, D = document;
+  let act = Date.now(), last = 0;
+  ["pointerdown", "keydown", "touchstart", "wheel", "scroll"].forEach((e) => D.addEventListener(e, () => {
+    act = Date.now();
+  }, { capture: true, passive: true }));
+  function wrap() {
+    if (typeof W.v202Inbox != "function") return false;
+    if (W.v202Inbox._v242) return true;
+    const prev = W.v202Inbox;
+    W.v202Inbox = function() {
+      last = Date.now();
+      return prev.apply(this, arguments);
+    };
+    W.v202Inbox._v242 = 1;
+    return true;
+  }
+  const inPortal = () => {
+    try {
+      return typeof PS != "undefined" && PS && PS.b && PS.key && PS.stage == "in";
+    } catch (e) {
+      return false;
+    }
+  };
+  setInterval(() => {
+    try {
+      if (!wrap() || D.hidden || navigator.onLine === false || !inPortal()) return;
+      if (Date.now() - act < 18e4 && Date.now() - last >= 7e3) W.v202Inbox();
+    } catch (e) {
+    }
+  }, 2500);
+  W.addEventListener("online", () => {
+    try {
+      if (wrap() && inPortal()) setTimeout(() => W.v202Inbox(1), 800);
+    } catch (e) {
+    }
+  });
+  W.addEventListener("focus", () => {
+    try {
+      if (wrap() && inPortal() && Date.now() - last > 3e3) W.v202Inbox(1);
+    } catch (e) {
+    }
   });
 })();
 </script>
