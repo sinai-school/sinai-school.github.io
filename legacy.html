@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v243c-2026-11-19T13:40:00.000Z-v243c";
+<script>window.APP_VER = "2k7v243d-2026-11-19T13:55:00.000Z-v243d";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -34236,7 +34236,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           const c = kind == "d" ? cands(it.s) : [];
           return '<div class="q206c"><div class="q206h"><span>صفحة القيد <b>'.concat(A(it.r.pg), "</b>").concat(it.r.y ? " · سنة " + A(E(it.r.y)) : "", '</span><span class="muted">').concat(E(it.s.s || ""), "</span></div>\n<dl><dt>اسم الصف (النظام)</dt><dd><b>").concat(E(it.s.n), "</b></dd><dt>اسم القيد</dt><dd>").concat(E(it.r.n), "</dd><dt>البوابة (حسب البطاقة)</dt><dd>").concat(E(it.pn || "—"), "</dd></dl>\n").concat(kind == "d" ? '<p class="q206w">⚠️ الاسمان لطالبين مختلفين — رقم صفحة القيد المسجّل للطالب في النظام خاطئ على الأرجح، لذا لن يُغيَّر أي اسم.</p>'.concat(c.length ? '<div class="q206a"><span class="muted">صفحات قيد بنفس اسم الطالب:</span>'.concat(c.map((r) => '<button class="btn sm" onclick="q206Link('.concat(i, ",'").concat(E(String(r.pg)), "')\">ربط بصفحة ").concat(A(r.pg)).concat(r.y ? " (" + A(E(r.y)) + ")" : "", "</button>")).join(""), "</div>") : '<p class="muted" style="margin:4px 0">لم أجد صفحة أخرى بالاسم نفسه — راجع رقم الصفحة في ملف الطالب.</p>', '<div class="q206a"><button class="btn ghost sm" onclick="qSkip205(').concat(i, ')">اتركه</button></div>') : '<div class="q206a"><button class="btn sm" onclick="qFix205('.concat(i, ')">اسم الصف صحيح ← يتصحح القيد</button><button class="btn sm" onclick="q206Sys(').concat(i, ')">اسم القيد صحيح ← يتصحح النظام</button>').concat(it.pn ? '<button class="btn sm" onclick="q206Por('.concat(i, ')">اسم البطاقة صحيح ← يتصحح الاثنين</button>') : "", '<button class="btn ghost sm" onclick="qSkip205(').concat(i, ')">اتركه</button></div>'), "</div>");
         };
-        const box = '<details class="box q206" '.concat(Q.rev.length ? "open" : "", '><summary><b>مطابقة أسماء الطلاب مع القيد العام</b><span class="q206s">تصحّح تلقائياً: ').concat(A(Q.done || 0), " · فرق همزة أو مسافة فقط: ").concat(A(Q.fmt || 0), " · تحتاج اختيارك: ").concat(A(near.length), " · صفحة قيد لطالب ثاني: ").concat(A(diff.length), "</span></summary>\n").concat(Q.rev.length ? '<p class="muted" style="margin:6px 0">اختر لكل طالب الاسم الصحيح، وسيُصحَّح تلقائياً في الموضع الآخر. «البوابة» هو الاسم الذي كتبه الطالب حسب بطاقته الموحدة.</p>'.concat(near.slice(0, 150).map((x) => card(x, "n")).join("")).concat(diff.length ? '<h3 style="margin:14px 0 6px">صفحة القيد مربوطة بطالب ثاني ('.concat(A(diff.length), ")</h3>") + diff.slice(0, 150).map((x) => card(x, "d")).join("") : "") : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>', "</details>");
+        const box = '<details class="box q206" '.concat(Q.rev.length ? "open" : "", '><summary><b>مطابقة أسماء الطلاب مع القيد العام</b><span class="q206s">').concat(Q.rev.length ? "تحتاج اختيارك: <b>".concat(A(near.length), "</b> اسم — صفحة قيد مربوطة بطالب آخر: <b>").concat(A(diff.length), "</b>") : "✓ كل أسماء الطلاب مطابقة للقيد العام — لا يحتاج أي إجراء", '<br><small class="muted">للعلم فقط: صُحّح تلقائياً ').concat(A(Q.done || 0), " اسم، و").concat(A(Q.fmt || 0), " اسم يختلف بالهمزة أو المسافة فقط (نفس الشخص، ولا يحتاج أي إجراء).</small></span></summary>\n").concat(Q.rev.length ? '<p class="muted" style="margin:6px 0">اختر لكل طالب الاسم الصحيح، وسيُصحَّح تلقائياً في الموضع الآخر. «البوابة» هو الاسم الذي كتبه الطالب حسب بطاقته الموحدة.</p>'.concat(near.slice(0, 150).map((x) => card(x, "n")).join("")).concat(diff.length ? '<h3 style="margin:14px 0 6px">صفحة القيد مربوطة بطالب ثاني ('.concat(A(diff.length), ")</h3>") + diff.slice(0, 150).map((x) => card(x, "d")).join("") : "") : '<p class="muted" style="margin:6px 0">كل الأسماء مطابقة ✓</p>', "</details>");
         h = h.slice(0, a) + box + h.slice(b + 10);
       } catch (x) {
         console.warn(x);
@@ -45076,10 +45076,25 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const SNAP243 = /* @__PURE__ */ new Map();
   const snap = () => {
     try {
-      (typeof ST != "undefined" ? ST : []).forEach((x) => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg) }));
+      (typeof ST != "undefined" ? ST : []).forEach((x) => SNAP243.set(x.id, { n: x.n, pg: pgK(x.pg), raw: x.pg }));
     } catch (e) {
     }
   };
+  const tok2 = (n) => NZ(n).split(" ").slice(0, 2).join(" ");
+  function pgWarn(x, pg) {
+    try {
+      const others = (ST || []).filter((y) => y.id != x.id && !y.x && pgK(y.pg) == pg);
+      const AR = (v) => typeof toAr == "function" ? toAr(v) : v;
+      if (others.length) return "رقم الصفحة " + AR(pg) + " في القيد العام مرتبط بالطالب " + others.map((y) => "«" + y.n + "» (" + (y.s || "") + ")").join("، ");
+      if (typeof QD != "undefined" && QD.length) {
+        const r = QD.filter((r2) => pgK(r2.pg) == pg);
+        const bad = r.filter((r2) => tok2(r2.n) != tok2(x.n) && !(pName(x) && tok2(r2.n) == tok2(pName(x))));
+        if (r.length && bad.length == r.length) return "رقم الصفحة " + AR(pg) + " في القيد العام مرتبط باسم " + bad.map((r2) => "«" + r2.n + "»" + (r2.y ? " (" + AR(r2.y) + ")" : "")).join("، ");
+      }
+    } catch (e) {
+    }
+    return "";
+  }
   const PEND = [];
   const qReady = () => typeof QD != "undefined" && QD.length && (typeof QREADY == "undefined" || QREADY);
   function applyQ() {
@@ -45148,6 +45163,28 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     if (P.st._v243) return true;
     const _st = P.st;
     P.st = function() {
+      on(() => {
+        if (!SNAP243.size) return;
+        (ST || []).forEach((x) => {
+          const o = SNAP243.get(x.id);
+          if (!o) return;
+          const pg = pgK(x.pg);
+          if (!pg || pg == o.pg) return;
+          const w = pgWarn(x, pg);
+          if (!w) return;
+          if (o.raw) x.pg = o.raw;
+          else delete x.pg;
+          const msg = "لا يمكن حفظ رقم الصفحة للطالب «" + x.n + "»: " + w + ".";
+          try {
+            toast(msg, "err");
+          } catch (e) {
+          }
+          try {
+            setTimeout(() => alert(msg + "\n\nأُعيد رقم الصفحة السابق، وحُفظت باقي التعديلات."), 50);
+          } catch (e) {
+          }
+        });
+      });
       on(() => {
         if (!SNAP243.size) return;
         (ST || []).forEach((x) => {
