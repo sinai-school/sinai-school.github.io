@@ -217,19 +217,40 @@
   const pgK = v => String(v == null ? "" : v).replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g, "");
   const portalName = s => { try { const x = (typeof INF != "undefined" && INF && INF[s.id] && INF[s.id].x) || null; return x ? [x.n1, x.n2, x.n3, x.n4].filter(Boolean).join(" ") : ""; } catch (e) { return ""; } };
   const allSt = () => (typeof ST != "undefined" ? ST : []).filter(s => !s.x && s.ss != "مفصول");
+  /* v243: چانت تاخذ ~١ ثانية (٣ ثواني بحاسبة بطيئة) بكل رسم للقيد العام: لكل طالب تقارن بكل الـ١٣ ألف سجل بـ lev + regex.
+     هسه: الأسماء المطبّعة والكلمات محسوبة مرة وحدة لكل نسخة من القيد، المقارنة القريبة بس ويا السجلات اللي كلمتها الأولى بطول قريب،
+     والنتيجة محفوظة لحد ما يتغيّر القيد أو قوائم الطلاب. النتيجة نفسها بالضبط. */
+  let NQ = { k: "", v: null }, QX = { n: -1, q: null, m: null };
+  function qIdx(sig) {
+    if (QX.q === QD && QX.n === sig && QX.m) return QX.m;
+    const m = new Map(); QD.forEach(r => { const z = NZ(r.n); m.set(r, { z, t: z.split(" ").filter(Boolean), k: pgK(r.pg) }); });
+    QX = { n: sig, q: QD, m }; return m;
+  }
+  const near2 = (x, y) => { if (x.length < 2 || y.length < 2) return false; const d0 = lev(x[0], y[0]); if (d0 > 1) return false; const d1 = lev(x[1], y[1]); if (d1 > 1 || d0 + d1 > 2) return false; if (x.length >= 3 && y.length >= 3 && lev(x[2], y[2]) > 2) return false; return true; };
   function noQaid() {
     if (typeof QD == "undefined" || !QD.length) return null;
-    const used = new Set(allSt().map(s => pgK(s.pg)).filter(Boolean));
-    const free = QD.filter(r => !used.has(pgK(r.pg)));
+    const S = allSt();
+    const qsig = QD.map(r => r.pg + ":" + r.n).join("¦");
+    const key = qsig + "|" + S.map(s => s.id + ":" + (s.pg || "") + ":" + s.n).join("¦") + "|" + (typeof INF != "undefined" && INF ? Object.keys(INF).length : 0);
+    if (NQ.k === key && NQ.v) return NQ.v;
+    const M = qIdx(qsig);
+    const used = new Set(S.map(s => pgK(s.pg)).filter(Boolean));
+    const qk = new Set(); QD.forEach(r => qk.add(M.get(r).k));
+    const free = QD.filter(r => !used.has(M.get(r).k));
+    const byLen = new Map(); free.forEach(r => { const t = M.get(r).t; if (t.length < 2) return; const L = t[0].length; (byLen.get(L) || byLen.set(L, []).get(L)).push(r); });
+    const cand = t => t.length < 2 ? [] : [...(byLen.get(t[0].length - 1) || []), ...(byLen.get(t[0].length) || []), ...(byLen.get(t[0].length + 1) || [])];
     const out = [];
-    allSt().forEach(s => {
+    S.forEach(s => {
       const k = pgK(s.pg);
-      if (k && QD.some(r => pgK(r.pg) == k)) return;
-      const pn = portalName(s);
-      const ex = free.filter(r => NZ(r.n) == NZ(s.n) || (pn && NZ(r.n) == NZ(pn)));
-      const near = free.filter(r => !ex.includes(r) && (samePerson(s.n, r.n) || (pn && samePerson(pn, r.n)))).sort((a, b) => (+pgK(b.pg)) - (+pgK(a.pg))).slice(0, 4);
+      if (k && qk.has(k)) return;
+      const pn = portalName(s), zs = NZ(s.n), zp = pn ? NZ(pn) : "";
+      const ex = free.filter(r => { const z = M.get(r).z; return z == zs || (zp && z == zp); });
+      const ts = zs.split(" ").filter(Boolean), tp = zp ? zp.split(" ").filter(Boolean) : [];
+      const pool = new Set([...cand(ts), ...cand(tp)]);
+      const near = [...pool].filter(r => !ex.includes(r) && (near2(ts, M.get(r).t) || (tp.length && near2(tp, M.get(r).t)))).sort((a, b) => (+pgK(b.pg)) - (+pgK(a.pg))).slice(0, 4);
       out.push({ s, pn, ex, near, bad: !!k });
     });
+    NQ = { k: key, v: out };
     return out;
   }
   W.noQaid207 = noQaid;

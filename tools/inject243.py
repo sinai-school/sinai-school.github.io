@@ -11,7 +11,7 @@ R=[
  ('const EDU=["دكتوراه","ماجستير","دبلوم عالي","بكالوريوس","دبلوم","إعدادية","أخرى","غير محدد"];', 'const EDU=["دكتوراه","ماجستير","دبلوم عالي","بكالوريوس","دبلوم","إعدادية","متوسطة","ابتدائية","أخرى","غير محدد"];'),
  ('D.text("التوقيع",{sz:13,b:1,al:"c",x0:D.L,x1:D.L+sw});D.gap(2);D.text("المدير: فراس حسن كاظم",{sz:13,b:1,al:"c",x0:D.L,x1:D.L+sw});',
   '{const _sg=String(L.sig??L_SIG).split("\\n").filter(x=>x.trim());(_sg.length?_sg:["التوقيع"]).forEach((t,i)=>{if(i)D.gap(2);D.text(t,{sz:13,b:1,al:"c",x0:D.L,x1:D.L+sw})})}'),
- ('<label>السنة<input id="qa_y" value="${esc(yrs[yrs.length-1]||"")}"', '<label>السنة<input id="qa_y" value="${esc((()=>{try{const m=String(yrSlash()).match(/(\\d{4})\\D+(\\d{4})/);if(m)return Math.max(+m[1],+m[2])+"/"+Math.min(+m[1],+m[2])}catch(e){}return""})()||yrs.filter(y=>/^\\d{4}\\/\\d{4}$/.test(y)).pop()||"")}"'),
+ ('<label>السنة<input id="qa_y" value="${esc(yrs[yrs.length-1]||"")}" ', '<label>السنة<input id="qa_y" value="${esc((()=>{const C={};QD.forEach(r=>{const y=r.y||"";if(/^\\d{4}\\D\\d{4}$/.test(y))C[y]=(C[y]||0)+1});const L=Object.keys(C);if(!L.length)return"";const top=y=>Math.max(...y.match(/\\d{4}/g).map(Number));L.sort((a,b)=>top(b)-top(a)||C[b]-C[a]);return L[0]})())}" '),
  ('try{const a=document.querySelector(\'#nav [aria-current="page"]\');if(a&&a.scrollIntoView)a.scrollIntoView({block:"nearest"})}catch(e){}', 'try{const a=document.querySelector(\'#nav [aria-current="page"]\');if(a&&a.scrollIntoView&&window.__siv243!==a.textContent){window.__siv243=a.textContent;a.scrollIntoView({block:"nearest"})}}catch(e){}'),
 ]
 for a,b in R:
