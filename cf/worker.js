@@ -436,6 +436,8 @@ async function tgrade202_(b, y) {
   const P = await private_(), me = (P.t || {})[y.key] || {}, studs = new Set(me.studs || []);
   const label = String(b.label || '').trim().slice(0, 60), subj0 = String(b.subj || '').trim().slice(0, 60);
   if (!label) return { err: 'text' };
+  /* v244: نصف السنة وآخر السنة والدرجة النهائية والدور الثاني للإدارة حصراً */
+  if (/^(امتحان نصف السنة|السعي السنوي|امتحان آخر السنة|الدرجة النهائية|امتحان الإكمال)/.test(label)) return { err: 'lbl244' };
   const M = await tsj233_();
   const st = [], t = now();
   for (const r of (b.rows || []).slice(0, 600)) {

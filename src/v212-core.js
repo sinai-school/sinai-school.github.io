@@ -84,7 +84,11 @@
   function idbGet(k) { return db().then(function (d) { if (!d) return null; return new Promise(function (ok) { try { var q = d.transaction("lc").objectStore("lc").get(k); q.onsuccess = function () { ok(q.result || null); }; q.onerror = function () { ok(null); }; } catch (e) { ok(null); } }); }); }
   function idbPut(k, v) { return db().then(function (d) { if (!d) return; try { var tx = d.transaction("lc", "readwrite"), st = tx.objectStore("lc"); st.put(v, k); var cr = st.openCursor(), n = 0, L = []; cr.onsuccess = function () { var c = cr.result; if (!c) { L.sort(function (a, b) { return b[1] - a[1]; }); L.slice(16).forEach(function (x) { try { st.delete(x[0]); } catch (e) { } }); return; } L.push([c.key, (c.value && c.value.t) || 0]); c.continue(); }; } catch (e) { } }); }
   var PRE = {}; /* مفتاح → نتيجة محمّلة مسبقاً من IndexedDB */
-  function keyOf(root) { return "L" + h32(root.innerHTML) + "|" + (W.devicePixelRatio || 1) + "|" + fontsOk() + "|" + (W.APP_VER || ""); }
+  /* v244: المفتاح ما يعتمد على نسخة النظام (كانت كل تحديث — عدة مرات باليوم — يرجّع أول فتح بطيء ~٣٠ ثانية).
+     يعتمد على نسخة محرك الترتيب DXLV + تنسيقات .dx — أي تعديل على dxLayout/dxFit لازم يرفع DXLV. */
+  var DXLV = "dx244a", LV = null;
+  function lv() { if (LV) return LV; var t = ""; try { [].forEach.call(document.querySelectorAll("style"), function (st) { var x = st.textContent || ""; if (x.indexOf(".dx") >= 0) t += x; }); } catch (e) { } LV = DXLV + "-" + h32(t); return LV; }
+  function keyOf(root) { return "L" + h32(root.innerHTML) + "|" + (W.devicePixelRatio || 1) + "|" + fontsOk() + "|" + lv(); }
   var _fit = dxFit, _lay = dxLayout;
   dxFit = function (root) {
     var k = null;

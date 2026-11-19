@@ -33,7 +33,7 @@
       const f = y !== "" && isNv(o.e) && o.e !== "م" ? avg([y, o.e]) : "";
       const k2 = f !== "" && f < 50 && isNv(o.k) && o.k !== "م" ? N(o.k) : "";
       const eff = k2 !== "" && k2 !== null ? k2 : f;
-      const st = o.e === "م" ? "مؤجل" : f === "" ? "" : f >= 50 ? "ناجح" : (k2 === "" || k2 === null) ? (o.k === "م" ? "مؤجل" : "مكمل") : k2 >= 50 ? "ناجح بالإكمال" : "راسب";
+      const st = (o.e === "م" || ["a", "m", "b"].some(k => o[k] === "م")) ? "مؤجل" : f === "" ? "" : f >= 50 ? "ناجح" : (k2 === "" || k2 === null) ? (o.k === "م" ? "مؤجل" : "مكمل") : k2 >= 50 ? "ناجح بالإكمال" : "راسب";
       return { y, f, k: k2 === null ? "" : k2, eff, st };
     };
   } catch (e) { console.warn("v219", e); }
@@ -51,12 +51,21 @@
     const val = (l, depth) => {
       const r = (G.rows || []).find(x => x.skey == sk && x.label == l && x.subj == G.sj);
       if (r && isNv(r.val)) return String(r.val);
+      /* v244: شهر ثالث اختياري — إذا أُرسل: الثلاثة ÷ ٣ أو أعلى درجتين ÷ ٢ حسب اختيار المدرس */
+      const sem = l == "معدل الفصل الأول" ? "a" : l == "معدل الفصل الثاني" ? "b" : "";
+      if (sem) {
+        const m = AUTO[l].map(x => val(x, depth + 1)), m3 = val(sem == "a" ? "الشهر الثالث — الفصل الأول" : "الشهر الثالث — الفصل الثاني", depth + 1);
+        if (!isNv(m3)) { const v = avg(m); return v === "" ? "" : String(v); }
+        const all = m.concat([m3]); if (all.some(x => x === "م") || all.some(x => N(x) === null)) return "";
+        if ((W.tgMeth244 ? W.tgMeth244(sem) : "3") == "2") { const t = all.map(N).sort((a, b) => b - a).slice(0, 2); return String(Math.round((t[0] + t[1]) / 2)); }
+        return String(avg(all));
+      }
       if (AUTO[l] && depth < 3) { const v = avg(AUTO[l].map(x => val(x, depth + 1))); return v === "" ? "" : String(v); }
       return "";
     };
     if (!AUTO[lbl]) return "";
     return val(lbl, 0);
   };
-  W.tgIsAuto219 = l => !!AUTO[l || (W.G202 || {}).lbl];
+  W.tgIsAuto219 = l => /^معدل الفصل/.test(l || (W.G202 || {}).lbl || "");
   try { const st = document.createElement("style"); st.textContent = `input.au219{background:#eef7f1;color:#0f4d3c;font-weight:700}.g219{font-size:12px;margin:4px 0 8px}`; document.head.appendChild(st); } catch (e) { }
 })();
