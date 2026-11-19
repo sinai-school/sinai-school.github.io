@@ -1036,9 +1036,50 @@ async function stf_(b) {
     if (!BLOB_RE.test(p) && b.sid) await kvPut('ds_' + p, String(b.sid) + '|' + rr.rev);
     if (/^(school\/students|stuinfo\/|staff\/)/.test(p)) MEMO.applyDirty = 1;
     if (old216) { try { await rev216_(p, old216, JSON.parse(g8.d)); } catch (e) { } }
+    if (/^school\/(students|timetable|config)$/.test(p)) { try { await privLite242_(); } catch (e) { } }
     return g8.d === d ? { ok: 1, rev: rr.rev } : { ok: 1, rev: rr.rev, mod: 1 };
   }
   return { err: 'op' };
+}
+
+/* ---------- v242: قوائم طلاب كل مدرس تتحدّث بالخادم نفسه ----------
+   قبل: شعب المدرس وطلابه (priv.t[k].secs/studs/studs2) ما تتحدّث إلا من جهاز مدير النظام وهو مفتوح (push217).
+   هسه أي حفظ لـ school/students أو الجدول أو الإعدادات (من أي جهاز) يعيد حسابها هنا بنفس قاعدة الصفحة (staSorted/STA،
+   متحقق على نسخة 19/11: ٣٤ مدرساً مطابقين ١٠٠٪ بالترتيب)، ويحدّث اسم الطالب وشعبته بملفه الخاص. باقي الحقول ما تتغيّر. */
+const AKEY242 = n => String(n || '').replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim();
+async function privLite242_() {
+  const P = await kvJ('priv', null); if (!P || !P.t || !P.s) return 0;
+  const J = x => { try { return x && typeof x.json === 'string' ? JSON.parse(x.json) : x; } catch (e) { return null; } };
+  const A = x => { if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } } return x; };
+  const st = J(await docJ_('school/students')), c = J(await docJ_('school/config')), tt = J(await docJ_('school/timetable'));
+  const L0 = st && Array.isArray(st.list) ? st.list : null, N = c && Array.isArray(c.N) ? c.N : null;
+  if (!L0 || !L0.length || !N || !N.length) return 0;
+  const ix = {}; N.forEach((n, i) => { if (!(n in ix)) ix[n] = i; });
+  const isAtt = x => /^السادس/.test(String(x.s || '')) && /محاول/.test((x.nt || '') + ' ' + (x.ss || ''));
+  let L = L0.filter(x => x && !x.x).map(x => [x, ix[x.s] ?? 999, AKEY242(x.n)]);
+  L.sort((a, b) => a[1] - b[1] || (a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0) || String(a[0].id).localeCompare(String(b[0].id)));
+  L = L.map(x => x[0]); if (L.some(isAtt)) L = L.filter(x => !isAtt(x));
+  const before = JSON.stringify([P.t, P.s]);
+  /* شعب كل مدرس من الجدول: g[شعبة][يوم][حصة] = وحدة، وuk[وحدة] = «اسم المدرس|المادة|…» */
+  const g = A(tt && tt.g), uk = A(tt && tt.uk), SB = {};
+  if (Array.isArray(g) && Array.isArray(uk) && g.length === N.length) {
+    g.forEach((S, si) => (S || []).forEach(dd => (dd || []).forEach(u => { if (u != null && u >= 0 && u < uk.length) { const t = String(uk[u] || '').split('|')[0].trim(); if (t) (SB[t] = SB[t] || new Set()).add(si); } })));
+  }
+  const tn = Object.keys(SB).map(t => [t, AKEY242(t)]);
+  for (const k in P.t) {
+    const o = P.t[k]; if (!o || typeof o !== 'object') continue;
+    const nm = AKEY242(o.n); let secs = Array.isArray(o.secs) ? o.secs : null;
+    if (nm && tn.length) {
+      const m = tn.filter(([t, a]) => a && (nm === a || nm.startsWith(a + ' '))).sort((x, y) => y[1].length - x[1].length);
+      if (m.length && (m.length === 1 || m[0][1].length > m[1][1].length)) secs = [...SB[m[0][0]]].sort((a, b) => a - b).map(i => N[i]);
+    }
+    if (!secs) continue;
+    const S = new Set(secs), my = L.filter(x => S.has(x.s));
+    o.secs = secs; o.studs = my.map(x => x.id); o.studs2 = my.map(x => [x.id, x.n, x.s]);
+  }
+  for (const x of L0) { const q = x && P.s[x.id]; if (!q || x.x) continue; if (x.n) q.n = x.n; if (x.s) q.s = x.s; if ('ss' in x) q.st = x.ss || ''; }
+  if (JSON.stringify([P.t, P.s]) === before) return 0;
+  await kvPut('priv', P); await privBump_(); return 1;
 }
 
 /* ---------- v216: تعديل النظام ← البوابة ----------
