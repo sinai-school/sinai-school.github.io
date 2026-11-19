@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v245-2026-11-19T19:30:00.000Z-v245";
+<script>window.APP_VER = "2k7v246-2026-11-19T20:55:00.000Z-v246";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -29493,6 +29493,15 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   W.v244Q = (sk, v) => {
     const g2 = D.getElementById("gv_" + sk);
     if (!g2) return;
+    {
+      const w = D.getElementById("gw_" + sk), o = D.getElementById("go_" + sk);
+      if (w && o) {
+        w.value = v;
+        o.value = v;
+        W.v246Sum(sk);
+        return;
+      }
+    }
     g2.value = v;
     g2.classList.toggle("red235", W.gRed235(v, G.lbl));
     const c = D.getElementById("gq_" + sk);
@@ -29537,7 +29546,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const G = W.G202 = W.G202 || { sec: "", lbl: LBL[0], sj: "", rows: null, at: 0 };
   try {
     const st2 = D.createElement("style");
-    st2.textContent = ".g202 td.nt244{min-width:190px!important;width:190px}.g202 td.nt244 input{width:100%!important;min-width:170px!important;max-width:none!important;box-sizing:border-box}.g202 .q244{display:flex!important;gap:4px;margin-bottom:4px;flex-wrap:nowrap;justify-content:flex-start}.g202 .q244[hidden]{display:none!important}.g202 .q244 .btn{padding:3px 8px!important;font-size:12px!important;white-space:nowrap;min-height:0!important;width:auto!important}";
+    st2.textContent = ".g202 td.nt244{min-width:190px!important;width:190px}.g202 td.nt244 input{width:100%!important;min-width:170px!important;max-width:none!important;box-sizing:border-box}.g202 .q244{display:flex!important;gap:4px;margin-bottom:4px;flex-wrap:nowrap;justify-content:flex-start}.g202 .q244[hidden]{display:none!important}.g202 .q244 .btn{padding:3px 8px!important;font-size:12px!important;white-space:nowrap;min-height:0!important;width:auto!important}.g202 .sp246{display:flex;gap:6px;align-items:flex-end;justify-content:center}.g202 .sp246 label{display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;margin:0}.g202 .sp246 input{width:58px!important;min-width:0!important;text-align:center}.g202 .sp246 small{font-size:10px;color:#667}.g202 input.tot246{background:#f2f5f3!important;font-weight:700}";
     D.head.appendChild(st2);
   } catch (e) {
   }
@@ -29555,26 +29564,36 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   }
   const tgVal = (sk) => {
     const r = (G.rows || []).find((x) => x.skey == sk && x.label == G.lbl && x.subj == G.sj);
-    return r ? { v: r.val, n: r.note } : { v: "", n: "" };
+    return r ? { v: r.val, n: r.note, x: r.x || "" } : { v: "", n: "", x: "" };
   };
-  function mySubj() {
+  const GA246 = () => {
     try {
-      const t = (SNAP.tch || []).find((x) => x && x.k == PS.key);
-      const ti = SNAP.tch.indexOf(t);
-      const S = /* @__PURE__ */ new Set();
-      (SNAP.cells || []).forEach((a) => a.forEach((c) => {
-        if (c && c[1] == ti) S.add(SNAP.subj[c[0]]);
-      }));
-      return [...S];
+      return ((PS.b && PS.b.private || {}).ga || []).filter((x) => Array.isArray(x) && x[0] && x[1]);
     } catch (e) {
       return [];
     }
+  };
+  function mySubj() {
+    const S = /* @__PURE__ */ new Set();
+    try {
+      const t = (SNAP.tch || []).find((x) => x && x.k == PS.key);
+      const ti = SNAP.tch.indexOf(t);
+      (SNAP.cells || []).forEach((a) => a.forEach((c) => {
+        if (c && ti >= 0 && c[1] == ti) S.add(SNAP.subj[c[0]]);
+      }));
+    } catch (e) {
+    }
+    GA246().forEach((g2) => S.add(g2[0]));
+    return [...S];
   }
   function secSubj233(sec) {
     try {
       const ti = SNAP.tch.findIndex((x) => x && x.k == PS.key), s = (SNAP.sn || []).indexOf(sec), S = /* @__PURE__ */ new Set();
       if (ti >= 0 && s >= 0) (SNAP.cells[s] || []).forEach((c) => {
         if (c && c[1] == ti) S.add(SNAP.subj[c[0]]);
+      });
+      GA246().forEach((g2) => {
+        if (g2[1] == sec) S.add(g2[0]);
       });
       if (S.size) return [...S];
     } catch (e) {
@@ -29585,13 +29604,68 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const L = secs.filter((s) => {
       try {
         const ti = SNAP.tch.findIndex((x) => x && x.k == PS.key), si = (SNAP.sn || []).indexOf(s);
-        return ti >= 0 && si >= 0 && (SNAP.cells[si] || []).some((c) => c && c[1] == ti && SNAP.subj[c[0]] == sj);
+        return GA246().some((g2) => g2[0] == sj && g2[1] == s) || ti >= 0 && si >= 0 && (SNAP.cells[si] || []).some((c) => c && c[1] == ti && SNAP.subj[c[0]] == sj);
       } catch (e) {
         return false;
       }
     });
     return L.length ? L : secs;
   }
+  const OR246 = /اسلام|إسلام|عربي|عربية|انكليز|إنكليز|انجليز|إنجليز/;
+  const n246 = (v) => String(v == null ? "" : v).trim().replace(/[٠-٩]/g, (c) => c.charCodeAt(0) - 1632).replace(",", ".").replace(/^(غائب|غياب)$/, "غ").replace(/^(مؤجل|موجل)$/, "م");
+  const xp246 = (x) => {
+    const m = /^([^\/+]*)\/(\d+)\+([^\/+]*)\/(\d+)$/.exec(String(x || ""));
+    return m ? { w: m[1], X: +m[2], o: m[3], O: +m[4] } : null;
+  };
+  const red246 = (v, mx) => {
+    v = n246(v);
+    return v === "غ" || /^\d+(\.\d+)?$/.test(v) && +v < mx / 2;
+  };
+  const oxKey246 = () => "ox246_" + (PS.key || "") + "|" + (G.sj || "") + "|" + (G.sec || "") + "|" + (G.lbl || "");
+  function ox246() {
+    let v = null;
+    try {
+      v = localStorage.getItem(oxKey246());
+    } catch (e) {
+    }
+    if (v && +v >= 50 && +v <= 100) return +v;
+    const st2 = new Set(((PS.b && PS.b.private || {}).studs2 || []).filter((x) => x[2] == G.sec).map((x) => x[0])), r = (G.rows || []).find((r2) => r2.label == G.lbl && r2.subj == G.sj && st2.has(r2.skey) && xp246(r2.x));
+    return r ? xp246(r.x).X : 100;
+  }
+  W.v246Ox = (v) => {
+    try {
+      localStorage.setItem(oxKey246(), String(+v || 100));
+    } catch (e) {
+    }
+    prender();
+  };
+  W.v246Sum = (sk) => {
+    const g2 = (id) => D.getElementById(id + sk), w = g2("gw_"), o = g2("go_"), t = g2("gv_");
+    if (!w || !o || !t) return;
+    const X = ox246(), O = 100 - X, a = n246(w.value), b = n246(o.value);
+    w.classList.toggle("red235", red246(a, X));
+    o.classList.toggle("red235", red246(b, O));
+    let T2 = "";
+    if (a === "م" || b === "م") T2 = "م";
+    else if (a === "غ" && b === "غ") T2 = "غ";
+    else if (a !== "" && b !== "") {
+      const num = (z) => z === "غ" ? 0 : +z;
+      if (!isNaN(num(a)) && !isNaN(num(b))) T2 = String(Math.round((num(a) + num(b)) * 100) / 100);
+    }
+    t.value = T2;
+    t.classList.toggle("red235", W.gRed235(T2, G.lbl));
+    const q = g2("gq_");
+    if (q) q.hidden = !!(a || b);
+  };
+  W.gX246 = (x) => {
+    const p = xp246(x);
+    return p ? "تحريري " + A(p.w || "—") + " من " + A(p.X) + (p.o === "" ? " (الشفهي لم يُرسل بعد)" : " + شفهي " + A(p.o) + " من " + A(p.O)) : "";
+  };
+  W.gShow246 = (v, x, l) => {
+    const p = xp246(x);
+    if ((v === "" || v == null) && p && p.w !== "") return { t: A(p.w) + " من " + A(p.X), red: red246(p.w, p.X) };
+    return { t: W.gVal235(v, l), red: W.gRed235(v, l) };
+  };
   function gradesTab() {
     const pv = PS.b && PS.b.private || {}, secs = pv.secs || [], studs = pv.studs2 || [];
     if (!secs.length) return '<div class="box"><p class="muted" style="margin:0">لا توجد شعب مسندة إليك في الجدول.</p></div>';
@@ -29610,14 +29684,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const lblOpts = LBL.map((l) => '<option value="'.concat(E(l), '" ').concat(l == G.lbl || isEx && l == "امتحان يومي" ? "selected" : "", ">").concat(E(l == "امتحان يومي" ? "امتحان يومي (تحدد درجته الكلية — منفصل لا يدخل بأي معدل)" : /^الشهر الثالث/.test(l) ? l + " (اختياري)" : /^معدل الفصل/.test(l) ? l + " (يُحسب تلقائياً)" : W.gLbl235(l)), "</option>")).join("");
     const sem244 = /الفصل الأول/.test(G.lbl) ? "a" : /الفصل الثاني/.test(G.lbl) ? "b" : "";
     const mF = sem244 && /^(الشهر الثالث|معدل الفصل)/.test(G.lbl) ? '<label class="wide">معدل الفصل إذا أُرسل شهر ثالث<select onchange="v244Meth(\''.concat(sem244, '\',this.value)"><option value="3" ').concat(W.tgMeth244(sem244) == "3" ? "selected" : "", '>مجموع الأشهر الثلاثة ÷ ٣</option><option value="2" ').concat(W.tgMeth244(sem244) == "2" ? "selected" : "", ">أعلى درجتين من الثلاثة ÷ ٢</option></select></label>") : "";
+    const oral = /^الشهر/.test(G.lbl) && OR246.test(G.sj || ""), OX = oral ? ox246() : 100, OO = 100 - OX, split = oral && OX < 100;
+    const oxF = oral ? '<label>الامتحان التحريري من<select onchange="v246Ox(this.value)">'.concat([100, 95, 90, 85, 80, 75, 70, 65, 60, 50].map((n) => '<option value="'.concat(n, '" ').concat(n == OX ? "selected" : "", ">").concat(A(n)).concat(n == 100 ? " (بدون شفهي)" : " — والشفهي من " + A(100 - n), "</option>")).join(""), "</select></label>") : "";
     const exF = isEx ? '<label>تاريخ الامتحان<input type="date" value="'.concat(E(DX.d), '" onchange="G202.dx.d=this.value||G202.dx.d;prender()"></label><label>الدرجة الكلية (من)<input inputmode="decimal" value="').concat(E(A(DX.m)), '" onchange="v235Max(this.value)"></label><label class="wide">موضوع الامتحان (اختياري)<input value="').concat(E(DX.t), '" maxlength="25" placeholder="مثلاً: الفصل الثاني" onchange="G202.dx.t=this.value.replace(/—/g,\'-\').trim().slice(0,25);prender()"></label>') : "";
     const rows = L.map((x, i) => {
       const v = tgVal(x[0]), au = !v.v && W.tgAuto219 ? W.tgAuto219(x[0]) : "";
-      return "<tr><td>".concat(A(i + 1), '</td><td class="l">').concat(E(x[1]), '</td><td><input id="gv_').concat(E(x[0]), '" inputmode="').concat(/امتحان/.test(G.lbl) ? "text" : "decimal", '" value="').concat(E(v.v || au), '" maxlength="6" oninput="this.classList.toggle(\'red235\',gRed235(this.value,G202.lbl));var q=document.getElementById(\'gq_').concat(E(x[0]), '\');if(q)q.hidden=!!this.value.trim()" class="').concat(au ? "au219" : "").concat(W.gRed235(v.v || au, G.lbl) ? " red235" : "", '"').concat(au ? ' title="محسوبة تلقائياً — راجعها واضغط إرسال"' : "", ">").concat(isEx ? ' <span class="sub">من '.concat(A(DX.m), "</span>") : "", '</td><td class="nt244"><span id="gq_').concat(E(x[0]), '" class="q244"').concat(v.v || au ? " hidden" : "", '><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), '\',\'غ\')">غ غائب</button><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), "','م')\">م مؤجل</button></span><input id=\"gn_").concat(E(x[0]), '" value="').concat(E(v.n), '" placeholder="ملاحظة… (أحسنت)" maxlength="100" style="text-align:right"></td><td><button class="btn ghost sm" onclick="v202GSend(\'').concat(E(x[0]), "')\">إرسال</button></td></tr>");
+      return "<tr><td>".concat(A(i + 1), '</td><td class="l">').concat(E(x[1]), "</td><td>").concat(split ? (() => {
+        const px = xp246(v.x), w = px && px.X == OX ? px.w : "", o = px && px.X == OX ? px.o : "";
+        return '<span class="sp246"><label>تحريري<input id="gw_'.concat(E(x[0]), '" inputmode="decimal" maxlength="5" value="').concat(E(w), '" oninput="v246Sum(\'').concat(E(x[0]), '\')" class="').concat(red246(w, OX) ? "red235" : "", '"><small>من ').concat(A(OX), '</small></label><label>شفهي<input id="go_').concat(E(x[0]), '" inputmode="decimal" maxlength="5" value="').concat(E(o), '" oninput="v246Sum(\'').concat(E(x[0]), '\')" class="').concat(red246(o, OO) ? "red235" : "", '"><small>من ').concat(A(OO), '</small></label><label>المجموع<input id="gv_').concat(E(x[0]), '" readonly tabindex="-1" value="').concat(E(v.v), '" class="tot246').concat(W.gRed235(v.v, G.lbl) ? " red235" : "", '"><small>من ١٠٠</small></label></span>');
+      })() : '<input id="gv_'.concat(E(x[0]), '" inputmode="').concat(/امتحان/.test(G.lbl) ? "text" : "decimal", '" value="').concat(E(v.v || au), '" maxlength="6" oninput="this.classList.toggle(\'red235\',gRed235(this.value,G202.lbl));var q=document.getElementById(\'gq_').concat(E(x[0]), '\');if(q)q.hidden=!!this.value.trim()" class="').concat(au ? "au219" : "").concat(W.gRed235(v.v || au, G.lbl) ? " red235" : "", '"').concat(au ? ' title="محسوبة تلقائياً — راجعها واضغط إرسال"' : "", ">").concat(isEx ? ' <span class="sub">من '.concat(A(DX.m), "</span>") : ""), '</td><td class="nt244"><span id="gq_').concat(E(x[0]), '" class="q244"').concat(v.v || au ? " hidden" : "", '><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), '\',\'غ\')">غ غائب</button><button type="button" class="btn ghost sm" onclick="v244Q(\'').concat(E(x[0]), "','م')\">م مؤجل</button></span><input id=\"gn_").concat(E(x[0]), '" value="').concat(E(v.n), '" placeholder="ملاحظة… (أحسنت)" maxlength="100" style="text-align:right"></td><td><button class="btn ghost sm" onclick="v202GSend(\'').concat(E(x[0]), "')\">إرسال</button></td></tr>");
     }).join("");
     const sjSel = SJ.length ? "<label>١ — المادة<select onchange=\"G202.sj=this.value;G202.sec='';prender()\">".concat(SJ.length > 1 ? '<option value="" '.concat(G.sj ? "" : "selected", ">— اختر المادة —</option>") : "").concat(SJ.map((s) => "<option ".concat(s == G.sj ? "selected" : "", ">").concat(E(s), "</option>")).join(""), "</select></label>") : "";
     const secSel = "<label>".concat(SJ.length ? "٢ — " : "", "الصف والشعبة<select ").concat(SS.length ? "" : "disabled", ' onchange="G202.sec=this.value;prender()">').concat(SS.length == 1 ? "" : '<option value="" '.concat(G.sec ? "" : "selected", ">").concat(SS.length ? "— اختر الصف والشعبة —" : "اختر المادة أولاً", "</option>")).concat(SS.map((s) => "<option ".concat(s == G.sec ? "selected" : "", ">").concat(E(s), "</option>")).join(""), "</select></label>");
-    return '<div class="box g202"><h3>'.concat(I("pen"), ' درجات طلابي</h3><p class="muted" style="margin:0 0 8px">تصل الدرجة إلى صفحة الطالب فوراً. يمكنك إرسالها لطالب واحد (زر «إرسال» بجانب اسمه) أو للشعبة كلها دفعة واحدة، وتعديلها في أي وقت وإرسالها مجدداً.</p>\n    <div class="fgrid">').concat(sjSel).concat(secSel, '\n    <label class="wide">نوع الدرجة<select onchange="G202.lbl=this.value;prender()">').concat(lblOpts, "</select></label>").concat(exF).concat(mF, '</div><p class="muted" style="margin:6px 0 0;font-size:12px">امتحان نصف السنة وامتحان آخر السنة والدرجة النهائية والدور الثاني تُدخلها الإدارة.</p>').concat(ready ? '<p class="g234" style="margin:8px 0;padding:8px 10px;border:1px solid #c9a44c;border-radius:10px;background:#fbf7ea"><b>تُدخل الآن درجات: '.concat(G.sj ? "مادة «" + E(G.sj) + "» — " : "").concat(E(G.sec), " — ").concat(E(W.gLbl235(G.lbl))).concat(isEx ? " (من " + A(DX.m) + ")" : "", '</b></p><p class="muted g219">اكتب <b>غ</b> للغائب (يُحسب صفر) و<b>م</b> للمؤجل.').concat(W.tgIsAuto219 && W.tgIsAuto219() ? " هذه الدرجة تُحسب تلقائياً من الدرجات التي أرسلتها (الخضراء محسوبة) — راجعها واضغط «إرسال»." : "", '</p>\n    <div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th><th>الدرجة</th><th>ملاحظات</th><th></th></tr>').concat(rows || '<tr><td colspan="5" class="muted">لا يوجد طلاب في هذه الشعبة</td></tr>', '</table></div>\n    <div class="tools"><button class="btn" id="gs_all" onclick="v202GSend()">').concat(I("upload"), ' إرسال درجات الشعبة كلها</button><button class="btn ghost sm" onclick="v202GLoad()">').concat(I("rld"), " تحديث</button></div>") : '<p class="muted" style="margin:10px 0 0"><b>'.concat(!G.sj && SJ.length ? "اختر المادة أولاً، ثم الصف والشعبة" : "اختر الصف والشعبة", "</b> لتظهر قائمة الطلاب وتُدخل الدرجات.</p>"), '</div>\n    <div class="box"><h3>').concat(I("print"), ' طباعة طلابي</h3><p class="muted" style="margin:0 0 8px">لكل شعبة ورقة. اختر نوع السجل والصيغة:</p>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'n\',\'pdf\')">أسماء الطلاب PDF</button><button class="btn ghost sm" onclick="v202TP(\'n\',\'docx\')">أسماء الطلاب Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'a\',\'pdf\')">سجل الحضور PDF</button><button class="btn ghost sm" onclick="v202TP(\'a\',\'docx\')">سجل الحضور Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'g\',\'pdf\')">سجل الدرجات (القالب المعتمد) PDF</button><button class="btn ghost sm" onclick="v202TP(\'g\',\'docx\')">سجل الدرجات Word</button></div></div>');
+    return '<div class="box g202"><h3>'.concat(I("pen"), ' درجات طلابي</h3><p class="muted" style="margin:0 0 8px">تصل الدرجة إلى صفحة الطالب فوراً. يمكنك إرسالها لطالب واحد (زر «إرسال» بجانب اسمه) أو للشعبة كلها دفعة واحدة، وتعديلها في أي وقت وإرسالها مجدداً.</p>\n    <div class="fgrid">').concat(sjSel).concat(secSel, '\n    <label class="wide">نوع الدرجة<select onchange="G202.lbl=this.value;prender()">').concat(lblOpts, "</select></label>").concat(exF).concat(mF).concat(oxF, "</div>").concat(split ? '<p class="muted" style="margin:6px 0 0">اكتب درجة <b>التحريري (من '.concat(A(OX), ")</b> ودرجة <b>الشفهي (من ").concat(A(OO), ")</b>، ويُحسب المجموع (من ١٠٠) تلقائياً. التحريري أقل من ").concat(A(OX / 2), " يظهر بالأحمر. يمكنك إرسال التحريري وحده الآن، وإضافة الشفهي لاحقاً وإرساله فيكتمل المجموع.</p>") : "", '<p class="muted" style="margin:6px 0 0;font-size:12px">امتحان نصف السنة وامتحان آخر السنة والدرجة النهائية والدور الثاني تُدخلها الإدارة.</p>').concat(ready ? '<p class="g234" style="margin:8px 0;padding:8px 10px;border:1px solid #c9a44c;border-radius:10px;background:#fbf7ea"><b>تُدخل الآن درجات: '.concat(G.sj ? "مادة «" + E(G.sj) + "» — " : "").concat(E(G.sec), " — ").concat(E(W.gLbl235(G.lbl))).concat(isEx ? " (من " + A(DX.m) + ")" : "", '</b></p><p class="muted g219">اكتب <b>غ</b> للغائب (يُحسب صفر) و<b>م</b> للمؤجل.').concat(W.tgIsAuto219 && W.tgIsAuto219() ? " هذه الدرجة تُحسب تلقائياً من الدرجات التي أرسلتها (الخضراء محسوبة) — راجعها واضغط «إرسال»." : "", '</p>\n    <div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th><th>').concat(split ? "الدرجة (تحريري + شفهي = المجموع)" : "الدرجة", "</th><th>ملاحظات</th><th></th></tr>").concat(rows || '<tr><td colspan="5" class="muted">لا يوجد طلاب في هذه الشعبة</td></tr>', '</table></div>\n    <div class="tools"><button class="btn" id="gs_all" onclick="v202GSend()">').concat(I("upload"), ' إرسال درجات الشعبة كلها</button><button class="btn ghost sm" onclick="v202GLoad()">').concat(I("rld"), " تحديث</button></div>") : '<p class="muted" style="margin:10px 0 0"><b>'.concat(!G.sj && SJ.length ? "اختر المادة أولاً، ثم الصف والشعبة" : "اختر الصف والشعبة", "</b> لتظهر قائمة الطلاب وتُدخل الدرجات.</p>"), '</div>\n    <div class="box"><h3>').concat(I("print"), ' طباعة طلابي</h3><p class="muted" style="margin:0 0 8px">لكل شعبة ورقة. اختر نوع السجل والصيغة:</p>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'n\',\'pdf\')">أسماء الطلاب PDF</button><button class="btn ghost sm" onclick="v202TP(\'n\',\'docx\')">أسماء الطلاب Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'a\',\'pdf\')">سجل الحضور PDF</button><button class="btn ghost sm" onclick="v202TP(\'a\',\'docx\')">سجل الحضور Word</button></div>\n    <div class="tools"><button class="btn sm" onclick="v202TP(\'g\',\'pdf\')">سجل الدرجات (القالب المعتمد) PDF</button><button class="btn ghost sm" onclick="v202TP(\'g\',\'docx\')">سجل الدرجات Word</button></div></div>');
   }
   W.v202GLoad = () => tgLoad(1);
   W.v202GSend = async function(one) {
@@ -29634,7 +29713,18 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         return T0("هذه المادة ليست لهذه الشعبة — اختر الصف والشعبة من جديد", "err");
       }
     }
-    const rows = L.map((x) => [x[0], ((D.getElementById("gv_" + x[0]) || {}).value || "").trim(), ((D.getElementById("gn_" + x[0]) || {}).value || "").trim()]).filter((r) => one || r[1] !== "" || r[2]);
+    const rows = L.map((x) => [x[0], ((D.getElementById("gv_" + x[0]) || {}).value || "").trim(), ((D.getElementById("gn_" + x[0]) || {}).value || "").trim()]).filter((r) => one || r[1] !== "" || r[2] || ((D.getElementById("gw_" + r[0]) || {}).value || "").trim());
+    {
+      const X = /^الشهر/.test(G.lbl) && OR246.test(G.sj || "") ? ox246() : 100;
+      if (X < 100) for (const r of rows) {
+        const w = n246((D.getElementById("gw_" + r[0]) || {}).value), o = n246((D.getElementById("go_" + r[0]) || {}).value), nm = (L.find((x) => x[0] == r[0]) || [])[1] || "";
+        if (w === "" && o !== "" && o !== "م") return T0("اكتب درجة التحريري أولاً: " + nm, "err");
+        const bd = (z, mx) => z !== "" && z !== "غ" && z !== "م" && !(/^\d{1,3}(\.\d{1,2})?$/.test(z) && +z <= mx);
+        if (bd(w, X)) return T0("درجة التحريري أكبر من " + A(X) + " أو غير صحيحة: " + nm, "err");
+        if (bd(o, 100 - X)) return T0("درجة الشفهي أكبر من " + A(100 - X) + " أو غير صحيحة: " + nm, "err");
+        r[3] = w === "" && o === "" ? "" : w + "/" + X + "+" + o + "/" + (100 - X);
+      }
+    }
     rows.forEach((r) => {
       if (/^(غ|غائب|غياب)$/.test(String(r[1]).trim())) r[1] = "غ";
       else if (/^(م|مؤجل|موجل)$/.test(String(r[1]).trim())) r[1] = "م";
@@ -29648,7 +29738,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     rows.forEach((r) => r[1] = String(r[1]).replace(/[٠-٩]/g, (c) => c.charCodeAt(0) - 1632).replace(",", "."));
     if (!rows.length) return T0("اكتب الدرجات أولاً", "err");
     const b = Object.assign({ a: "tgrade", label: G.lbl, subj: G.sj, rows }, cred());
-    G.rows = (G.rows || []).filter((x) => !(x.label == G.lbl && x.subj == G.sj && rows.some((r) => r[0] == x.skey))).concat(rows.map((r) => ({ skey: r[0], label: G.lbl, subj: G.sj, val: r[1], note: r[2] })));
+    G.rows = (G.rows || []).filter((x) => !(x.label == G.lbl && x.subj == G.sj && rows.some((r) => r[0] == x.skey))).concat(rows.map((r) => ({ skey: r[0], label: G.lbl, subj: G.sj, val: r[1], note: r[2], x: r[3] || "" })));
     try {
       const r = await post(b, 6e4);
       if (r && r.ok) T0((one ? "أُرسلت الدرجة" : "أُرسلت درجات " + A(rows.length) + " طالب") + " ✓");
@@ -29703,7 +29793,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     L.forEach((r) => {
       (by[r.subj || "—"] = by[r.subj || "—"] || []).push(r);
     });
-    return '<div class="box"><h3>'.concat(I("pen"), " درجات المدرسين</h3>").concat(Object.keys(by).sort((a, b) => a.localeCompare(b, "ar")).map((sj) => '<div style="margin:6px 0"><b>'.concat(E(sj), '</b> <span class="sub">').concat(E(by[sj][0].tname || ""), '</span><div class="tw"><table><tr><th class="l">النوع</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>').concat(by[sj].map((r) => '<tr><td class="l">'.concat(E(W.gLbl235(r.label)), '</td><td class="').concat(W.gRed235(r.val, r.label) ? "red" : "", '"><b>').concat(E(W.gVal235(r.val, r.label)), '</b></td><td class="l">').concat(E(r.note || ""), "</td><td>").concat(E(FD(r.date)), "</td></tr>")).join(""), "</table></div></div>")).join(""), "</div>");
+    return '<div class="box"><h3>'.concat(I("pen"), " درجات المدرسين</h3>").concat(Object.keys(by).sort((a, b) => a.localeCompare(b, "ar")).map((sj) => '<div style="margin:6px 0"><b>'.concat(E(sj), '</b> <span class="sub">').concat(E(by[sj][0].tname || ""), '</span><div class="tw"><table><tr><th class="l">النوع</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>').concat(by[sj].map((r) => '<tr><td class="l">'.concat(E(W.gLbl235(r.label)), '</td><td class="').concat(W.gShow246(r.val, r.x, r.label).red ? "red" : "", '"><b>').concat(E(W.gShow246(r.val, r.x, r.label).t), '</b></td><td class="l">').concat(r.x ? '<small class="muted">'.concat(E(W.gX246(r.x)), "</small>").concat(r.note ? "<br>" : "") : "").concat(E(r.note || ""), "</td><td>").concat(E(FD(r.date)), "</td></tr>")).join(""), "</table></div></div>")).join(""), "</div>");
   }
   on(() => {
     const _pv = psView;
@@ -31957,7 +32047,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         if (L.length && labs.length) {
           const v = (sk, l) => {
             const r = R.find((x) => x.skey == sk && x.label == l);
-            return r ? r.val : "";
+            return r ? r.val === "" && r.x && W.gShow246 ? W.gShow246(r.val, r.x, l).t : r.val : "";
           };
           const short = (l) => (W.gMax235 && /^امتحان يومي — /.test(l) ? W.gLbl235(l).replace(/^امتحان يومي/, "يومي") + " (من " + A(W.gMax235(l)) + ")" : l).replace(/^يومي — (\d{4}-\d{2}-\d{2})$/, (m, d) => "يومي " + FD(d)).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
           const tbl = '<div class="box gr204"><h3>'.concat(I("sheet") || I("pen"), " سجل درجات ").concat(E(G.sec), " — ").concat(E(G.sj), '</h3><p class="muted" style="margin:0 0 6px">جميع الدرجات التي أرسلتها (اليومية والشهرية والفصلية) في جدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>').concat(labs.map((l) => "<th>".concat(E(short(l)), "</th>")).join(""), "</tr>").concat(L.map((x, i2) => "<tr><td>".concat(A(i2 + 1), '</td><td class="l">').concat(E(x[1]), "</td>").concat(labs.map((l) => {
@@ -39435,7 +39525,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     if (!L.length) return "";
     return '<div class="box tg215"><h3>'.concat(I("pen"), ' تفاصيل الدرجات المرسلة للطلاب</h3><p class="muted" style="margin:0 0 8px">اضغط على أي إرسال لعرض أسماء الطلاب ودرجاتهم.</p>').concat(L.map((r, i) => {
       const k = kOf(r), op = OPEN[k], d = DET[k];
-      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>' : '<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>'.concat(sortD243(d).map((x, j) => "<tr><td>".concat(AD(j + 1), '</td><td class="l">').concat(E(sName(x.skey)), '</td><td class="').concat(W.gRed235 && W.gRed235(x.val, r.label) ? "red" : "", '"><b>').concat(E(AD(x.val))).concat(W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : "", '</b></td><td class="l">').concat(E(x.note || ""), "</td><td>").concat(E(FD(x.date)), "</td></tr>")).join(""), "</table></div>");
+      const body = !op ? "" : !r.tkey ? '<p class="muted">حدّث الصفحة لتُفتح التفاصيل.</p>' : d == "…" ? '<p class="muted">جارٍ التحميل…</p>' : d == "err" ? '<p class="muted">تعذّر التحميل — تأكد من الإنترنت</p>' : '<div class="tw"><table><tr><th>ت</th><th class="l">الطالب</th><th>الدرجة</th><th class="l">ملاحظة</th><th>التاريخ</th></tr>'.concat(sortD243(d).map((x, j) => "<tr><td>".concat(AD(j + 1), '</td><td class="l">').concat(E(sName(x.skey)), '</td><td class="').concat(W.gShow246 ? W.gShow246(x.val, x.x, r.label).red ? "red" : "" : W.gRed235 && W.gRed235(x.val, r.label) ? "red" : "", '"><b>').concat(E(x.val === "" && x.x && W.gShow246 ? W.gShow246(x.val, x.x, r.label).t : AD(x.val))).concat(W.gMax235 && /^امتحان يومي — /.test(r.label) && x.val !== "" && !/^(غ|م)$/.test(x.val) ? " من " + AD(W.gMax235(r.label)) : "", '</b></td><td class="l">').concat(x.x && W.gX246 ? '<small class="muted">'.concat(E(W.gX246(x.x)), "</small>").concat(x.note ? "<br>" : "") : "").concat(E(x.note || ""), "</td><td>").concat(E(FD(x.date)), "</td></tr>")).join(""), "</table></div>");
       return '<div class="tg215r"><button type="button" class="tg215h" onclick="tg215('.concat(i, ')"><span><b>').concat(E(r.tname || tName(r.tkey)), "</b><small>").concat(E(r.subj), " — ").concat(E(W.gLbl235 ? W.gLbl235(r.label) : r.label), '</small></span><span class="chip">').concat(AD(r.n), ' طالب</span><span class="chip">').concat(E(FD(r.d)), '</span><span class="tg215c">').concat(op ? "▲" : "▼", "</span></button>").concat(body, "</div>");
     }).join(""), "</div>");
   }
@@ -45521,6 +45611,112 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const b = box();
     return i >= 0 ? h.slice(0, i) + b + h.slice(i) : h + b;
   };
+})();
+</script>
+<script id="v246">(function() {
+  "use strict";
+  const W = window, D = document;
+  const E = (s) => typeof esc == "function" ? esc(s) : String(s == null ? "" : s);
+  const I = (n) => typeof ic == "function" ? ic(n) : "";
+  const T0 = (m, k) => {
+    try {
+      toast(m, k);
+    } catch (e) {
+    }
+  };
+  let GA = null, busy = 0;
+  const tName = (k) => {
+    try {
+      const f = (STF || []).find((x) => x && x.id == k);
+      return f ? f.name : k;
+    } catch (e) {
+      return k;
+    }
+  };
+  const call = async (b) => {
+    try {
+      return await api(Object.assign({ a: "admin", secret: APIK.secret, op: "ga244" }, b), APIK.url);
+    } catch (e) {
+      return null;
+    }
+  };
+  const load = async () => {
+    if (busy) return;
+    busy = 1;
+    const r = await call({});
+    busy = 0;
+    GA = r && r.ok ? r.ga || [] : GA || [];
+    try {
+      render();
+    } catch (e) {
+    }
+  };
+  const save = async (L) => {
+    const r = await call({ ga: L });
+    if (r && r.ok) {
+      GA = r.ga || [];
+      T0("حُفظ التكليف ✓ — يظهر في بوابة المدرس خلال ثوانٍ");
+    } else T0("تعذّر الحفظ", "err");
+    try {
+      render();
+    } catch (e) {
+    }
+  };
+  const subjects = () => {
+    const S = /* @__PURE__ */ new Set();
+    try {
+      (STF || []).forEach((f) => {
+        try {
+          FSD.units(f).forEach((u) => u.sj && S.add(u.sj));
+        } catch (e) {
+        }
+      });
+    } catch (e) {
+    }
+    return [...S].sort((a, b) => a.localeCompare(b, "ar"));
+  };
+  const teachers = () => {
+    try {
+      return (STF || []).filter((f) => f && (f.status || "مستمر") == "مستمر" && !/خدم/.test((f.job || "") + (f.jtitle || "")));
+    } catch (e) {
+      return [];
+    }
+  };
+  W.ga246Add = () => {
+    const v = (id) => (D.getElementById(id) || {}).value || "";
+    const t = v("ga246t"), sj = v("ga246j"), sec = v("ga246s");
+    if (!t || !sj || !sec) return T0("اختر المدرس والمادة والشعبة", "err");
+    const L = (GA || []).filter((r) => !(r[0] == t && r[1] == sj && r[2] == sec)).concat([[t, sj, sec]]);
+    save(L);
+  };
+  W.ga246Del = (i) => {
+    const r = (GA || [])[i];
+    if (!r) return;
+    if (!confirm("حذف تكليف " + tName(r[0]) + " بدرجات " + r[1] + " — " + r[2] + "؟")) return;
+    save((GA || []).filter((x, j) => j != i));
+  };
+  function box() {
+    if (GA === null) {
+      setTimeout(load, 0);
+      return '<div class="box"><h3>'.concat(I("pen"), ' تكليف مدرس بإدخال درجات شعبة</h3><p class="muted" style="margin:0">جارٍ التحميل…</p></div>');
+    }
+    const SNx = typeof SN != "undefined" ? SN : [];
+    const rows = GA.map((r, i) => '<tr><td class="l">'.concat(E(tName(r[0])), "</td><td>").concat(E(r[1]), "</td><td>").concat(E(r[2]), '</td><td><button class="btn ghost sm danger" onclick="ga246Del(').concat(i, ')">حذف</button></td></tr>')).join("");
+    return '<div class="box ga246"><h3>'.concat(I("pen"), ' تكليف مدرس بإدخال درجات شعبة</h3><p class="muted" style="margin:0 0 8px">للمدرس الذي يُدخل درجات مادة في شعبة غير مسندة إليه في الجدول الأسبوعي. تظهر الشعبة في «درجات طلابي» ببوابته، ولا يتغيّر الجدول.</p>\n      ').concat(rows ? '<div class="tw"><table><tr><th class="l">المدرس</th><th>المادة</th><th>الشعبة</th><th></th></tr>'.concat(rows, "</table></div>") : '<p class="muted">لا يوجد تكليف.</p>', '\n      <div class="fgrid"><label>المدرس<select id="ga246t"><option value="">— اختر —</option>').concat(teachers().map((f) => '<option value="'.concat(E(f.id), '">').concat(E(f.name), "</option>")).join(""), '</select></label>\n      <label>المادة<select id="ga246j"><option value="">— اختر —</option>').concat(subjects().map((s) => "<option>".concat(E(s), "</option>")).join(""), '</select></label>\n      <label>الشعبة<select id="ga246s"><option value="">— اختر —</option>').concat(SNx.map((s) => "<option>".concat(E(s), "</option>")).join(""), '</select></label></div>\n      <div class="tools"><button class="btn" onclick="ga246Add()">').concat(I("plus"), " إضافة التكليف</button></div></div>");
+  }
+  try {
+    const _pb = ppBody;
+    ppBody = function(D0) {
+      let h = _pb.apply(this, arguments);
+      try {
+        if (typeof APIT != "undefined" && APIT == "tg" && D0 && D0.acc && typeof h == "string" && typeof OWN != "undefined" && OWN) h = box() + h;
+      } catch (e) {
+      }
+      return h;
+    };
+  } catch (e) {
+    console.warn("v246", e);
+  }
 })();
 </script>
 </body></html>
