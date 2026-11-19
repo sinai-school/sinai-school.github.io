@@ -166,7 +166,22 @@ async function private0_() {
   const P = await kvJ('priv', null) || { s: {}, t: {} }, X = await kvJ('privx', {});
   for (const k of ['s', 't']) { P[k] = P[k] || {}; for (const id in (X[k] || {})) if (!P[k][id]) P[k][id] = X[k][id]; }
   /* v215: الحسابات التجريبية انحذفت */
+  try { await ga244Apply_(P); } catch (e) { }
   return MEMO.priv = P;
+}
+/* v246: «تكليف بإدخال الدرجات» — مدرس يدخل درجات مادة بشعبة مو مسندة إله بالجدول الأسبوعي (الجدول ما يتغيّر).
+   kv GA244 = [[مفتاح المدرس, المادة, الشعبة], …] — يندمج وقت القراءة (push217/privLite242_ ما يمسحونه). */
+async function ga244_() { const L = await kvJ('GA244', []); return Array.isArray(L) ? L.filter(r => Array.isArray(r) && r[0] && r[1] && r[2]).map(r => [String(r[0]), String(r[1]), String(r[2])]) : []; }
+async function ga244Apply_(P) {
+  const GA = await ga244_(); if (!GA.length || !P || !P.t || !P.s) return;
+  for (const [k, sj, sec] of GA) {
+    const o = P.t[k]; if (!o || typeof o !== 'object') continue;
+    o.ga = (o.ga || []).filter(x => !(x[0] === sj && x[1] === sec)).concat([[sj, sec]]);
+    const secs = Array.isArray(o.secs) ? o.secs.slice() : []; if (!secs.includes(sec)) secs.push(sec); o.secs = secs;
+    const have = new Set(o.studs || []), add = [];
+    for (const id in P.s) { const q = P.s[id]; if (q && q.s === sec && !have.has(id)) add.push([id, q.n || '', sec]); }
+    if (add.length) { o.studs = (o.studs || []).concat(add.map(x => x[0])); o.studs2 = (o.studs2 || []).concat(add); }
+  }
 }
 const privBump_ = () => kvPut('PRIVV', uid().slice(0, 10)).then(() => { G_PRIV = null; MEMO.priv = null; });
 async function gas_(body) {
@@ -428,6 +443,7 @@ async function tsj233_() {
     const by = {}; (a || []).forEach(c => { if (!Array.isArray(c)) return; const t = J.tch[c[1]], sj = String(J.subj[c[0]] || ''); if (!t || !t.k || !sj) return; (by[t.k] = by[t.k] || new Set()).add(sj); });
     for (const tk in by) for (const sk of (J.sid[s] || [])) if (sk) M.set(tk + '|' + sk, [...by[tk]]);
   });
+  try { const GA = await ga244_(), sn = J.sn || []; for (const [k, sj, sec] of GA) { const si = sn.indexOf(sec); if (si < 0) continue; for (const sk of (J.sid[si] || [])) if (sk) { const L = M.get(k + '|' + sk) || []; if (!L.includes(sj)) M.set(k + '|' + sk, L.concat([sj])); } } } catch (e) { }
   return S.sj233 = M;
 }
 const fixSj233_ = (M, tkey, sk, subj) => { const L = M && M.get(tkey + '|' + sk); return L && L.length === 1 && L[0] !== subj ? L[0] : subj; };
@@ -442,11 +458,13 @@ async function tgrade202_(b, y) {
   const st = [], t = now();
   for (const r of (b.rows || []).slice(0, 600)) {
     const sk = String(r[0] || ''), v = String(r[1] == null ? '' : r[1]).trim().slice(0, 20), nt = String(r[2] || '').slice(0, 200);
+    /* v246: تفصيل الشهري (تحريري/شفهي) «تحريري/من+شفهي/من» مثل «30/70+22/30» */
+    const xx = /^[0-9.غم]{0,6}\/\d{1,3}\+[0-9.غم]{0,6}\/\d{1,3}$/.test(String(r[3] || '')) ? String(r[3]) : '';
     if (!studs.has(sk)) continue;
     const subj = fixSj233_(M, y.key, sk, subj0);
     const id = await tgId233_(y.key, label, subj, sk);
-    if (v === '' && !nt) st.push(DB.prepare('delete from tgr where id=?').bind(id));
-    else st.push(DB.prepare('insert into tgr(id,tkey,tname,subj,label,skey,val,note,date) values(?,?,?,?,?,?,?,?,?) on conflict(id) do update set val=excluded.val,note=excluded.note,date=excluded.date,tname=excluded.tname').bind(id, y.key, y.a.name || me.n || '', subj, label, sk, v, nt, t));
+    if (v === '' && !nt && !xx) st.push(DB.prepare('delete from tgr where id=?').bind(id));
+    else st.push(DB.prepare('insert into tgr(id,tkey,tname,subj,label,skey,val,note,date,x) values(?,?,?,?,?,?,?,?,?,?) on conflict(id) do update set val=excluded.val,note=excluded.note,date=excluded.date,tname=excluded.tname,x=excluded.x').bind(id, y.key, y.a.name || me.n || '', subj, label, sk, v, nt, t, xx));
   }
   for (let i = 0; i < st.length; i += 80) await DB.batch(st.slice(i, i + 80));
   try { gcDel('tgc217'); } catch (e) { }
@@ -455,6 +473,13 @@ async function tgrade202_(b, y) {
 /* تصحيح لمرة واحدة للدرجات المرسلة سابقاً باسم مادة لا يدرّسها المدرس في شعبة الطالب (وله فيها مادة واحدة فقط).
    الدرجة نفسها لا تتغيّر — اسم المادة فقط. الأصل محفوظ في kv TGR233BK. */
 let E233 = 0, E234 = 0;
+let E246 = 0;
+async function ens246_() {
+  if (E246) return; E246 = 1;
+  if ((await kvGet('E246')) === '1') return;
+  try { await run('alter table tgr add column x text'); } catch (e) { }
+  await kvPut('E246', '1');
+}
 async function ens234_() {
   if (E234) return; E234 = 1;
   if ((await kvGet('E234')) === '1') return;
@@ -488,7 +513,7 @@ async function extra202_(o, x) {
   o.myreps = mine;
   if (x.kind === 't') o.reps = R.filter(r => r.tgt === 't:' + x.key).map(r => ({ id: r.id, kind: r.kind, key: r.key, name: r.name, text: r.text, date: r.date, status: r.status, files: fl_(r.files), reply: r.reply || '', rdate: r.rdate || '' }));
   if (x.kind === 's') {
-    o.tg = await all('select tname,subj,label,val,note,date from tgr where skey=? order by date desc limit 300', x.key);
+    o.tg = await all('select tname,subj,label,val,note,date,x from tgr where skey=? order by date desc limit 300', x.key);
     const rel = (await kvJ('REL', { c: [] })).c || [], pv = o.private;
     if (pv && Array.isArray(pv.g) && !/^tst-/.test(x.key)) { o.private = { ...pv, g: pv.g.map(r => r.map((v, i) => i === 0 || rel.includes(i) ? v : '')), rel }; }
   }
@@ -555,7 +580,7 @@ async function handle(b) {
   /* v222: محاولات دخول غلط كثيرة من نفس العنوان (لأي حساب) — قفل ساعة. يحمي من تجربة أرقام/كلمات مرور على حسابات كثيرة */
   const lg222 = /^(login|reg)$/.test(a) || (a === 'stf' && b.op === 'login') || (a === 'admin' && !String(b.secret || '').startsWith('own:'));
   if (lg222 && RL215IP) { const f = await one('select n,exp from fails where k=?', 'ip_' + RL215IP); if (f && f.exp > Date.now() && f.n >= 120) return { err: 'many' }; }
-  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { } try { await ens233_(); } catch (e) { E233 = 0; } try { await ens234_(); } catch (e) { E234 = 0; }
+  await ens202_(); await ens205_(); try { await ens206_(); } catch (e) { } try { await ens215_(); } catch (e) { } try { await ens233_(); } catch (e) { E233 = 0; } try { await ens234_(); } catch (e) { E234 = 0; } try { await ens246_(); } catch (e) { E246 = 0; }
   if (a === 'status') return { ok: 1, reg: !!(await accGet_(b.kind, b.key)) };
   if (a === 'login') {
     const x = await auth_(b); if (x.err) return x;
@@ -646,7 +671,7 @@ async function handle(b) {
     if (a === 'inbox') { const P = await private_(), pv = (P[y.kind] || {})[y.key] || {}, secs = pv.secs || (pv.s ? [pv.s] : []); const o = { ok: 1, notes: await notesFor_(y.kind, y.key, secs), at: now(), sa: (await kvGet('snapat')) || '' }; try { const pr = await profGet_(y.kind, y.key); if (pr) { o.pu = String(pr.updated || ''); if (String(b.pu || '') !== o.pu) o.profile = JSON.parse(pr.json || '{}'); } } catch (e) { } /* v217: المعلومات الخاصة (شعب المدرس وطلابه، معلومات الطالب) توصل بالفحص الخفيف إذا تغيّرت */ if ('pvh' in b) { try { const rl = y.kind === 's' ? ((gcGet('rel217', 15000) || gcSet('rel217', await kvJ('REL', { c: [] }))).c || []) : 0, uv = y.kind === 's' && !schoolNid_(gcGet('nf217', 15000) || gcSet('nf217', await kvJ('NIDFIX', {})), P, y.kind, y.key); o.pvh = h217_(JSON.stringify([pv, rl, uv ? 1 : 0])).toString(36); if (String(b.pvh || '') !== o.pvh) { o.private = pv; o.pvch = 1; } } catch (e) { } } await extra202_(o, y); try { await extra204_(o, y); } catch (e) { } return gate_(o, y); }
     if (a === 'repReply') return repReply202_(b, y);
     if (a === 'tgrade') return tgrade202_(b, y);
-    if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date from tgr where tkey=? order by date desc limit 3000', y.key) }; }
+    if (a === 'tgrades') { if (y.kind !== 't') return { err: 'role' }; return { ok: 1, rows: await all('select subj,label,skey,val,note,date,x from tgr where tkey=? order by date desc limit 3000', y.key) }; }
     if (a === 'seen') {
       const st = []; for (const id of (b.ids || []).slice(0, 200)) st.push(DB.prepare('insert or ignore into seen(id,kind,key,at) values(?,?,?,?)').bind(String(id), y.kind, y.key, now())); gcDel('seen');
       let n = 0; if (st.length) { const r = await DB.batch(st); n = r.reduce((s, x) => s + (x.meta && x.meta.changes || 0), 0); }
@@ -744,7 +769,8 @@ async function admin_(b) {
   if (b.op === 'report') { await run('update reports set status=? where id=?', String(b.status || 'done'), String(b.id)); return { ok: 1 }; }
   if (b.op === 'exPub') return exPub204_(b);
   /* v215b: تفاصيل الدرجات اللي أرسلها المدرس (لكل طالب) */
-  if (b.op === 'tgrDet') return { ok: 1, rows: await all('select skey,val,note,date from tgr where tkey=? and subj=? and label=? order by date desc limit 400', String(b.tkey || ''), String(b.subj || ''), String(b.label || '')) };
+  if (b.op === 'ga244') { if ('ga' in b) { const P0 = await kvJ('priv', { t: {} }), L = (Array.isArray(b.ga) ? b.ga : []).filter(r => Array.isArray(r) && P0.t && P0.t[String(r[0])] && String(r[1] || '').trim() && String(r[2] || '').trim()).slice(0, 200).map(r => [String(r[0]), String(r[1]).trim().slice(0, 60), String(r[2]).trim().slice(0, 60)]); await kvPut('GA244', L); await privBump_(); if (G_SN226) G_SN226.sj233 = null; return { ok: 1, ga: L }; } return { ok: 1, ga: await ga244_() }; }
+  if (b.op === 'tgrDet') return { ok: 1, rows: await all('select skey,val,note,date,x from tgr where tkey=? and subj=? and label=? order by date desc limit 400', String(b.tkey || ''), String(b.subj || ''), String(b.label || '')) };
   if (b.op === 'exGet') return { ok: 1, pub: await kvJ('EXPUB', {}) };
   if (b.op === 'tstGet') return { ok: 1, x: await kvJ('TST206', {}), ps: await tstPS206_(), pt: await tstPT206_() };
   if (b.op === 'tstSet') return { err: 'op' };

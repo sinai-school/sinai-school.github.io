@@ -81,6 +81,13 @@ if REQ.get('flag226'):
         if k in ('SNAPLOCK', 'SNAP226OFF') and str(v) in ('0', '1'):
             q("insert into kv(k,v) values('%s','%s') on conflict(k) do update set v=excluded.v" % (k, str(v)))
             log.setdefault('flag226', {})[k] = str(v)
+# v246: «تكليف بإدخال الدرجات» — {"ga244":[["st015","إنكليزي","الخامس العلمي ب"]]} (مفتاح المدرس، المادة، الشعبة؛ القائمة كاملة تستبدل السابقة)
+if isinstance(REQ.get('ga244'), list):
+    _ga = [[str(r[0]), str(r[1]).strip(), str(r[2]).strip()] for r in REQ['ga244'] if isinstance(r, list) and len(r) == 3 and all(str(x).strip() for x in r)]
+    _v = json.dumps(_ga, ensure_ascii=False).replace("'", "''")
+    q("insert into kv(k,v) values('GA244','%s') on conflict(k) do update set v=excluded.v" % _v)
+    q("insert into kv(k,v) values('PRIVV','ga%d') on conflict(k) do update set v=excluded.v" % int(time.time()))
+    log['ga244'] = _ga
 # v226: فحص حي للخادم — النسخة العامة بدون أسماء للصفحة الجديدة (بدون ما يطبع أي اسم)
 if REQ.get('chk226'):
     import urllib.request as _u, gzip as _gz, base64 as _b
