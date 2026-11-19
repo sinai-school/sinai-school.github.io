@@ -94,6 +94,24 @@ if REQ.get('tgrchk'):
     log['tgr_by_t'] = q("select tkey,count(*) n,max(date) d from tgr group by tkey")
     log['e246'] = q("select v from kv where k='E246'")
     log['tgr_recent'] = q("select tkey,subj,label,skey,val,x,substr(note,1,20) note,date from tgr where date>'2026-11-19T18:00' order by date desc limit 120")
+# v247b: درجات أُرسلت قبل خيار «التحريري من» — تتحول إلى «تحريري من X» (الشفهي يبقى فارغاً). {"x247":{"tkey":"st015","subj":"إنكليزي","label":"…","of":70}}
+#   يرفض إذا أي درجة أكبر من X، ويحفظ النسخة الأصلية بـ kv X247BK_<tkey>.
+if isinstance(REQ.get('x247'), dict):
+    _o = REQ['x247']; _t, _sj, _lb, _of = str(_o['tkey']), str(_o['subj']), str(_o['label']), int(_o.get('of', 70))
+    _esc = lambda v: str(v).replace("'", "''")
+    _R = q("select id,val,x from tgr where tkey='%s' and subj='%s' and label='%s'" % (_esc(_t), _esc(_sj), _esc(_lb)))
+    _nums = [float(r['val']) for r in _R if re.match(r'^\d+(\.\d+)?$', str(r['val'] or ''))]
+    _x = {'rows': len(_R), 'max': max(_nums) if _nums else None, 'hasx': sum(1 for r in _R if r.get('x'))}
+    if _R and _nums and max(_nums) <= _of and not _x['hasx']:
+        q("insert into kv(k,v) values('X247BK_%s','%s') on conflict(k) do update set v=excluded.v" % (_esc(_t), _esc(json.dumps(_R, ensure_ascii=False))))
+        _n = 0
+        for r in _R:
+            v = str(r['val'] or '')
+            if re.match(r'^\d+(\.\d+)?$', v): q("update tgr set val='', x='%s/%d+/%d' where id='%s'" % (_esc(v), _of, 100 - _of, _esc(r['id']))); _n += 1
+            elif v in ('غ', 'م'): q("update tgr set x='%s/%d+/%d' where id='%s'" % (v, _of, 100 - _of, _esc(r['id']))); _n += 1
+        _x['done'] = _n
+    else: _x['skip'] = 1
+    log['x247'] = _x
 # v226: فحص حي للخادم — النسخة العامة بدون أسماء للصفحة الجديدة (بدون ما يطبع أي اسم)
 if REQ.get('chk226'):
     import urllib.request as _u, gzip as _gz, base64 as _b
