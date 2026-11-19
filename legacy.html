@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v248-2026-11-19T21:45:00.000Z-v248";
+<script>window.APP_VER = "2k7v248b-2026-11-19T21:55:00.000Z-v248b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -28109,9 +28109,10 @@ if (window.OFFLINE_COPY) {
     history.pushState({ s130: 1 }, "", location.href);
     addEventListener("popstate", (e) => {
       if (!e.state || e.state.s130 !== 1) {
+        const ov = ["ar238v", "ar238c", "lb206", "nm206"].some((id) => document.getElementById(id));
         try {
           const onApp = !(($("app") || {}).hidden && ($("portal") || {}).hidden);
-          if (onApp) goBack();
+          if (onApp && !ov) goBack();
         } catch (x) {
         }
         try {
@@ -34261,6 +34262,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   }
   W.addEventListener("popstate", () => {
     TRAP = 0;
+    if (D.getElementById("ar238v") || D.getElementById("ar238c")) {
+      setTimeout(trap, 80);
+      return;
+    }
     const lb = D.getElementById("lb206");
     if (lb) {
       lb.remove();
