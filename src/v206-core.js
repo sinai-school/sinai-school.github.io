@@ -239,6 +239,8 @@
   function trap() { if (TRAP || !canBack()) return; try { history.pushState({ s206: 1 }, ""); TRAP = 1; } catch (e) { } }
   W.addEventListener("popstate", () => {
     TRAP = 0;
+    /* v248: عارض صور بوابة الأرشفة (ومحرر القص) يسدّ نفسه بالرجوع — لا نرجع قسم (كان يطلع من الأرشيف كله) */
+    if (D.getElementById("ar238v") || D.getElementById("ar238c")) { setTimeout(trap, 80); return; }
     const lb = D.getElementById("lb206"); if (lb) { lb.remove(); trap(); return; }
     const nm = D.getElementById("nm206"); if (nm) { nm.remove(); NM = 0; trap(); return; }
     if (!canBack()) return;
