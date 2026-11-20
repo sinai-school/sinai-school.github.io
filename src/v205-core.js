@@ -287,7 +287,7 @@
           const R = [["الاسم (كما كتبه الطالب)", nmJoin([x.n1, x.n2, x.n3, x.n4]) + (x.laqab ? " " + x.laqab : "")], ["اسم الأم الثلاثي", nmJoin([x.m1, x.m2, x.m3])], ["المواليد", dmy(x.dob)], ["رقم البطاقة الموحدة", A(x.nid || "")], ["هاتف ولي الأمر", A(x.gphone || "")], ["الرعاية الاجتماعية", x.gr || ""], ["السكن", [x.city, x.hay].filter(Boolean).join(" — ")], ["محلة / زقاق / دار", A([x.mahalla, x.zuqaq, x.dar].map(v => v || "—").join(" / "))], ["أقرب نقطة دالة", x.near || ""], ["البريد الإلكتروني", x.email || ""], ["آخر تحديث", x.at ? dmy(String(x.at).slice(0, 10)) : ""]].filter(r => r[1]);
           if (!(SPF in PH205)) ph205(SPF);
           const ph = PH205[SPF] ? `<img src="${PH205[SPF]}" alt="صورة الطالب" style="width:96px;height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--line,#ddd);float:left;margin:0 0 8px 12px">` : "";
-          body = ph + `<dl class="pf3kv">${R.map(([k, v]) => `<dt>${e(k)}</dt><dd>${e(v)}</dd>`).join("")}</dl><div style="clear:both"></div>`;
+          body = ph + `<dl class="pf3kv">${R.map(([k, v]) => `<dt>${e(k)}</dt><dd>${/@/.test(String(v || "")) ? '<bdi dir="ltr" data-noar>' + e(v) + '</bdi>' : e(v)}</dd>`).join("")}</dl><div style="clear:both"></div>`;
         } else body = `<p class="muted" style="margin:4px 0">الطالب بعد ما ملّى معلوماته بالبوابة، أو معلوماته بانتظار المراجعة.</p>`;
         h += `<div class="box" id="pfp205"><h3>${typeof ic == "function" ? ic("user") : ""} معلومات الطالب من البوابة والتطبيق</h3>${body}</div>`;
       } catch (e) { console.warn(e); }
