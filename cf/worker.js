@@ -776,6 +776,7 @@ async function admin_(b) {
   if (b.op === 'bklist') return { ok: 1, list: await bklist_() };
   if (b.op === 'bkget') return bkget_(b);
   if (b.op === 'applyAll') return applyAll_();
+  if (b.op === 'gap251') { const r = await applyAll_(); const n = await gap251_(true); return { ok: 1, r, n }; }
   if (b.op === 'editAcc') return editAcc202_(b);
   if (b.op === 'repReply') return repReply202_(b, null);
   if (b.op === 'up') return upOne_(b);
@@ -1524,6 +1525,45 @@ const TMAP_ = ["gender","birth","birthPlace","blood","marital","spouse","marriag
 async function docJ_(p) { const e = await dmeta_(p); if (!e || e.h === 'DEL') return null; try { return JSON.parse(await dget_(e)); } catch (x) { return null; } }
 async function docW_(p, obj, by) { const t = canon_(obj); const e = await dmeta_(p); const h = syH_(t); if (e && e.h === h) return 0; await dput_(p, t, h, by || 'portal', null); return 1; }
 async function applyOne_(kind, key) { return applyAll_(); }
+/* v251b: المزامنة البوابة ← ملف الطالب كانت تصير مرة وحدة (status new→ok)؛ إذا المعلومة ضاعت بعدها من ملف المدرسة ما ترجع.
+   هسه كل نص ساعة: أي خانة **فارغة أو غير صالحة** بملف الطالب تنملي من ملفه بالبوابة (إذا ملف البوابة صحيح). ما يكتب فوق معلومة صحيحة موجودة. */
+const AR251 = s => String(s == null ? '' : s).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).trim();
+async function gap251_(force) {
+  const last = +(await kvGet('GAP251') || 0);
+  if (!force && Date.now() - last < 30 * 60e3) return 0;
+  await kvPut('GAP251', String(Date.now()));
+  const stuDoc = await docJ_('school/students'); const ST = stuDoc && Array.isArray(stuDoc.list) ? stuDoc.list : null; if (!ST) return 0;
+  const byId = {}; for (const s of ST) if (s && s.id) byId[s.id] = s;
+  const R = await all("select key,json from prof where kind='s' and status='ok'");
+  const INF = {}, INFG = {}, chG = new Set(); let chST = false, n = 0;
+  for (const g of ['g4', 'g5', 'g6']) { const d = await docJ_('stuinfo/' + g); let o = {}; try { o = d && d.json ? JSON.parse(d.json) : {}; } catch (x) { o = {}; } INF[g] = o; for (const i in o) INFG[i] = g; }
+  const gk = s => { const g = String(s.s || '').split(' ')[0]; return g === 'الرابع' ? 'g4' : g === 'الخامس' ? 'g5' : 'g6'; };
+  for (const p of R) {
+    const s = byId[p.key]; if (!s || s.x) continue;
+    let o; try { o = JSON.parse(p.json || '{}'); } catch (e) { continue; }
+    if (o.v3 !== '1' || fcheck_('s', o).length) continue;
+    const g = INFG[p.key] || gk(s), i = INF[g][p.key] = INF[g][p.key] || {}, X = i.x = i.x || {};
+    let ch = false;
+    const momS = X.m1 ? [X.m1, X.m2, X.m3].filter(Boolean).join(' ') : String(i.m || '');
+    if (momS.split(/\s+/).filter(Boolean).length < 2 && o.m1) { i.m = jn_(o.m1, o.m2, o.m3); X.m1 = o.m1; X.m2 = o.m2; X.m3 = o.m3; ch = true; }
+    if (!/(19|20)\d\d/.test(AR251(X.dob || i.dob)) && o.dob) { i.dob = o.dob; X.dob = o.dob; ch = true; }
+    const okN = v => /^20\d{10}$/.test(AR251(v));
+    if (!AR251(X.nid || i.nid) && okN(o.nid)) { i.nid = AR251(o.nid); X.nid = AR251(o.nid); ch = true; }
+    if (!(X.mahalla || X.zuqaq || X.dar || String(i.ad || '').trim()) && (o.mahalla || o.zuqaq || o.dar)) {
+      i.ad = ['محلة ' + String(o.mahalla ?? ''), 'زقاق ' + String(o.zuqaq ?? ''), 'دار ' + String(o.dar ?? '')].join(' / ');
+      if (!i.ar) i.ar = [o.city, o.hay, o.near].filter(Boolean).join(' — ');
+      for (const k of ['city', 'hay', 'mahalla', 'zuqaq', 'dar', 'near']) if (!X[k] && o[k]) X[k] = o[k];
+      ch = true;
+    }
+    if (!X.gphone && o.gphone) { X.gphone = o.gphone; ch = true; }
+    const gp = phN_(o.gphone); if (!/^07\d{9}$/.test(AR251(s.p)) && gp) { s.p = '0' + gp; chST = true; ch = true; }
+    if (ch) { chG.add(g); n++; }
+  }
+  for (const g of chG) await docW_('stuinfo/' + g, { json: JSON.stringify(INF[g]) });
+  if (chST) await docW_('school/students', Object.assign({}, stuDoc, { list: ST }));
+  if (n) { try { await kvPut('GAP251N', JSON.stringify({ at: now(), n })); } catch (e) { } }
+  return n;
+}
 async function applyAll_() {
   /* قفل حتى ما تتداخل كتابتين على نفس الملف */
   const t0 = Date.now();
@@ -1532,7 +1572,7 @@ async function applyAll_() {
   if (!(lk.meta && lk.meta.changes)) return { ok: 1, busy: 1 };
   try {
     const R = await all("select kind,key,name,json,photo from prof where status='new' order by updated desc limit 300");
-    if (!R.length) return { ok: 1, applied: 0 };
+    if (!R.length) { let gf = 0; try { gf = await gap251_(); } catch (e) { } return { ok: 1, applied: 0, gap: gf }; }
     const stuDoc = await docJ_('school/students'); const ST = stuDoc && Array.isArray(stuDoc.list) ? stuDoc.list : null;
     const INF = {}, INFG = {}, chG = new Set(); let chST = false;
     for (const g of ['g4', 'g5', 'g6']) { const d = await docJ_('stuinfo/' + g); let o = {}; try { o = d && d.json ? JSON.parse(d.json) : {}; } catch (x) { o = {}; } INF[g] = o; for (const i in o) INFG[i] = g; }
