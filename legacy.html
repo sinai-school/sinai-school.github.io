@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v248b-2026-11-19T21:55:00.000Z-v248b";
+<script>window.APP_VER = "2k7v249-2026-11-20T03:30:00.000Z-v249";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -6305,7 +6305,7 @@ async function s6Import(file) {
     }
     P.st();
     render();
-    toast("استُورد " + toAr(n) + " طالب" + (miss.length ? " — لم يُطابق " + toAr(miss.length) : ""));
+    toast("استُورد " + cnt228(n, "طالب واحد", "طالبان", "طلاب", "طالباً") + (miss.length ? " — لم يُطابق " + toAr(miss.length) : ""));
     if (miss.length) console.log(miss);
   } catch (e) {
     toast("تعذّرت قراءة الملف", "err");
@@ -29862,7 +29862,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     G.rows = (G.rows || []).filter((x) => !(x.label == G.lbl && x.subj == G.sj && rows.some((r) => r[0] == x.skey))).concat(rows.map((r) => ({ skey: r[0], label: G.lbl, subj: G.sj, val: r[1], note: r[2], x: r[3] || "" })));
     try {
       const r = await post(b, 6e4);
-      if (r && r.ok) T0((one ? "أُرسلت الدرجة" : "أُرسلت درجات " + A(rows.length) + " طالب") + " ✓");
+      if (r && r.ok) T0((one ? "أُرسلت الدرجة" : "أُرسلت درجات " + cnt228(rows.length, "طالب واحد", "طالبَين", "طلاب", "طالباً")) + " ✓");
       else if (!r || /^(net|server)$/.test(r.err || "")) {
         qAdd(b);
         T0("حُفظت وستُرسل تلقائياً فور عودة الشبكة");
