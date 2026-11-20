@@ -283,9 +283,9 @@ if REQ.get('misschk'):
         if x.get('ss') == 'مفصول' or x.get('x') == 'out': continue
         cur += 1
         i = I.get(x.get('id')) or {}; X = i.get('x') or {}
-        nid = str(X.get('nid') or i.get('nid') or ''); mom = (' '.join(v for v in [X.get('m1'), X.get('m2'), X.get('m3')] if v) if X.get('m1') else i.get('m')) or ''
+        _tr = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789'); nid = str(X.get('nid') or i.get('nid') or '').translate(_tr); mom = (' '.join(v for v in [X.get('m1'), X.get('m2'), X.get('m3')] if v) if X.get('m1') else i.get('m')) or ''
         dob = str(X.get('dob') or i.get('dob') or ''); ad = bool(X.get('mahalla') or X.get('zuqaq') or X.get('dar') or str(i.get('ad') or '').strip())
-        ph = str(x.get('p') or X.get('gphone') or '')
+        ph = str(x.get('p') or X.get('gphone') or '').translate(_tr)
         m = []
         if not re.match(r'^20\d{10}$', nid): m.append('البطاقة')
         if len(mom.split()) < 2: m.append('اسم الأم')
