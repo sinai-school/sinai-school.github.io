@@ -1621,7 +1621,8 @@ async function applyAll_() {
     }
     for (const g of chG) await docW_('stuinfo/' + g, { json: JSON.stringify(INF[g]) });
     if (chST) await docW_('school/students', Object.assign({}, stuDoc, { list: ST }));
-    return { ok: 1, applied, invalid: invalid.length };
+    let gf = 0; try { gf = await gap251_(); } catch (e) { }
+    return { ok: 1, applied, invalid: invalid.length, gap: gf };
   } finally { await run("update kv set v='0' where k='APLOCK'"); }
 }
 
