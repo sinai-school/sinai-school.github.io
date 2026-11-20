@@ -378,6 +378,14 @@
     if (WEBP) { const b = await blobOf(c, "image/webp", q); if (b && b.type == "image/webp") return b; }
     return blobOf(c, "image/jpeg", thumb ? .78 : .92);
   }
+  /* v250: ضغط ذكي للأرشيف — أعلى دقة ممكنة ضمن ~٦٥٠ ك.ب للصفحة (حتى تكفي المساحة المجانية ١٣٥٠٠+ صفحة)
+     يبدأ ٣٢٠٠ بكسل جودة ٠٫٨٦، ولا ينزل أبداً تحت ٢٤٠٠ بكسل جودة ٠٫٧٢ (الخط اليدوي يبقى واضحاً) */
+  const ARCT = 650 * 1024, ASTEP = [[3200, .86], [3200, .8], [2800, .8], [2800, .75], [2400, .75], [2400, .72]];
+  async function encodeArc(c) {
+    let b = null;
+    for (const [L, q] of ASTEP) { b = await encode(scaled(c, L), q); if (b && b.size <= ARCT) return b; }
+    return b;
+  }
   function scaled(c, L) { const s = Math.min(1, L / Math.max(c.width, c.height)); if (s >= 1) return c; const o = canvas(c.width * s, c.height * s), x = o.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, o.width, o.height); return o; }
   /* PDF → صور الصفحات */
   async function pdfPages(file) {
@@ -791,7 +799,7 @@
       it.st = "up"; upRow(it);
       for (let t = 0; t < 4; t++) {
         try {
-          const c = await render238(it.bm, it.q, it.rot), bl = await encode(c, WQ), th = await encode(scaled(c, TH), .72, 1);
+          const c = await render238(it.bm, it.q, it.rot), bl = await encodeArc(c), th = await encode(scaled(c, TH), .72, 1);
           const m = { tok: "", bk: U.bk, pg: it.pg, mime: bl.type, w: c.width, h: c.height, nt: (it.nt || "").trim() || (U.recrop ? "إعادة قص" : ""), rep: page(U.bk, it.pg) ? 1 : 0, cid: it.cid || (it.cid = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10)) };
           const tb = new Uint8Array(await th.arrayBuffer()), ib = new Uint8Array(await bl.arrayBuffer());
           const r = await raw("/ar238u", tok => { m.tok = tok; const mj = new TextEncoder().encode(JSON.stringify(m)), o = new Uint8Array(8 + mj.length + tb.length + ib.length), dv = new DataView(o.buffer); dv.setUint32(0, mj.length); o.set(mj, 4); dv.setUint32(4 + mj.length, tb.length); o.set(tb, 8 + mj.length); o.set(ib, 8 + mj.length + tb.length); return o; }, 1);
@@ -861,7 +869,7 @@
         const bl = await (await fetch(src)).blob(), bm = await decode(bl), det = detect(bm);
         /* القص التلقائي فقط إذا كانت حدود الورقة واضحة؛ وإلا تُحفظ الصورة كما هي */
         const q = det.c == "ok" ? det.q : [[0, 0], [1, 0], [1, 1], [0, 1]];
-        const c = await render238(bm, q, 0), ib = await encode(c, WQ), th = await encode(scaled(c, TH), .72, 1);
+        const c = await render238(bm, q, 0), ib = await encodeArc(c), th = await encode(scaled(c, TH), .72, 1);
         const m = { tok: "", bk: "q", pg: p, mime: ib.type, w: c.width, h: c.height, nt: "نُقلت من صورة القيد السابقة" + (det.c == "ok" ? "" : " — تحتاج مراجعة القص"), rep: 0, cid: "m" + (String(o).replace(/[^A-Za-z0-9]/g, "") + p.replace(/\D/g, "")).slice(-30) };
         const tb = new Uint8Array(await th.arrayBuffer()), u8 = new Uint8Array(await ib.arrayBuffer());
         const rr = await raw("/ar238u", tok => { m.tok = tok; const mj = new TextEncoder().encode(JSON.stringify(m)), out = new Uint8Array(8 + mj.length + tb.length + u8.length), dv = new DataView(out.buffer); dv.setUint32(0, mj.length); out.set(mj, 4); dv.setUint32(4 + mj.length, tb.length); out.set(tb, 8 + mj.length); out.set(u8, 8 + mj.length + tb.length); return out; }, 1);
