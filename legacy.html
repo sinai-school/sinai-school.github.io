@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v251-2026-11-20T09:45:00.000Z-v251";
+<script>window.APP_VER = "2k7v252-2026-11-20T14:40:00.000Z-v252";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -12274,7 +12274,7 @@ function psView() {
   const blocked = PS.kind == "s" && miss.length;
   let tab = PS.tab;
   if (blocked && (tab == "g" || tab == "n")) tab = "f";
-  const head = '<div class="box"><div class="prof"><div class="av psav">'.concat(b.photo ? '<img src="'.concat(b.photo, '" alt="">') : esc((PS.name || "؟")[0]), '</div><div><h2 style="margin:0;font:700 20px/1.35 var(--f-display)">').concat(esc(PS.name), '</h2><span class="sub">').concat(esc(PS.kind == "s" ? pv.s || "" : pv.job || "مدرس"), '</span>\n    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">').concat(pv.ent ? '<span class="chip bad">انتساب</span>' : "").concat(pv.thm ? '<span class="chip">تحميل — '.concat(esc(pv.thm), "</span>") : "").concat(b.status == "new" && PS.kind == "t" ? '<span class="chip">تعديلاتك بانتظار موافقة الإدارة</span>' : "", "</div></div></div>\n    ").concat(PS.off ? '<div class="banner warn">تعرض آخر نسخة محفوظة على جهازك — الإنترنت ضعيف أو مقطوع.</div>' : "", "\n    ").concat(miss.length ? '<div class="banner '.concat(PS.kind == "s" ? "err" : "warn", '">').concat(ic("alert"), " <span>").concat(PS.kind == "s" ? "يجب إكمال" : "يُفضَّل إكمال", ": ").concat(esc(miss.join("، ")), "</span></div>") : "", '\n    <div class="daytabs">').concat(T0.map(([k2, l]) => '<button class="'.concat(tab == k2 ? "on" : "", '" ').concat(blocked && (k2 == "g" || k2 == "n") ? 'disabled title="أكمل ملفك أولاً"' : "", " onclick=\"PS.tab='").concat(k2, "';prender()\">").concat(l).concat(k2 == "n" && (b.notes || []).length ? " (" + toAr((b.notes || []).length) + ")" : "", "</button>")).join(""), "</div></div>");
+  const head = '<div class="box"><div class="prof"><label class="av psav av251" title="'.concat(b.photo ? "تغيير الصورة الشخصية" : "إضافة صورة شخصية", '">').concat(b.photo ? '<img src="'.concat(b.photo, '" alt="">') : esc((PS.name || "؟")[0]), '<span class="cam251">').concat(ic("upload"), '</span><input type="file" accept="image/*" hidden onchange="psPhoto(this)"></label><div><h2 style="margin:0;font:700 20px/1.35 var(--f-display)">').concat(esc(PS.name), '</h2><span class="sub">').concat(esc(PS.kind == "s" ? pv.s || "" : pv.job || "مدرس"), '</span>\n    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">').concat(pv.ent ? '<span class="chip bad">انتساب</span>' : "").concat(pv.thm ? '<span class="chip">تحميل — '.concat(esc(pv.thm), "</span>") : "").concat(b.status == "new" && PS.kind == "t" ? '<span class="chip">تعديلاتك بانتظار موافقة الإدارة</span>' : "", "</div></div></div>\n    ").concat(PS.off ? '<div class="banner warn">تعرض آخر نسخة محفوظة على جهازك — الإنترنت ضعيف أو مقطوع.</div>' : "", "\n    ").concat(miss.length ? '<div class="banner '.concat(PS.kind == "s" ? "err" : "warn", '">').concat(ic("alert"), " <span>").concat(PS.kind == "s" ? "يجب إكمال" : "يُفضَّل إكمال", ": ").concat(esc(miss.join("، ")), "</span>").concat(!b.photo ? '<label class="btn sm" style="margin-inline-start:auto;cursor:pointer">'.concat(ic("upload"), ' إضافة صورة<input type="file" accept="image/*" hidden onchange="psPhoto(this)"></label>') : "", "</div>") : "", '\n    <div class="daytabs">').concat(T0.map(([k2, l]) => '<button class="'.concat(tab == k2 ? "on" : "", '" ').concat(blocked && (k2 == "g" || k2 == "n") ? 'disabled title="أكمل ملفك أولاً"' : "", " onclick=\"PS.tab='").concat(k2, "';prender()\">").concat(l).concat(k2 == "n" && (b.notes || []).length ? " (" + toAr((b.notes || []).length) + ")" : "", "</button>")).join(""), "</div></div>");
   let body = "";
   if (tab == "f") {
     const F = PS.kind == "s" ? PSF : PTF;
@@ -15052,7 +15052,7 @@ function pfSummary() {
     }
     const v2 = p[f.k];
     if (!v2) continue;
-    h += "<div><dt>".concat(esc(f.l.replace(/ \(.*\)$/, "")), "</dt><dd>").concat(f.t == "date" ? fmtD(v2) : /^\d+$/.test(v2) || f.t == "phone" ? '<span dir="ltr">'.concat(toAr(v2), "</span>") : esc(v2), "</dd></div>");
+    h += "<div><dt>".concat(esc(f.l.replace(/ \(.*\)$/, "")), "</dt><dd>").concat(f.t == "email" || /@/.test(v2) ? '<bdi dir="ltr" data-noar>' + esc(v2) + "</bdi>" : f.t == "date" ? fmtD(v2) : /^\d+$/.test(v2) || f.t == "phone" ? '<span dir="ltr">'.concat(toAr(v2), "</span>") : esc(v2), "</dd></div>");
   }
   if (open2) h += "</dl></div>";
   return pfPhotoBox() + '<div class="box"><div class="vh"><h3>'.concat(ic("idc"), ' معلوماتي</h3><button class="btn ghost sm" onclick="PS.edit=1;prender()">').concat(ic("edit"), " تعديل معلوماتي</button></div>").concat(b101Status(), "</div>") + h + '<div class="box"><h3>'.concat(ic("alert"), ' تبليغ الإدارة عن خطأ</h3><textarea id="psrep" style="min-height:90px" placeholder="مثل: اسمي بقائمة المدرسة مكتوب غلط…"></textarea><div class="tools"><button class="btn ghost" onclick="psReport()">إرسال البلاغ</button></div></div>');
@@ -19522,7 +19522,7 @@ try {
       if (tab != "i" && tab != "r") return h;
       const pv = PS.b.private || {};
       let x = "";
-      const fv2 = (v2) => /^\d{4}-\d\d-\d\d$/.test(v2) ? fmtD(v2) : esc(toAr(v2));
+      const fv2 = (v2) => /^\d{4}-\d\d-\d\d$/.test(v2) ? fmtD(v2) : /@|https?:|www\./i.test(v2) ? '<bdi dir="ltr" data-noar>' + esc(v2) + "</bdi>" : esc(toAr(v2));
       if (tab == "i") {
         const F = pv.full || [];
         x = F.length ? F.map(([sec, L]) => '<div class="box"><h3>'.concat(ic("idc"), " ").concat(esc(sec), '</h3><dl class="kv">').concat(L.map(([l, v2]) => "<div><dt>".concat(esc(l), "</dt><dd>").concat(fv2(v2), "</dd></div>")).join(""), "</dl></div>")).join("") : '<div class="box"><p class="muted" style="margin:0">معلوماتك الكاملة توصل هنا أول ما الإدارة تحدّث النظام.</p></div>';
@@ -33620,7 +33620,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           const R = [["الاسم (كما كتبه الطالب)", nmJoin([x.n1, x.n2, x.n3, x.n4]) + (x.laqab ? " " + x.laqab : "")], ["اسم الأم الثلاثي", nmJoin([x.m1, x.m2, x.m3])], ["المواليد", dmy(x.dob)], ["رقم البطاقة الموحدة", A(x.nid || "")], ["هاتف ولي الأمر", A(x.gphone || "")], ["الرعاية الاجتماعية", x.gr || ""], ["السكن", [x.city, x.hay].filter(Boolean).join(" — ")], ["محلة / زقاق / دار", A([x.mahalla, x.zuqaq, x.dar].map((v) => v || "—").join(" / "))], ["أقرب نقطة دالة", x.near || ""], ["البريد الإلكتروني", x.email || ""], ["آخر تحديث", x.at ? dmy(String(x.at).slice(0, 10)) : ""]].filter((r) => r[1]);
           if (!(SPF in PH205)) ph205(SPF);
           const ph = PH205[SPF] ? '<img src="'.concat(PH205[SPF], '" alt="صورة الطالب" style="width:96px;height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--line,#ddd);float:left;margin:0 0 8px 12px">') : "";
-          body = ph + '<dl class="pf3kv">'.concat(R.map(([k, v]) => "<dt>".concat(e(k), "</dt><dd>").concat(e(v), "</dd>")).join(""), '</dl><div style="clear:both"></div>');
+          body = ph + '<dl class="pf3kv">'.concat(R.map(([k, v]) => "<dt>".concat(e(k), "</dt><dd>").concat(/@/.test(String(v || "")) ? '<bdi dir="ltr" data-noar>' + e(v) + "</bdi>" : e(v), "</dd>")).join(""), '</dl><div style="clear:both"></div>');
         } else body = '<p class="muted" style="margin:4px 0">الطالب بعد ما ملّى معلوماته بالبوابة، أو معلوماته بانتظار المراجعة.</p>';
         h += '<div class="box" id="pfp205"><h3>'.concat(typeof ic == "function" ? ic("user") : "", " معلومات الطالب من البوابة والتطبيق</h3>").concat(body, "</div>");
       } catch (e) {
@@ -40673,7 +40673,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const f = document.createElement("iframe");
       f.setAttribute("aria-hidden", "true");
       f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0";
-      f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><title>'.concat(esc(name), "</title><style>\n@page{size:").concat(w0.toFixed(1), "mm ").concat(h0.toFixed(1), "mm;margin:0}\nhtml,body{margin:0;padding:0;background:#fff}\n.pg{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}\n.pg:last-child{page-break-after:auto;break-after:auto}\n.pg img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}\n@media screen{.pg{width:").concat(w0.toFixed(1), "mm;height:").concat(h0.toFixed(1), "mm}}\n</style></head><body>").concat(imgs.map(([u]) => '<div class="pg"><img src="'.concat(u, '"></div>')).join(""), "</body></html>");
+      f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><title>'.concat(esc(name), "</title><style>\n@page{size:").concat(w0.toFixed(1), "mm ").concat(h0.toFixed(1), "mm;margin:0}\nhtml,body{margin:0;padding:0;background:#fff}\n.pg{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}\n.pg:last-child{page-break-after:auto;break-after:auto}\n.pg img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}\n@media screen{.pg{width:").concat(w0.toFixed(1), "mm;height:").concat(h0.toFixed(1), 'mm}}\n</style><style id="css251">.av251{position:relative;cursor:pointer;overflow:visible}.av251>img{border-radius:inherit}.cam251{position:absolute;bottom:-2px;inset-inline-start:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent,#1e5a46);color:#fff;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}.cam251 svg{width:14px;height:14px}</style></head><body>').concat(imgs.map(([u]) => '<div class="pg"><img src="'.concat(u, '"></div>')).join(""), "</body></html>");
       const done = () => {
         setTimeout(() => {
           f.remove();
