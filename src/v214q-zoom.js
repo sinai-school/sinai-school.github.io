@@ -44,7 +44,7 @@ ${rowId ? `<label class="rep">استبدال الصورة<input type="file" acce
     const close = () => { if (!w.isConnected) return; on(() => history.back()); setTimeout(() => { if (w.isConnected) w.remove(); }, 400); };
     img.onload = () => { msg.style.display = "none"; fit(); };
     img.onerror = () => { msg.textContent = "تعذّر فتح الصورة"; };
-    if (src) img.src = src; else msg.textContent = "ماكو صورة";
+    if (src) img.src = src; else msg.textContent = "لا توجد صورة";
     W.addEventListener("resize", () => { if (w.isConnected) fit(); });
 
     w.querySelector(".qzb").addEventListener("click", e => {
