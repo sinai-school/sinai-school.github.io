@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v249-2026-11-20T03:30:00.000Z-v249";
+<script>window.APP_VER = "2k7v250-2026-11-20T09:00:00.000Z-v250";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -43121,6 +43121,15 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     return blobOf(c, "image/jpeg", thumb ? 0.78 : 0.92);
   }
+  const ARCT = 650 * 1024, ASTEP = [[3200, 0.86], [3200, 0.8], [2800, 0.8], [2800, 0.75], [2400, 0.75], [2400, 0.72]];
+  async function encodeArc(c) {
+    let b = null;
+    for (const [L, q] of ASTEP) {
+      b = await encode(scaled(c, L), q);
+      if (b && b.size <= ARCT) return b;
+    }
+    return b;
+  }
   function scaled(c, L) {
     const s = Math.min(1, L / Math.max(c.width, c.height));
     if (s >= 1) return c;
@@ -43989,7 +43998,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       upRow(it);
       for (let t = 0; t < 4; t++) {
         try {
-          const c = await render238(it.bm, it.q, it.rot), bl = await encode(c, WQ), th = await encode(scaled(c, TH), 0.72, 1);
+          const c = await render238(it.bm, it.q, it.rot), bl = await encodeArc(c), th = await encode(scaled(c, TH), 0.72, 1);
           const m = { tok: "", bk: U.bk, pg: it.pg, mime: bl.type, w: c.width, h: c.height, nt: (it.nt || "").trim() || (U.recrop ? "إعادة قص" : ""), rep: page(U.bk, it.pg) ? 1 : 0, cid: it.cid || (it.cid = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10)) };
           const tb = new Uint8Array(await th.arrayBuffer()), ib = new Uint8Array(await bl.arrayBuffer());
           const r = await raw("/ar238u", (tok) => {
@@ -44173,7 +44182,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         if (!src) throw 0;
         const bl = await (await fetch(src)).blob(), bm = await decode(bl), det = detect(bm);
         const q = det.c == "ok" ? det.q : [[0, 0], [1, 0], [1, 1], [0, 1]];
-        const c = await render238(bm, q, 0), ib = await encode(c, WQ), th = await encode(scaled(c, TH), 0.72, 1);
+        const c = await render238(bm, q, 0), ib = await encodeArc(c), th = await encode(scaled(c, TH), 0.72, 1);
         const m = { tok: "", bk: "q", pg: p, mime: ib.type, w: c.width, h: c.height, nt: "نُقلت من صورة القيد السابقة" + (det.c == "ok" ? "" : " — تحتاج مراجعة القص"), rep: 0, cid: "m" + (String(o).replace(/[^A-Za-z0-9]/g, "") + p.replace(/\D/g, "")).slice(-30) };
         const tb = new Uint8Array(await th.arrayBuffer()), u8 = new Uint8Array(await ib.arrayBuffer());
         const rr = await raw("/ar238u", (tok) => {
