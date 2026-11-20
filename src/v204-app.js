@@ -259,12 +259,25 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
     if (!PTABS.t.some(x => x[0] == "x")) PTABS.t.splice(Math.min(3, PTABS.t.length), 0, ["x", "الامتحانات", "cal"]);
   });
   const wd = d => { try { return typeof wdOf == "function" ? wdOf(d) : ""; } catch (e) { return ""; } };
+  function exDone249(rows) {
+    let last = ""; (rows || []).forEach(r => { if (r.d && r.d > last && (r.c || []).some(c => c && String(c).trim() && c != "بلا امتحان")) last = r.d; });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(last)) return false;
+    const n = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16);
+    return n >= last + "T18:00";
+  }
+  function exMsg249(t) {
+    let s = String(t || "").trim().replace(/^جدول\s+/, "").replace(/\s*لل?عام\s+الدراسي.*$/, "").trim();
+    if (!s) s = "الامتحانات"; else if (!/^امتحان/.test(s)) s = "امتحانات " + s;
+    return "انتهت " + s;
+  }
   function exTab() {
     const L = (PS.b && PS.b.ex) || [];
     if (!L.length) return `<div class="box"><h3>${I("cal")} جداول الامتحانات</h3><p class="muted" style="margin:0">لم يُنشر أي جدول امتحانات بعد. فور نشره من الإدارة سيظهر هنا ويصلك تبليغ.</p></div>`;
     const t0 = today();
     return L.map(t => {
       const stu = PS.kind == "s", G = t.g || [];
+      /* v249: بعد آخر امتحان (٦ مساءً) — الجدول ينشال عند الطالب ويظهر «انتهت امتحانات …» (حتى لو النسخة محفوظة بالجهاز) */
+      if (stu && (t.done || exDone249(t.rows))) return `<div class="box ex204 exd249"><h3 style="margin:0">${I("ok") || I("cal")} ${E(A(t.done ? t.t : exMsg249(t.t)))}</h3><p class="muted" style="margin:6px 0 0">بالتوفيق والنجاح. ستظهر نتائجك في تبويب الدرجات حين ترسلها المدرسة.</p></div>`;
       const rows = (t.rows || []).filter(r => r.d || r.c.some(Boolean));
       const nx = rows.find(r => r.d >= t0 && (r.c || []).some(c => c && c != "بلا امتحان"));
       let cd = "";

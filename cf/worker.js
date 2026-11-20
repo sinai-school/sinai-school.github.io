@@ -556,19 +556,33 @@ async function exPub204_(b) {
   }
   return { ok: 1, at: t.at, h };
 }
+function exDone249_(rows) {
+  let last = ''; for (const r of rows || []) if (r.d && r.d > last && (r.c || []).some(c => c && String(c).trim() && c !== 'بلا امتحان')) last = r.d;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(last)) return false;
+  const bg = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16);
+  return bg >= last + 'T18:00';
+}
+function exDoneMsg249_(t) {
+  let s = String(t || '').trim().replace(/^جدول\s+/, '').replace(/\s*لل?عام\s+الدراسي.*$/, '').trim();
+  if (!s) s = 'الامتحانات'; else if (!/^امتحان/.test(s)) s = 'امتحانات ' + s;
+  return 'انتهت ' + s;
+}
 async function extra204_(o, x) {
   const P = await kvJ('EXPUB', {}), L = [];
   for (const k in P) {
     const t = P[k]; if (!t) continue;
     if (x.kind === 's') {
-      const pv = o.private || {}, sec = String(pv.s || (pv.secs || [])[0] || ''), g = sec.split(' ').slice(0, -1).join(' ') || sec;
+      const pv = o.private || (((await private_()).s || {})[x.key]) || {}, sec = String(pv.s || (pv.secs || [])[0] || ''), g = sec.split(' ').slice(0, -1).join(' ') || sec;
       const gi = t.g.indexOf(g);
       if (t.f2) { if (!t.f2[x.key]) continue; }
       if (gi < 0) continue;
-      L.push({ k, t: t.t, at: t.at, g: [g], rows: t.rows.map(r => ({ d: r.d, c: [String(r.c[gi] || '').trim()] })).filter(r => r.c[0] && r.c[0] !== 'بلا امتحان'), notes: t.notes, mine: t.f2 ? t.f2[x.key] : null });
+      const rw = t.rows.map(r => ({ d: r.d, c: [String(r.c[gi] || '').trim()] })).filter(r => r.c[0] && r.c[0] !== 'بلا امتحان');
+      /* v249: بعد آخر امتحان للطالب (الساعة ٦ مساءً بتوقيت بغداد) الجدول ينشال من بوابته ويظهر «انتهت امتحانات …» */
+      if (exDone249_(rw)) { L.push({ k, t: exDoneMsg249_(t.t), at: t.at, g: [g], rows: [], notes: '', done: 1 }); continue; }
+      L.push({ k, t: t.t, at: t.at, g: [g], rows: rw, notes: t.notes, mine: t.f2 ? t.f2[x.key] : null });
     } else L.push({ k, t: t.t, at: t.at, g: t.g, rows: t.rows, notes: t.notes, n2: t.f2 ? Object.keys(t.f2).length : 0 });
   }
-  o.ex = L; o.exh = exHash_(['v217', L.map(t => [t.k, t.at, t.rows.length])]);
+  o.ex = L; o.exh = exHash_(['v217', L.map(t => [t.k, t.at, t.rows.length, t.done ? 1 : 0])]);
   if (x.kind === 't' && !o.sent) { try { const pv = ((await private_()).t || {})[x.key] || {}; o.sent = await sentFor_(x.a.name || pv.n || ''); } catch (e) { } }
 }
 
