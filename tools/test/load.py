@@ -17,8 +17,10 @@ for r in D['acc']: db.execute('insert into acc(kind,key,name,phone,created,updat
 for r in D['prof']: db.execute('insert into prof(kind,key,name,json,photo,updated,status) values(?,?,?,?,?,?,?)',(r['kind'],r['key'],r['name'],r['json'],'',r['updated'],r['status']))
 for r in D['kv']: db.execute('insert or replace into kv(k,v) values(?,?)',(r['k'],r['v']))
 for k,v in [('SECRET','localtestsecret'),('DREV',str(mx))]: db.execute('insert or replace into kv(k,v) values(?,?)',(k,v))
+# أعلام ترحيل الجداول (E202…) تُحذف حتى يُنشئ الخادم المحلي الأعمدة/الفهارس من جديد
+db.execute("delete from kv where k glob 'E[0-9]*' and k not in ('E233','E233N')")
 if D['snap']: blob('snap',D['snap'])
 for r in D['notes']: db.execute('insert or ignore into notes(seq,id,scope,target,frm,title,body,date,cat,files) values(?,?,?,?,?,?,?,?,?,?)',(r['seq'],r['id'],r['scope'],r['target'],r['frm'],r['title'],'',r['date'],r['cat'],''))
-db.execute('create table if not exists tgr(id text primary key, tkey text, tname text, subj text, label text, skey text, val text, note text, date text)')
-for r in D.get('tgr',[]): db.execute('insert or replace into tgr(id,tkey,tname,subj,label,skey,val,note,date) values(?,?,?,?,?,?,?,?,?)',(r['id'],r['tkey'],'',r['subj'],r['label'],r['skey'],r['val'],'',r['date']))
+db.execute('create table if not exists tgr(id text primary key, tkey text, tname text, subj text, label text, skey text, val text, note text, date text, x text)')
+for r in D.get('tgr',[]): db.execute('insert or replace into tgr(id,tkey,tname,subj,label,skey,val,note,date,x) values(?,?,?,?,?,?,?,?,?,?)',(r['id'],r['tkey'],'',r['subj'],r['label'],r['skey'],r['val'],r.get('note') or '',r['date'],r.get('x')))
 db.commit(); sqlite3.connect(S+'/h/t_f.db').close(); print('loaded',len(D['meta']))
