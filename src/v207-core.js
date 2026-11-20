@@ -40,14 +40,16 @@
   W.dt207 = dt207;
   on(() => { if (typeof dt72 == "function") dt72 = function (v) { return dt207(v); }; });
   /* كل نص معروض بالنظام والمعاينة والطباعة (عدا الحقول وقت الكتابة) */
-  const SKIP = "script,style,textarea,input,select,code,pre,a,[dir=ltr],[data-nodate]";
+  const SKIP = "script,style,textarea,input,select,code,pre,a,[data-nodate]";
+  /* v254: يتخطى النص إذا أقرب اتجاه له ltr فقط — إطار معاينة الاستمارات dir=ltr وداخله صفحات rtl ما چانت تتصحح */
+  const ltr254 = p => { const d = p.closest("[dir]"); return !!d && String(d.getAttribute("dir")).toLowerCase() == "ltr"; };
   function fixDom(root) {
     if (!root || !root.querySelectorAll) return;
     const Wk = D.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const L = []; let n;
     while ((n = Wk.nextNode())) { const v = n.nodeValue; if (v.length > 5 && /[0-9٠-٩]{1,4}[\s‎‏]*[\/\-\.][\s‎‏]*[0-9٠-٩]{1,2}[\s‎‏]*[\/\-\.]|[0-9٠-٩]{4}[\s‎‏]*[-–—\/][\s‎‏]*[0-9٠-٩]{4}/.test(v)) L.push(n); }
     L.forEach(t => {
-      const p = t.parentElement; if (!p || p.closest(SKIP)) return;
+      const p = t.parentElement; if (!p || p.closest(SKIP) || ltr254(p)) return;
       if (p.closest("[contenteditable=true]") && p.closest("[contenteditable=true]").contains(D.activeElement)) return;
       const v = dt207(t.nodeValue); if (v != t.nodeValue) t.nodeValue = v;
     });
