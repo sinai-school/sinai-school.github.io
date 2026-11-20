@@ -369,6 +369,33 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
   });
 
   /* ================= (٧) المدرس: الدرجات اليومية (بالتاريخ) والشهرية + سجل كامل ================= */
+  /* v252: ورقة درجات شعبة/مادة من الدرجات المرسلة */
+  const lab252 = R => [...new Set(R.map(r => r.label))].sort((a, b) => { const da = (a.match(/\d{4}-\d{2}-\d{2}/) || [""])[0], db = (b.match(/\d{4}-\d{2}-\d{2}/) || [""])[0]; return (da ? 1 : 0) - (db ? 1 : 0) || da.localeCompare(db) || a.localeCompare(b, "ar"); });
+  const short252 = l => (W.gMax235 && /^امتحان يومي — /.test(l) ? W.gLbl235(l).replace(/^امتحان يومي/, "يومي") + " (من " + A(W.gMax235(l)) + ")" : l).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
+  function sheet252(sec, sj) {
+    const G = W.G202 || {}, pv = PS.b.private || {}, L = (pv.studs2 || []).filter(x => x[2] == sec), R = (G.rows || []).filter(r => r.subj == sj && L.some(x => x[0] == r.skey));
+    const labs = lab252(R); if (!L.length || !labs.length) return null;
+    const cell = (sk, l) => { const r = R.find(x => x.skey == sk && x.label == l); if (!r) return ""; const sh = W.gShow246 ? W.gShow246(r.val, r.x, l) : { t: r.val, red: 0 }; const t = sh.t === "" ? "" : A(sh.t); return sh.red ? { v: t, red: 1 } : t; };
+    const yr = String((typeof SNAP != "undefined" && SNAP && SNAP.yr) || "").replace(/[\u200e\u200f]/g, "");
+    const nm = (PS.name || "").trim();
+    const cols = ["ت", "اسم الطالب الكامل", ...labs.map(short252)];
+    const rows = L.map((x, i) => { const n = { v: x[1], l: 1 }; if (W.int235 && W.int235(x[1])) n.red = 1; return [A(i + 1), n, ...labs.map(l => cell(x[0], l))]; });
+    const k = labs.length, land = k > 4;
+    const m = sheet137("سجل درجات " + sec + " — المادة: " + sj + " — المدرس: " + nm + (yr ? " — العام الدراسي " + yr : ""), cols, rows, [0.6, 5, ...Array(k).fill(1.2)], [5, 36, ...Array(k).fill(10)], land);
+    m.foot = ["اسم المدرس وتوقيعه: " + nm, "المدير"]; return m;
+  }
+  W.v252GP = async function (fmt, all) {
+    try {
+      const G = W.G202 || {};
+      if (!G.rows) { try { await W.v202GLoad(); } catch (e) { } }
+      let P = [];
+      if (all) { const R = (W.G202 && W.G202.rows) || [], sec = {}; ((PS.b.private || {}).studs2 || []).forEach(x => { sec[x[0]] = x[2]; }); const seen = new Set(); R.forEach(r => { const s = sec[r.skey]; if (s && r.subj) seen.add(s + "|" + r.subj); }); const ord = [...new Set(((PS.b.private || {}).studs2 || []).map(x => x[2]))]; P = [...seen].map(k => k.split("|")).sort((a, b) => ord.indexOf(a[0]) - ord.indexOf(b[0]) || a[1].localeCompare(b[1], "ar")); }
+      else P = [[G.sec, G.sj]];
+      const sh = P.map(([s, j]) => sheet252(s, j)).filter(Boolean);
+      if (!sh.length) return T0("لا توجد درجات مرسلة للطباعة", "err");
+      return exportSheets(fmt, "درجات طلابي - " + (all ? "كل الشعب" : G.sec + " - " + G.sj), sh);
+    } catch (e) { console.error(e); T0("تعذّر تجهيز الطباعة", "err"); }
+  };
   on(() => {
     if (!has("psView")) return;
     const _pv = psView;
@@ -386,8 +413,13 @@ html{-webkit-tap-highlight-color:transparent}button,a,.btn,.gsi,select,label,[on
           const v = (sk, l) => { const r = R.find(x => x.skey == sk && x.label == l); return r ? (r.val === "" && r.x && W.gShow246 ? W.gShow246(r.val, r.x, l).t : r.val) : ""; };
           const short = l => (W.gMax235 && /^امتحان يومي — /.test(l) ? W.gLbl235(l).replace(/^امتحان يومي/, "يومي") + " (من " + A(W.gMax235(l)) + ")" : l).replace(/^يومي — (\d{4}-\d{2}-\d{2})$/, (m, d) => "يومي " + FD(d)).replace(/ — الفصل الأول/, " ف١").replace(/ — الفصل الثاني/, " ف٢");
           const tbl = `<div class="box gr204"><h3>${I("sheet") || I("pen")} سجل درجات ${E(G.sec)} — ${E(G.sj)}</h3><p class="muted" style="margin:0 0 6px">جميع الدرجات التي أرسلتها (اليومية والشهرية والفصلية) في جدول واحد.</p><div class="tw"><table><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(short(l))}</th>`).join("")}</tr>${L.map((x, i) => `<tr><td>${A(i + 1)}</td><td class="l">${E(x[1])}</td>${labs.map(l => { const z = v(x[0], l); return `<td class="${W.gRed235 ? (W.gRed235(z, l) ? "red" : "") : z !== "" && +z < 50 && !/^يومي/.test(l) ? "red" : ""}">${z === "" ? "" : E(A(z))}</td>`; }).join("")}</tr>`).join("")}</table></div></div>`;
+          /* v252: طباعة الدرجات المرسلة (هذي الشعبة، أو كل الشعب) */
+          const has252 = R.some(r => L.some(x => x[0] == r.skey));
+          const pb = !has252 ? `<div class="box"><h3>${I("print")} طباعة درجات طلابي</h3><p class="muted" style="margin:0 0 8px">لم تُرسل درجات لهذه الشعبة بعد.</p><div class="tools"><button class="btn ghost sm" onclick="v252GP('pdf',1)">${I("print")} درجات كل شعبي (PDF)</button></div></div>` : `<div class="box"><h3>${I("print")} طباعة درجات طلابي</h3><p class="muted" style="margin:0 0 8px">الدرجات التي أرسلتها، كما تظهر في السجل أعلاه (الأحمر أقل من النصف، وطلبة الانتساب بالأحمر).</p>
+            <div class="tools"><button class="btn sm" onclick="v252GP('pdf')">${I("print")} طباعة / PDF — ${E(G.sec)}</button><button class="btn ghost sm" onclick="v252GP('docx')">Word</button><button class="btn ghost sm" onclick="v252GP('xlsx')">Excel</button></div>
+            <div class="tools"><button class="btn ghost sm" onclick="v252GP('pdf',1)">${I("print")} درجات كل شعبي (PDF)</button></div></div>`;
           const i = h.indexOf('<div class="box"><h3>' + I("print") + " طباعة طلابي");
-          h = i >= 0 ? h.slice(0, i) + tbl + h.slice(i) : h;
+          h = i >= 0 ? h.slice(0, i) + tbl + pb + h.slice(i) : h + tbl + pb;
         }
       } catch (e) { console.warn(e); }
       return h;
