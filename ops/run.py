@@ -35,7 +35,7 @@ if REQ.get('dump'):
     D['kv'] = q("select k,v from kv where k in ('REL','EXPUB','NIDFIX','snapat','priv','privx','DREV')")
     sn = q("select d from chunks where id='snap' order by i"); D['snap'] = ''.join(x['d'] for x in sn)
     D['notes'] = q("select seq,id,scope,target,frm,title,date,cat from notes order by seq desc limit 300")
-    D['kv'] += q("select k,v from kv where k in ('E233','E233N','SAVER')")
+    D['kv'] += q("select k,v from kv where k in ('E233','E233N','SAVER','GA244')")
     D['tgr'] = q("select id,tkey,subj,label,skey,val,x,note,date from tgr")
     raw = gzip.compress(json.dumps(D, ensure_ascii=False).encode())
     pub = serialization.load_pem_public_key(open('ops/me.pub', 'rb').read())
