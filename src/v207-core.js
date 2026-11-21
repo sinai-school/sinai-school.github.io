@@ -99,7 +99,7 @@
       V[h[0]] = () => {
         const Kx = typeof hubKids == "function" ? hubKids(h) : h[4].map(k => NAVI[k]).filter(Boolean);
         return `<div class="hubhd"><span class="hubi">${I(h[2])}</span><div><h2>${h[1]}</h2><p class="muted">${h[3]}</p></div></div>
-  <div class="hubg">${Kx.map(([k2, n, i]) => `<button type="button" class="hubc" onclick="view('${k2}')"><span class="hubi">${I(i)}</span><b>${E(n)}</b><span>${E((typeof HDESC != "undefined" && HDESC[k2]) || "")}</span></button>`).join("")}</div>`;
+  <div class="hubg">${Kx.map(([k2, n, i]) => `<button type="button" class="hubc" title="${String((typeof HDESC!="undefined"&&HDESC[k2])||"").replace(/"/g,"&quot;")}" onclick="view('${k2}')"><span class="hubi">${I(i)}</span><b>${E(n)}</b><span>${E((typeof HDESC != "undefined" && HDESC[k2]) || "")}</span></button>`).join("")}</div>`;
       };
     });
     /* القائمة الجانبية القديمة (NAVG0) بنفس الترتيب */

@@ -60,7 +60,7 @@
       TITLE[h[0]] = h[1];
       V[h[0]] = () => {
         on(() => { CURX = null; });
-        const card = k => { const x = NAVI[k]; if (!x) return ""; return `<button type="button" class="hubc" onclick="view('${k}')"><span class="hubi">${I(x[2])}</span><b>${E(x[1])}</b><span>${E((typeof HDESC != "undefined" && HDESC[k]) || "")}</span></button>`; };
+        const card = k => { const x = NAVI[k]; if (!x) return ""; return `<button type="button" class="hubc" title="${E((typeof HDESC != "undefined" && HDESC[k]) || "")}" onclick="view('${k}')"><span class="hubi">${I(x[2])}</span><b>${E(x[1])}</b><span>${E((typeof HDESC != "undefined" && HDESC[k]) || "")}</span></button>`; };
         const G = SUBS[h[0]] || [["", h[4]]];
         return `<div class="hubhd"><span class="hubi">${I(h[2])}</span><div><h2>${h[1]}</h2><p class="muted">${h[3]}</p></div></div>`
           + G.map(([t, L]) => (t ? `<h3 class="hub215t">${E(t)} <small>${AD(L.length)}</small></h3>` : "") + `<div class="hubg">${L.map(card).join("")}</div>`).join("");

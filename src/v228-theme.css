@@ -47,3 +47,23 @@
 #main td .btn.danger.sm:hover,#main td .btn.danger.sm:focus-visible,#main td .btn.danger.sm.arm{border-color:#b3261e!important;background:#fdf1f0!important}
 @media(min-width:900px){#main>.vh+.tools+.tiles,#main>.vh+.tiles{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}}
 #main .hubg>.hubc>.hubi .ic,#main .tiles>.tile .ti .ic{color:#1f5c4a!important;stroke:#1f5c4a!important}
+/* ===== v255 (2026-11-21، طلب المستخدم: «التبويبات مربعات أنيقة وواضحة وبدون تشتت») =====
+   بطاقات الأقسام (الرئيسية وصفحة كل قسم) صارت مربعات: الأيقونة بالوسط، الاسم تحتها، وعدد الأقسام أسفل المربع.
+   الوصف الطويل ينشال من المربع (يبقى بـ title عند تمرير الفأرة) حتى ما يصير تشتت. ٢ بالسطر بالموبايل، وأكثر بالكمبيوتر. */
+#main .hubg{grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr))!important;gap:14px!important}
+#main .hubg>.hubc{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;aspect-ratio:1/1;min-height:0!important;padding:16px 12px!important;border-radius:20px!important;grid-template-columns:none!important;grid-template-areas:none!important}
+#main .hubg>.hubc>.hubi{width:62px!important;height:62px!important;border-radius:18px!important;display:grid!important;place-items:center!important}
+#main .hubg>.hubc>.hubi svg{width:28px!important;height:28px!important}
+#main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{align-self:center!important;text-align:center!important;font-size:15.5px!important;line-height:1.45!important;grid-row:auto!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+#main .hubg>.hubc>span:not(.hubi){display:none!important}
+#main .hubg>.hubc>em{align-self:center!important;justify-self:auto!important;font-size:12.5px!important;font-style:normal!important;margin-top:2px!important;padding:3px 10px!important;border-radius:99px!important;background:#f1f5f3!important}
+#main .hubg>.hubc:active{transform:scale(.98)!important}
+@media(max-width:700px){
+  #main .hubg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  #main .hubg>.hubc{padding:14px 8px!important;gap:8px!important;border-radius:18px!important}
+  #main .hubg>.hubc>.hubi{width:54px!important;height:54px!important;border-radius:16px!important}
+  #main .hubg>.hubc>.hubi svg{width:25px!important;height:25px!important}
+  #main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:14.5px!important}
+  #main .hubg>.hubc>em{font-size:12px!important}
+}
+@media(max-width:340px){#main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:13.5px!important}}
