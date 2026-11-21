@@ -414,14 +414,27 @@ input,select,textarea{max-width:100%;min-width:0}
   const unitsOf = f => { const o = []; on(() => { FSD.units(f).forEach(u => (u.secs || []).forEach(si => { const sec = (typeof SN != "undefined" ? SN : [])[si]; if (sec && u.sj) o.push([u.sj, sec]); })); }); return o; };
   const gradeOf = sec => String(sec || "").replace(/\s+\S$/, "");
   const secLetter = sec => { const m = String(sec || "").match(/\s(\S)$/); return m ? m[1] : sec; };
-  const box247 = () => { const el = D.querySelector(".tg247"); if (!el) { redraw(); return; } const y = el.getBoundingClientRect().top; let h = ""; on(() => { h = grBox((typeof APID != "undefined" && APID) || {}); }); const t = D.createElement("div"); t.innerHTML = h; const nb = t.firstElementChild; if (nb) el.replaceWith(nb); else redraw(); on(() => { const n2 = D.querySelector(".tg247"); if (!n2) return; let sc = n2.parentElement; while (sc && sc !== D.body && !(/(auto|scroll)/.test(getComputedStyle(sc).overflowY) && sc.scrollHeight > sc.clientHeight)) sc = sc.parentElement; if (!sc || sc === D.body) sc = D.scrollingElement; const top = sc === D.scrollingElement ? 0 : sc.getBoundingClientRect().top, d = n2.getBoundingClientRect().top - Math.max(0, top); if (d < 8) sc.scrollTop += d - 8; }); };
-  const load247 = async (t, n) => {
-    R247[t] = "…"; box247();
+  /* v256 (طلب المستخدم: «من أضغط على اسم مدرس الصفحة تتحرك وترجع للبداية»): التفاصيل تنفتح تحت بطاقة المدرس نفسها
+     (القائمة تبقى)، وبطاقة المدرس تبقى بنفس مكانها على الشاشة بعد كل تحديث — ما تتحرك الصفحة. */
+  const scroller = el => { let sc = el && el.parentElement; while (sc && sc !== D.body && !(/(auto|scroll)/.test(getComputedStyle(sc).overflowY) && sc.scrollHeight > sc.clientHeight)) sc = sc.parentElement; return (!sc || sc === D.body) ? D.scrollingElement : sc; };
+  const cardOf = (root, t) => t ? [...root.querySelectorAll(".c247[data-t]")].find(b => b.getAttribute("data-t") == t) : null;
+  let PREV247 = "";
+  const box247 = () => {
+    const el = D.querySelector(".tg247"); if (!el) { redraw(); return; }
+    const at = S247.t || PREV247; PREV247 = S247.t;
+    const a0 = cardOf(el, at), sc = scroller(el), y0 = a0 ? a0.getBoundingClientRect().top : el.getBoundingClientRect().top;
+    let h = ""; on(() => { h = grBox((typeof APID != "undefined" && APID) || {}); });
+    const t = D.createElement("div"); t.innerHTML = h; const nb = t.firstElementChild; if (!nb) { redraw(); return; }
+    el.replaceWith(nb);
+    on(() => { const a1 = cardOf(nb, at) || nb; const d = a1.getBoundingClientRect().top - y0; if (Math.abs(d) > 1) sc.scrollTop += d; });
+  };
+  const load247 = async (t, quiet) => {
+    R247[t] = "…"; if (!quiet) box247();
     for (let k = 0; k < 2; k++) {
       try { const x = await api({ a: "admin", secret: APIK.secret, op: "tgrT", tkey: t }, APIK.url); if (x && x.ok) { R247[t] = x.rows || []; break; } R247[t] = "err"; } catch (e) { R247[t] = "err"; }
       if (k == 0) await new Promise(r => setTimeout(r, 1200));
     }
-    if (S247.t == t) box247();
+    box247();
   };
   W.tg247 = (t, g, s) => { S247.t = t || ""; S247.g = g || ""; S247.s = s || ""; if (S247.t && (R247[S247.t] == null || R247[S247.t] == "err")) load247(S247.t); else box247(); };
   W.tg247R = () => { if (S247.t) load247(S247.t); };
@@ -434,35 +447,54 @@ input,select,textarea{max-width:100%;min-width:0}
     const by = {}; tgc.forEach(r => { if (!r.tkey) return; const o = by[r.tkey] = by[r.tkey] || { n: 0, d: "", name: r.tname }; o.n += +r.n || 0; if (String(r.d) > o.d) o.d = String(r.d); });
     let staff = []; on(() => { staff = (typeof sortStf == "function" ? sortStf() : STF || []).filter(f => f && ((f.status || "مستمر") == "مستمر" && unitsOf(f).length || by[f.id])); });
     const ids = new Set(staff.map(f => f.id)); Object.keys(by).forEach(k => { if (!ids.has(k)) staff.push({ id: k, name: by[k].name || k }); });
+    const nameOf = k => { const x = staff.find(f => f.id == k); return x ? x.name : ((by[k] || {}).name || k); };
+    const short2 = n => String(n || "").trim().split(/\s+/).slice(0, 2).join(" ");
+    /* v256: «التكليف بإدخال الدرجات» (v246) — درجات المكلَّف تُحسب أيضاً لمدرس الشعبة بالجدول («بواسطة …») */
+    let GAL = []; on(() => { GAL = (W.GA246 && W.GA246()) || []; });
+    const DEL = {};
+    GAL.forEach(([a, sj, sec]) => {
+      const own = staff.filter(f => f.id != a && unitsOf(f).some(u => u[0] == sj && u[1] == sec));
+      if (!own.length) return;
+      if (R247[a] == null) { R247[a] = "…"; setTimeout(() => load247(a, 1), 0); }
+      const R = Array.isArray(R247[a]) ? R247[a].filter(r => r.subj == sj && (stuOf(r.skey) || {}).s == sec).map(r => Object.assign({}, r, { by: a })) : [];
+      own.forEach(f => { (DEL[f.id] = DEL[f.id] || []).push(...R); });
+    });
+    const sum = f => { const o = by[f.id] ? { n: by[f.id].n, d: by[f.id].d } : { n: 0, d: "" }; const dl = DEL[f.id] || []; o.dn = dl.length; o.n += dl.length; dl.forEach(r => { if (String(r.date) > o.d) o.d = String(r.date); }); o.bys = [...new Set(dl.map(r => r.by))]; return o; };
+    /* v256 (طلب المستخدم): اللي أرسلوا أولاً — آخر من أرسل أول واحد، ثم الباقي بترتيبهم */
+    const SM = {}; staff.forEach((f, i) => { SM[f.id] = sum(f); SM[f.id].i = i; });
+    staff.sort((a, b) => { const A = SM[a.id], B = SM[b.id]; return (B.n > 0) - (A.n > 0) || (A.n > 0 ? String(B.d).localeCompare(String(A.d)) : 0) || A.i - B.i; });
     const head = t => `<div class="box tg215 tg247"><h3>${I("pen")} درجات المدرسين</h3>${t}</div>`;
-    /* (١) أيقونات المدرسين */
-    if (!S247.t) return head(`<p class="muted" style="margin:0 0 8px">اضغط على اسم المدرس لتظهر المواد والصفوف التي يدرّسها.</p><div class="g247">${staff.map(f => { const o = by[f.id]; return `<button type="button" class="c247${o ? "" : " z247"}" onclick="tg247('${q(f.id)}')"><b>${E(f.name)}</b><small>${o ? AD(o.n) + " درجة مرسلة — آخر إرسال " + E(FD(o.d)) : "لم يُرسل درجات بعد"}</small></button>`; }).join("")}</div>`);
-    const f = staff.find(x => x.id == S247.t) || { id: S247.t, name: (by[S247.t] || {}).name || tName(S247.t) || S247.t };
-    const R = R247[S247.t];
-    const nav = (...b) => `<div class="tools n247">${b.join("")}</div>`;
-    const bAll = `<button class="btn ghost sm" onclick="tg247('')">→ كل المدرسين</button>`, bRef = `<button class="btn ghost sm" onclick="tg247R()">تحديث</button>`;
-    if (R == "…" || R == null) return head(nav(bAll) + `<h4 class="h247">${E(f.name)}</h4><p class="muted">جارٍ التحميل…</p>`);
-    if (R == "err") return head(nav(bAll, bRef) + `<h4 class="h247">${E(f.name)}</h4><p class="muted">تعذّر التحميل — تأكد من الإنترنت ثم اضغط «تحديث».</p>`);
-    /* تجميع: المادة + الصف ← الشعب */
-    const G = {};
-    const add = (sj, sec, r) => { const k = sj + "|" + gradeOf(sec); const g = G[k] = G[k] || { k, sj, gr: gradeOf(sec), secs: {} }; const S = g.secs[sec] = g.secs[sec] || []; if (r) S.push(r); };
-    unitsOf(f).forEach(([sj, sec]) => add(sj, sec));
-    R.forEach(r => { const st = stuOf(r.skey); add(r.subj || "—", st ? st.s : "طلاب خارج القوائم", r); });
-    let SNx = []; on(() => { SNx = typeof SN != "undefined" ? SN : []; });
-    const sIx = sec => SNx.indexOf(sec) + 1 || 999;
-    const GL = Object.values(G).sort((a, b) => Math.min(...Object.keys(a.secs).map(sIx)) - Math.min(...Object.keys(b.secs).map(sIx)) || a.sj.localeCompare(b.sj, "ar"));
-    /* (٢) المادة والصف */
-    if (!S247.g || !G[S247.g]) return head(nav(bAll, bRef) + `<h4 class="h247">${E(f.name)}</h4><div class="g247">${GL.map(g => { const ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b)), n = ss.reduce((a, s) => a + g.secs[s].length, 0); return `<button type="button" class="c247${n ? "" : " z247"}" onclick="tg247('${q(S247.t)}','${q(g.k)}')"><b>${E(g.sj)} — ${E(g.gr)}</b><small>الشعب: ${ss.map(s => E(secLetter(s))).join("، ")} — ${n ? AD(n) + " درجة" : "لا توجد درجات بعد"}</small></button>`; }).join("") || '<p class="muted">لا توجد شعب.</p>'}</div>`);
-    /* (٣) الشعب + جدول الدرجات */
-    const g = G[S247.g], ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b));
-    const sec = ss.includes(S247.s) ? S247.s : ss[0], rows = g.secs[sec] || [];
-    const tabs = `<div class="s247">${ss.map(s => `<button type="button" class="${s == sec ? "on" : ""}" onclick="tg247('${q(S247.t)}','${q(g.k)}','${q(s)}')">شعبة ${E(secLetter(s))}<small>${AD(g.secs[s].length)}</small></button>`).join("")}</div>`;
-    const labs = [...new Set(rows.map(r => r.label))].sort(cmpL);
-    let studs = []; on(() => { studs = (typeof STA == "function" ? STA() : ST || []).filter(x => x.s == sec); });
-    const have = new Set(studs.map(x => x.id)); rows.forEach(r => { if (!have.has(r.skey)) { have.add(r.skey); studs.push(stuOf(r.skey) || { id: r.skey, n: r.skey }); } });
-    const M = {}; rows.forEach(r => { M[r.skey + "|" + r.label] = r; });
-    const cell = (sk, l) => { const r = M[sk + "|" + l]; if (!r) return "<td></td>"; const sh = W.gShow246 ? W.gShow246(r.val, r.x, l) : { t: AD(r.val), red: W.gRed235 && W.gRed235(r.val, l) }; const sub = [r.x && W.gX246 ? W.gX246(r.x) : "", r.note || ""].filter(Boolean).join(" — "); return `<td class="${sh.red ? "red" : ""}"><b>${E(sh.t)}</b>${sub ? `<br><small class="muted">${E(sub)}</small>` : ""}</td>`; };
-    return head(nav(`<button class="btn ghost sm" onclick="tg247('${q(S247.t)}')">→ مواد ${E(f.name)}</button>`, bAll, bRef) + `<h4 class="h247">${E(f.name)} — ${E(g.sj)} — ${E(g.gr)}</h4>${tabs}${labs.length ? `<div class="tw"><table class="t247"><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(shortL(l))}</th>`).join("")}</tr>${studs.map((x, i) => `<tr><td>${AD(i + 1)}</td><td class="l">${E(x.n)}</td>${labs.map(l => cell(x.id, l)).join("")}</tr>`).join("")}</table></div>` : '<p class="muted">لم يُرسل المدرس درجات لهذه الشعبة بعد.</p>'}`);
+    const card = f => { const o = SM[f.id], on1 = S247.t == f.id; const sub = o.n ? AD(o.n) + " درجة مرسلة — آخر إرسال " + E(FD(o.d)) + (o.dn ? " — منها " + AD(o.dn) + " بواسطة " + E(o.bys.map(k => short2(nameOf(k))).join("، ")) : "") : "لم يُرسل درجات بعد"; return `<button type="button" data-t="${q(f.id)}" class="c247${o.n ? "" : " z247"}${on1 ? " on" : ""}" onclick="tg247('${on1 ? "" : q(f.id)}')"><b>${E(f.name)}</b><small>${sub}</small></button>` + (on1 ? `<div class="d247">${detail(f)}</div>` : ""); };
+    return head(`<p class="muted" style="margin:0 0 8px">أول القائمة آخر مدرس أرسل درجات. اضغط على اسم المدرس لتظهر المواد والصفوف التي يدرّسها تحته مباشرة، واضغط عليه مرة أخرى للإغلاق.</p><div class="g247">${staff.map(card).join("")}</div>`);
+    function detail(f) {
+      const R0 = R247[f.id];
+      const nav = (...b) => `<div class="tools n247">${b.join("")}</div>`;
+      const bAll = `<button class="btn ghost sm" onclick="tg247('')">إغلاق</button>`, bRef = `<button class="btn ghost sm" onclick="tg247R()">تحديث</button>`;
+      if (R0 == "…" || R0 == null) return `<p class="muted">جارٍ التحميل…</p>`;
+      if (R0 == "err") return nav(bAll, bRef) + `<p class="muted">تعذّر التحميل — تأكد من الإنترنت ثم اضغط «تحديث».</p>`;
+      const R = R0.concat(DEL[f.id] || []);
+      /* تجميع: المادة + الصف ← الشعب */
+      const G = {};
+      const add = (sj, sec, r) => { const k = sj + "|" + gradeOf(sec); const g = G[k] = G[k] || { k, sj, gr: gradeOf(sec), secs: {} }; const S = g.secs[sec] = g.secs[sec] || []; if (r) S.push(r); };
+      unitsOf(f).forEach(([sj, sec]) => add(sj, sec));
+      R.forEach(r => { const st = stuOf(r.skey); add(r.subj || "—", st ? st.s : "طلاب خارج القوائم", r); });
+      let SNx = []; on(() => { SNx = typeof SN != "undefined" ? SN : []; });
+      const sIx = sec => SNx.indexOf(sec) + 1 || 999;
+      const GL = Object.values(G).sort((a, b) => Math.min(...Object.keys(a.secs).map(sIx)) - Math.min(...Object.keys(b.secs).map(sIx)) || a.sj.localeCompare(b.sj, "ar"));
+      const bys = rs => { const L = [...new Set(rs.filter(r => r.by).map(r => r.by))]; return L.length ? " — بواسطة " + E(L.map(k => short2(nameOf(k))).join("، ")) : ""; };
+      /* (٢) المادة والصف */
+      if (!S247.g || !G[S247.g]) return nav(bAll, bRef) + `<div class="g247 i247">${GL.map(g => { const ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b)), all = ss.flatMap(s => g.secs[s]), n = all.length; return `<button type="button" class="c247${n ? "" : " z247"}" onclick="tg247('${q(f.id)}','${q(g.k)}')"><b>${E(g.sj)} — ${E(g.gr)}</b><small>الشعب: ${ss.map(s => E(secLetter(s))).join("، ")} — ${n ? AD(n) + " درجة" + bys(all) : "لا توجد درجات بعد"}</small></button>`; }).join("") || '<p class="muted">لا توجد شعب.</p>'}</div>`;
+      /* (٣) الشعب + جدول الدرجات */
+      const g = G[S247.g], ss = Object.keys(g.secs).sort((a, b) => sIx(a) - sIx(b));
+      const sec = ss.includes(S247.s) ? S247.s : ss[0], rows = g.secs[sec] || [];
+      const tabs = `<div class="s247">${ss.map(s => `<button type="button" class="${s == sec ? "on" : ""}" onclick="tg247('${q(f.id)}','${q(g.k)}','${q(s)}')">شعبة ${E(secLetter(s))}<small>${AD(g.secs[s].length)}</small></button>`).join("")}</div>`;
+      const labs = [...new Set(rows.map(r => r.label))].sort(cmpL);
+      let studs = []; on(() => { studs = (typeof STA == "function" ? STA() : ST || []).filter(x => x.s == sec); });
+      const have = new Set(studs.map(x => x.id)); rows.forEach(r => { if (!have.has(r.skey)) { have.add(r.skey); studs.push(stuOf(r.skey) || { id: r.skey, n: r.skey }); } });
+      const M = {}; rows.forEach(r => { M[r.skey + "|" + r.label] = r; });
+      const cell = (sk, l) => { const r = M[sk + "|" + l]; if (!r) return "<td></td>"; const sh = W.gShow246 ? W.gShow246(r.val, r.x, l) : { t: AD(r.val), red: W.gRed235 && W.gRed235(r.val, l) }; const sub = [r.x && W.gX246 ? W.gX246(r.x) : "", r.note || ""].filter(Boolean).join(" — "); return `<td class="${sh.red ? "red" : ""}"><b>${E(sh.t)}</b>${sub ? `<br><small class="muted">${E(sub)}</small>` : ""}</td>`; };
+      return nav(`<button class="btn ghost sm" onclick="tg247('${q(f.id)}')">→ مواد المدرس</button>`, bAll, bRef) + `<h4 class="h247">${E(g.sj)} — ${E(g.gr)}${bys(rows)}</h4>${tabs}${labs.length ? `<div class="tw"><table class="t247"><tr><th>ت</th><th class="l">اسم الطالب</th>${labs.map(l => `<th>${E(shortL(l))}</th>`).join("")}</tr>${studs.map((x, i) => `<tr><td>${AD(i + 1)}</td><td class="l">${E(x.n)}</td>${labs.map(l => cell(x.id, l)).join("")}</tr>`).join("")}</table></div>` : '<p class="muted">لم تُرسل درجات لهذه الشعبة بعد.</p>'}`;
+    }
   }
   function attHTML(files) {
     let F = []; try { F = typeof files == "string" ? JSON.parse(files || "[]") : (files || []); } catch (e) { F = []; }
@@ -492,7 +524,7 @@ input,select,textarea{max-width:100%;min-width:0}
 .tg215h>span:first-child{flex:1 1 180px;display:grid;gap:2px}.tg215h small{color:var(--muted);font-size:12.5px}.tg215c{color:var(--muted);font-size:12px}
 .tg215r .tw{margin:0 10px 10px}
 .tg215n{border-top:1px solid var(--line);padding:10px 0}.tg215n:first-of-type{border-top:0}.tg215nh{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.h247{margin:6px 0 8px}.z247{opacity:.6}.s247{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.s247 button{all:unset;cursor:pointer;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:700;display:flex;gap:6px;align-items:center}.s247 button.on{background:var(--accent,#1e5a46);color:#fff;border-color:transparent}.s247 small{font-weight:400;opacity:.8}.g247{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.c247{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}.c247:hover{border-color:var(--accent,#1e5a46)}.c247 small{color:var(--muted);font-size:12.5px}.t247 td,.t247 th{text-align:center;white-space:nowrap}.t247 td.l{text-align:right;white-space:normal}.t247 td small{white-space:normal}
+.h247{margin:6px 0 8px}.z247{opacity:.6}.s247{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.s247 button{all:unset;cursor:pointer;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:700;display:flex;gap:6px;align-items:center}.s247 button.on{background:var(--accent,#1e5a46);color:#fff;border-color:transparent}.s247 small{font-weight:400;opacity:.8}.g247{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.c247{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}.c247:hover,.c247.on{border-color:var(--accent,#1e5a46)}.c247.on{box-shadow:inset 0 0 0 1px var(--accent,#1e5a46)}.d247{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px;background:#f7faf8;min-width:0}.d247 .tw{max-width:100%}.i247{margin-top:6px}.c247 small{color:var(--muted);font-size:12.5px}.t247 td,.t247 th{text-align:center;white-space:nowrap}.t247 td.l{text-align:right;white-space:normal}.t247 td small{white-space:normal}
 .tg215f{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.tg215im img{width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}`;
   (D.head || D.documentElement).appendChild(st);
 })();

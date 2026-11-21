@@ -8,6 +8,7 @@
   const I = n => typeof ic == "function" ? ic(n) : "";
   const T0 = (m, k) => { try { toast(m, k); } catch (e) { } };
   let GA = null, busy = 0;
+  W.GA246 = () => GA; /* v256: لعرض درجات المكلَّف عند مدرس الشعبة («بواسطة …») */
   const tName = k => { try { const f = (STF || []).find(x => x && x.id == k); return f ? f.name : k; } catch (e) { return k; } };
   const call = async b => { try { return await api(Object.assign({ a: "admin", secret: APIK.secret, op: "ga244" }, b), APIK.url); } catch (e) { return null; } };
   const load = async () => { if (busy) return; busy = 1; const r = await call({}); busy = 0; GA = r && r.ok ? (r.ga || []) : (GA || []); try { render(); } catch (e) { } };
