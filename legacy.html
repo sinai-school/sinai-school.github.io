@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v254-2026-11-21T00:30:00.000Z-v254";
+<script>window.APP_VER = "2k7v255-2026-11-21T09:00:00.000Z-v255";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -9699,10 +9699,10 @@ HUBS.forEach((h) => {
   TITLE[h[0]] = h[1];
   V[h[0]] = () => {
     const K = hubKids(h);
-    return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" onclick="view(\''.concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
+    return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" title="'.concat(String(typeof HDESC != "undefined" && HDESC[k2] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
   };
 });
-const hubTiles = () => '<div class="hubg hubm">'.concat(HUBS.map((h) => [h, hubKids(h)]).filter((x) => x[1].length).map(([h, K]) => '<button type="button" class="hubc" onclick="view(\''.concat(h[0], '\')"><span class="hubi">').concat(ic(h[2]), "</span><b>").concat(h[1], "</b><span>").concat(h[3], "</span><em>").concat(cnt228(K.length, "قسم واحد", "قسمان", "أقسام", "قسماً"), "</em></button>")).join(""), "</div>");
+const hubTiles = () => '<div class="hubg hubm">'.concat(HUBS.map((h) => [h, hubKids(h)]).filter((x) => x[1].length).map(([h, K]) => '<button type="button" class="hubc" title="'.concat(String(h[3] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(h[0], '\')"><span class="hubi">').concat(ic(h[2]), "</span><b>").concat(h[1], "</b><span>").concat(h[3], "</span><em>").concat(cnt228(K.length, "قسم واحد", "قسمان", "أقسام", "قسماً"), "</em></button>")).join(""), "</div>");
 {
   const _Vh = V.h;
   V.h = () => {
@@ -10332,7 +10332,7 @@ HUBS.forEach((h) => {
   TITLE[h[0]] = h[1];
   V[h[0]] = () => {
     const K = hubKids(h);
-    return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" onclick="view(\''.concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
+    return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" title="'.concat(String(typeof HDESC != "undefined" && HDESC[k2] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
   };
 });
 const MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", html: "text/html", csv: "text/csv", png: "image/png", zip: "application/zip", ico: "image/x-icon", js: "text/javascript", webmanifest: "application/manifest+json", json: "application/json" };
@@ -11170,7 +11170,7 @@ const hcol = (k2) => {
 HUBS.forEach((h) => {
   V[h[0]] = () => {
     const K = kidsOf(h);
-    return '<div class="hubhd" style="--hc:'.concat(HCOL[h[0]], '"><span class="hubi">').concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg" style="--hc:').concat(HCOL[h[0]], '">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" onclick="view(\''.concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
+    return '<div class="hubhd" style="--hc:'.concat(HCOL[h[0]], '"><span class="hubi">').concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg" style="--hc:').concat(HCOL[h[0]], '">').concat(K.map(([k2, n, i]) => '<button type="button" class="hubc" title="'.concat(String(typeof HDESC != "undefined" && HDESC[k2] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
   };
 });
 {
@@ -25053,7 +25053,7 @@ function fxHubs() {
     TITLE[h[0]] = h[1];
     V[h[0]] = () => {
       const Kx = hubKids(h);
-      return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(Kx.map(([k2, n, i]) => '<button type="button" class="hubc" onclick="view(\''.concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
+      return '<div class="hubhd"><span class="hubi">'.concat(ic(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(Kx.map(([k2, n, i]) => '<button type="button" class="hubc" title="'.concat(String(typeof HDESC != "undefined" && HDESC[k2] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(k2, '\')"><span class="hubi">').concat(ic(i), "</span><b>").concat(n, "</b><span>").concat(HDESC[k2] || "", "</span></button>")).join(""), "</div>");
     };
   });
   if (NAVI.k) {
@@ -35773,7 +35773,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       TITLE[h[0]] = h[1];
       V[h[0]] = () => {
         const Kx = typeof hubKids == "function" ? hubKids(h) : h[4].map((k) => NAVI[k]).filter(Boolean);
-        return '<div class="hubhd"><span class="hubi">'.concat(I(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(Kx.map(([k2, n, i]) => '<button type="button" class="hubc" onclick="view(\''.concat(k2, '\')"><span class="hubi">').concat(I(i), "</span><b>").concat(E(n), "</b><span>").concat(E(typeof HDESC != "undefined" && HDESC[k2] || ""), "</span></button>")).join(""), "</div>");
+        return '<div class="hubhd"><span class="hubi">'.concat(I(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], '</p></div></div>\n  <div class="hubg">').concat(Kx.map(([k2, n, i]) => '<button type="button" class="hubc" title="'.concat(String(typeof HDESC != "undefined" && HDESC[k2] || "").replace(/"/g, "&quot;"), '" onclick="view(\'').concat(k2, '\')"><span class="hubi">').concat(I(i), "</span><b>").concat(E(n), "</b><span>").concat(E(typeof HDESC != "undefined" && HDESC[k2] || ""), "</span></button>")).join(""), "</div>");
       };
     });
     try {
@@ -39193,7 +39193,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         const card = (k) => {
           const x = NAVI[k];
           if (!x) return "";
-          return '<button type="button" class="hubc" onclick="view(\''.concat(k, '\')"><span class="hubi">').concat(I(x[2]), "</span><b>").concat(E(x[1]), "</b><span>").concat(E(typeof HDESC != "undefined" && HDESC[k] || ""), "</span></button>");
+          return '<button type="button" class="hubc" title="'.concat(E(typeof HDESC != "undefined" && HDESC[k] || ""), '" onclick="view(\'').concat(k, '\')"><span class="hubi">').concat(I(x[2]), "</span><b>").concat(E(x[1]), "</b><span>").concat(E(typeof HDESC != "undefined" && HDESC[k] || ""), "</span></button>");
         };
         const G = SUBS[h[0]] || [["", h[4]]];
         return '<div class="hubhd"><span class="hubi">'.concat(I(h[2]), "</span><div><h2>").concat(h[1], '</h2><p class="muted">').concat(h[3], "</p></div></div>") + G.map(([t, L]) => (t ? '<h3 class="hub215t">'.concat(E(t), " <small>").concat(AD(L.length), "</small></h3>") : "") + '<div class="hubg">'.concat(L.map(card).join(""), "</div>")).join("");
@@ -41476,6 +41476,26 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 #main td .btn.danger.sm:hover,#main td .btn.danger.sm:focus-visible,#main td .btn.danger.sm.arm{border-color:#b3261e!important;background:#fdf1f0!important}
 @media(min-width:900px){#main>.vh+.tools+.tiles,#main>.vh+.tiles{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}}
 #main .hubg>.hubc>.hubi .ic,#main .tiles>.tile .ti .ic{color:#1f5c4a!important;stroke:#1f5c4a!important}
+/* ===== v255 (2026-11-21، طلب المستخدم: «التبويبات مربعات أنيقة وواضحة وبدون تشتت») =====
+   بطاقات الأقسام (الرئيسية وصفحة كل قسم) صارت مربعات: الأيقونة بالوسط، الاسم تحتها، وعدد الأقسام أسفل المربع.
+   الوصف الطويل ينشال من المربع (يبقى بـ title عند تمرير الفأرة) حتى ما يصير تشتت. ٢ بالسطر بالموبايل، وأكثر بالكمبيوتر. */
+#main .hubg{grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr))!important;gap:14px!important}
+#main .hubg>.hubc{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;aspect-ratio:1/1;min-height:0!important;padding:16px 12px!important;border-radius:20px!important;grid-template-columns:none!important;grid-template-areas:none!important}
+#main .hubg>.hubc>.hubi{width:62px!important;height:62px!important;border-radius:18px!important;display:grid!important;place-items:center!important}
+#main .hubg>.hubc>.hubi svg{width:28px!important;height:28px!important}
+#main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{align-self:center!important;text-align:center!important;font-size:15.5px!important;line-height:1.45!important;grid-row:auto!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+#main .hubg>.hubc>span:not(.hubi){display:none!important}
+#main .hubg>.hubc>em{align-self:center!important;justify-self:auto!important;font-size:12.5px!important;font-style:normal!important;margin-top:2px!important;padding:3px 10px!important;border-radius:99px!important;background:#f1f5f3!important}
+#main .hubg>.hubc:active{transform:scale(.98)!important}
+@media(max-width:700px){
+  #main .hubg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  #main .hubg>.hubc{padding:14px 8px!important;gap:8px!important;border-radius:18px!important}
+  #main .hubg>.hubc>.hubi{width:54px!important;height:54px!important;border-radius:16px!important}
+  #main .hubg>.hubc>.hubi svg{width:25px!important;height:25px!important}
+  #main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:14.5px!important}
+  #main .hubg>.hubc>em{font-size:12px!important}
+}
+@media(max-width:340px){#main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:13.5px!important}}
 </style>
 <script id="v229">(function() {
   try {
