@@ -10,7 +10,7 @@ window.__LEGACY=1})()</script><meta charset=utf8><meta http-equiv="Content-Secur
 <script>window.OFFLINE_COPY = 1;
 document.documentElement.classList.add("offline");
 </script>
-<script>window.APP_VER = "2k7v255-2026-11-21T09:00:00.000Z-v255";
+<script>window.APP_VER = "2k7v255b-2026-11-21T09:00:00.000Z-v255b";
 if ("serviceWorker" in navigator) addEventListener("DOMContentLoaded", function() {
   navigator.serviceWorker.register("sw.js").then(function(r) {
     r.update();
@@ -41479,8 +41479,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 /* ===== v255 (2026-11-21، طلب المستخدم: «التبويبات مربعات أنيقة وواضحة وبدون تشتت») =====
    بطاقات الأقسام (الرئيسية وصفحة كل قسم) صارت مربعات: الأيقونة بالوسط، الاسم تحتها، وعدد الأقسام أسفل المربع.
    الوصف الطويل ينشال من المربع (يبقى بـ title عند تمرير الفأرة) حتى ما يصير تشتت. ٢ بالسطر بالموبايل، وأكثر بالكمبيوتر. */
-#main .hubg{grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr))!important;gap:14px!important}
-#main .hubg>.hubc{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;aspect-ratio:1/1;min-height:0!important;padding:16px 12px!important;border-radius:20px!important;grid-template-columns:none!important;grid-template-areas:none!important}
+#main .hubg{grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr))!important;grid-auto-rows:1fr!important;justify-items:stretch!important;align-items:stretch!important;gap:14px!important}
+#main .hubg>.hubc{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;aspect-ratio:auto!important;width:100%!important;max-width:none!important;min-width:0!important;justify-self:stretch!important;align-self:stretch!important;box-sizing:border-box!important;min-height:178px!important;margin:0!important;padding:16px 12px!important;border-radius:20px!important;grid-template-columns:none!important;grid-template-areas:none!important}
 #main .hubg>.hubc>.hubi{width:62px!important;height:62px!important;border-radius:18px!important;display:grid!important;place-items:center!important}
 #main .hubg>.hubc>.hubi svg{width:28px!important;height:28px!important}
 #main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{align-self:center!important;text-align:center!important;font-size:15.5px!important;line-height:1.45!important;grid-row:auto!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
@@ -41489,13 +41489,15 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 #main .hubg>.hubc:active{transform:scale(.98)!important}
 @media(max-width:700px){
   #main .hubg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
-  #main .hubg>.hubc{padding:14px 8px!important;gap:8px!important;border-radius:18px!important}
+  #main .hubg>.hubc{padding:14px 8px!important;gap:8px!important;border-radius:18px!important;min-height:150px!important}
   #main .hubg>.hubc>.hubi{width:54px!important;height:54px!important;border-radius:16px!important}
   #main .hubg>.hubc>.hubi svg{width:25px!important;height:25px!important}
   #main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:14.5px!important}
   #main .hubg>.hubc>em{font-size:12px!important}
 }
 @media(max-width:340px){#main .hubg>.hubc>b,#main .hubg>.hubc>b:last-child{font-size:13.5px!important}}
+/* v255b: بدون aspect-ratio — سفاري الآيفون كان يحسب عرض المربعات من محتواها فتطلع بأحجام مختلفة. العرض = عمود الشبكة، والارتفاع ثابت لكل السطور (grid-auto-rows:1fr). */
+#main .hubg>.hubc>b,#main .hubg>.hubc>em,#main .hubg>.hubc>.hubi{flex:0 0 auto!important;max-width:100%!important}
 </style>
 <script id="v229">(function() {
   try {
